@@ -1,16 +1,19 @@
 /**
  * SPAN (Structural Pattern ANalysis) MI variant.
  *
- * Combines Jaccard with degree similarity to capture both
- * neighbourhood overlap and structural equivalence.
+ * Clustering-coefficient penalty, favouring bridge edges.
+ * Formula: MI(u,v) = Jaccard(u,v) * (1 - max(cc(u), cc(v)))
  *
- * SPAN(u,v) = sqrt(Jaccard(u,v) * deg_similarity)
- * where deg_similarity = 1 - |deg(u) - deg(v)| / max(deg(u), deg(v))
+ * Nodes with high clustering coefficient are tightly embedded in triangles;
+ * edges between such nodes are less likely to be bridge edges. This variant
+ * downweights such edges, favouring paths through bridge edges.
  *
  * Range: [0, 1]
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
+import { neighbourSet, neighbourOverlap } from "../../utils";
+import { localClusteringCoefficient } from "../../utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -24,35 +27,26 @@ export function span<N extends NodeData, E extends EdgeData>(
 ): number {
 	const { epsilon = 1e-10 } = config ?? {};
 
-	// Get neighbourhoods
-	const sourceNeighbours = new Set(graph.neighbours(source));
-	const targetNeighbours = new Set(graph.neighbours(target));
-
-	// Remove self-references
-	sourceNeighbours.delete(target);
-	targetNeighbours.delete(source);
-
-	const sourceDegree = sourceNeighbours.size;
-	const targetDegree = targetNeighbours.size;
+	// Get neighbourhoods, excluding opposite endpoint
+	const sourceNeighbours = neighbourSet(graph, source, target);
+	const targetNeighbours = neighbourSet(graph, target, source);
 
 	// Compute Jaccard
-	let intersectionSize = 0;
-	for (const neighbour of sourceNeighbours) {
-		if (targetNeighbours.has(neighbour)) {
-			intersectionSize++;
-		}
-	}
+	const { intersection, union } = neighbourOverlap(
+		sourceNeighbours,
+		targetNeighbours,
+	);
+	const jaccard = union > 0 ? intersection / union : 0;
 
-	const unionSize = sourceDegree + targetDegree - intersectionSize;
-	const jaccard = unionSize > 0 ? intersectionSize / unionSize : 0;
+	// Compute clustering coefficients
+	const sourceCc = localClusteringCoefficient(graph, source);
+	const targetCc = localClusteringCoefficient(graph, target);
 
-	// Compute degree similarity
-	const maxDegree = Math.max(sourceDegree, targetDegree);
-	const degreeDiff = Math.abs(sourceDegree - targetDegree);
-	const degreeSimilarity = maxDegree > 0 ? 1 - degreeDiff / maxDegree : 1;
+	// Apply bridge penalty: downweight edges between highly-embedded nodes
+	const bridgePenalty = 1 - Math.max(sourceCc, targetCc);
 
-	// Geometric mean combination
-	const score = Math.sqrt(jaccard * degreeSimilarity);
+	const score = jaccard * bridgePenalty;
 
-	return Math.max(epsilon, Math.min(1, score));
+	// Apply epsilon floor for numerical stability
+	return Math.max(epsilon, score);
 }
