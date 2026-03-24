@@ -2,12 +2,18 @@
  * Unified Adaptive MI - combines multiple MI signals dynamically.
  *
  * Adapts to graph structure by weighting different MI components
- * based on local graph properties.
+ * based on structural properties.
+ *
+ * Three-component weighted sum:
+ * - Structural: Jaccard neighbourhood overlap
+ * - Degree: Adamic-Adar inverse-log-degree weighting
+ * - Overlap: Overlap coefficient (intersection / min degree)
  *
  * Range: [0, 1] - higher values indicate stronger association
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
+import { neighbourSet, neighbourOverlap } from "../../utils";
 import type { AdaptiveMIConfig } from "./types";
 import { jaccard } from "./jaccard";
 import { adamicAdar } from "./adamic-adar";
@@ -16,7 +22,7 @@ import { adamicAdar } from "./adamic-adar";
  * Compute unified adaptive MI between two connected nodes.
  *
  * Combines structural, degree, and overlap signals with
- * adaptive weighting based on graph density.
+ * configurable weighting.
  *
  * @param graph - Source graph
  * @param source - Source node ID
@@ -47,24 +53,17 @@ export function adaptive<N extends NodeData, E extends EdgeData>(
 	});
 
 	// Component 3: Overlap coefficient
-	const sourceNeighbours = new Set(graph.neighbours(source));
-	const targetNeighbours = new Set(graph.neighbours(target));
-	sourceNeighbours.delete(target);
-	targetNeighbours.delete(source);
-
-	const sourceDegree = sourceNeighbours.size;
-	const targetDegree = targetNeighbours.size;
+	const sourceNeighbours = neighbourSet(graph, source, target);
+	const targetNeighbours = neighbourSet(graph, target, source);
 
 	let overlap: number;
-	if (sourceDegree > 0 && targetDegree > 0) {
-		let commonCount = 0;
-		for (const n of sourceNeighbours) {
-			if (targetNeighbours.has(n)) {
-				commonCount++;
-			}
-		}
-		const minDegree = Math.min(sourceDegree, targetDegree);
-		overlap = commonCount / minDegree;
+	if (sourceNeighbours.size > 0 && targetNeighbours.size > 0) {
+		const { intersection } = neighbourOverlap(
+			sourceNeighbours,
+			targetNeighbours,
+		);
+		const minDegree = Math.min(sourceNeighbours.size, targetNeighbours.size);
+		overlap = minDegree > 0 ? intersection / minDegree : epsilon;
 	} else {
 		overlap = epsilon;
 	}
