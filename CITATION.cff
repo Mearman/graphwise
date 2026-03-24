@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: graphwise
+abstract: >-
+  Low-dependency TypeScript graph algorithms for citation network analysis:
+  novel expansion, MI variants, and path ranking.
+repository-code: https://github.com/Mearman/graphwise
+url: https://www.npmjs.com/package/graphwise
+authors:
+  - family-names: Mearman
+    given-names: Joseph
+keywords:
+  - graph
+  - algorithms
+  - citation-network
+  - expansion
+  - path-ranking
+  - mutual-information
+  - seed-selection
