@@ -1,5 +1,8 @@
 # graphwise
 
+[![npm](https://img.shields.io/badge/npm-cb3837?logo=npm)](https://www.npmjs.com/package/graphwise)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github)](https://github.com/Mearman/graphwise)
+
 Low-dependency TypeScript graph algorithms for citation network analysis: novel expansion, MI variants, and path ranking.
 
 ## Features
