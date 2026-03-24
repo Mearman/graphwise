@@ -1,17 +1,18 @@
 /**
  * ETCH (Edge Topology Coherence via Homophily) MI variant.
  *
- * Measures the density of connections among common neighbours,
- * capturing structural cohesion around the edge.
+ * Edge-type rarity weighting applied to Jaccard base.
+ * Formula: MI(u,v) = Jaccard(u,v) * rarity(edgeType(u,v))
+ * where rarity(t) = log(|E| / count(edges with type t))
  *
- * ETCH(u,v) = weighted combination of:
- *   - Joint density: edges among N(u) ∩ N(v)
- *   - Common density: edges from (u,v) to common neighbours
+ * Edges of rare types (fewer instances in the graph) receive higher salience,
+ * making discoveries across unusual edge relationships more significant.
  *
- * Range: [0, 1]
+ * Range: [0, ∞) but typically [0, 1] for well-typed edges
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
+import { neighbourSet, neighbourOverlap, countEdgesOfType } from "../../utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -25,62 +26,36 @@ export function etch<N extends NodeData, E extends EdgeData>(
 ): number {
 	const { epsilon = 1e-10 } = config ?? {};
 
-	// Get neighbourhoods
-	const sourceNeighbours = new Set(graph.neighbours(source));
-	const targetNeighbours = new Set(graph.neighbours(target));
+	// Get neighbourhoods, excluding opposite endpoint
+	const sourceNeighbours = neighbourSet(graph, source, target);
+	const targetNeighbours = neighbourSet(graph, target, source);
 
-	// Remove self-references
-	sourceNeighbours.delete(target);
-	targetNeighbours.delete(source);
+	// Compute Jaccard
+	const { intersection, union } = neighbourOverlap(
+		sourceNeighbours,
+		targetNeighbours,
+	);
+	const jaccard = union > 0 ? intersection / union : 0;
 
-	// Find common neighbours
-	const commonNeighbours: NodeId[] = [];
-	for (const neighbour of sourceNeighbours) {
-		if (targetNeighbours.has(neighbour)) {
-			commonNeighbours.push(neighbour);
-		}
+	// Get edge between source and target
+	const edge = graph.getEdge(source, target);
+
+	// If edge has no type or doesn't exist, fall back to Jaccard
+	if (edge?.type === undefined) {
+		return Math.max(epsilon, jaccard);
 	}
 
-	if (commonNeighbours.length < 2) {
-		return epsilon;
+	// Compute edge rarity: log(total edges / edges of this type)
+	const edgeTypeCount = countEdgesOfType(graph, edge.type);
+
+	// Avoid division by zero
+	if (edgeTypeCount === 0) {
+		return Math.max(epsilon, jaccard);
 	}
 
-	// Component 1: Joint density (edges among common neighbours)
-	let jointEdges = 0;
-	for (let i = 0; i < commonNeighbours.length; i++) {
-		for (let j = i + 1; j < commonNeighbours.length; j++) {
-			const ni = commonNeighbours[i];
-			const nj = commonNeighbours[j];
-			if (
-				ni !== undefined &&
-				nj !== undefined &&
-				graph.getEdge(ni, nj) !== undefined
-			) {
-				jointEdges++;
-			}
-		}
-	}
+	const rarity = Math.log(graph.edgeCount / edgeTypeCount);
+	const score = jaccard * rarity;
 
-	const maxJointEdges =
-		(commonNeighbours.length * (commonNeighbours.length - 1)) / 2;
-	const jointDensity = maxJointEdges > 0 ? jointEdges / maxJointEdges : 0;
-
-	// Component 2: Common density (edges from endpoints to common neighbours)
-	let commonEdges = 0;
-	for (const cn of commonNeighbours) {
-		if (graph.getEdge(source, cn) !== undefined) {
-			commonEdges++;
-		}
-		if (graph.getEdge(target, cn) !== undefined) {
-			commonEdges++;
-		}
-	}
-
-	const maxCommonEdges = commonNeighbours.length * 2;
-	const commonDensity = maxCommonEdges > 0 ? commonEdges / maxCommonEdges : 0;
-
-	// Weighted combination
-	const score = jointDensity * 0.7 + commonDensity * 0.3;
-
-	return Math.max(epsilon, Math.min(1, score));
+	// Apply epsilon floor for numerical stability
+	return Math.max(epsilon, score);
 }
