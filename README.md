@@ -1,5 +1,6 @@
 # graphwise
 
+[![DOI](https://zenodo.org/badge/1190809040.svg)](https://doi.org/10.5281/zenodo.19209820)
 [![npm](https://img.shields.io/badge/npm-cb3837?logo=npm)](https://www.npmjs.com/package/graphwise)
 [![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github)](https://github.com/Mearman/graphwise)
 
