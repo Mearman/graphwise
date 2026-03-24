@@ -1,3 +1,28 @@
+## [1.3.0](https://github.com/Mearman/graphwise/compare/v1.2.0...v1.3.0) (2026-03-24)
+
+### Features
+
+* **ranking:** rewrite etch mi variant with edge-type rarity weighting ([5d1ff1e](https://github.com/Mearman/graphwise/commit/5d1ff1e1bd7e68417eadc719409f7b20b0364688))
+* **ranking:** rewrite notch mi variant with node-type rarity weighting ([15c9976](https://github.com/Mearman/graphwise/commit/15c9976febeba93f514d8551bd4b7cb80744cf44))
+* **ranking:** rewrite scale mi variant to density-normalised jaccard ([cff639d](https://github.com/Mearman/graphwise/commit/cff639da0033b12988c9065b3f3c559412dbd141))
+* **ranking:** rewrite skew mi variant with idf-style rarity weighting ([169db9f](https://github.com/Mearman/graphwise/commit/169db9fc6b10a76c246bf52236111ea975b0d2de))
+* **ranking:** rewrite span mi variant with clustering coefficient penalty ([247474f](https://github.com/Mearman/graphwise/commit/247474f94acd7c42b0bacc94387adc028ef518a0))
+* **utils:** add neighbourhood utility functions ([f41798c](https://github.com/Mearman/graphwise/commit/f41798c1dcc305ffd80541798172aba9859b8aa7))
+
+### Code Refactoring
+
+* **ranking:** fix adamic-adar formula and use utilities ([5ee40ef](https://github.com/Mearman/graphwise/commit/5ee40ef7d3772fabc5464b0069a3d505455a52fa))
+* **ranking:** use neighbourhood utilities in jaccard ([ecb91d4](https://github.com/Mearman/graphwise/commit/ecb91d4dd5ec1b26753dcf60a16f65d09a0fcfed))
+* **ranking:** use utilities in adaptive mi variant ([1d1d731](https://github.com/Mearman/graphwise/commit/1d1d7317b9d2daab1240f765a55f35ec47031618))
+
+### Documentation
+
+* add algorithm documentation to README ([f467848](https://github.com/Mearman/graphwise/commit/f4678481fcb532f2ad2acbc3a6a60e12b72086a5))
+
+### Tests
+
+* **ranking:** update mi variant test expectations for corrected formulas ([5510eb0](https://github.com/Mearman/graphwise/commit/5510eb063215e232a53b1d66ede8809780e34489))
+
 ## [1.2.0](https://github.com/Mearman/graphwise/compare/v1.1.1...v1.2.0) (2026-03-24)
 
 ### Features
