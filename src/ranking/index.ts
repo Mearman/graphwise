@@ -7,34 +7,6 @@
  * @module ranking
  */
 
-// PARSE ranking
-export { parse } from "./parse";
-export type { PARSEConfig, PARSEResult, RankedPath } from "./parse";
-
-// MI variants
-export type {
-	MIFunction,
-	MIVariantName,
-	MIConfig,
-	AdaptiveMIConfig,
-} from "./mi/types";
-
-export {
-	jaccard,
-	adamicAdar,
-	scale,
-	skew,
-	span,
-	etch,
-	notch,
-	adaptive,
-} from "./mi/index";
-
-// Baseline rankings
-export { shortest } from "./baselines/shortest";
-export type {
-	BaselineConfig,
-	BaselineResult,
-	ScoredPath,
-	PathRanker,
-} from "./baselines/types";
+export * from "./parse";
+export * from "./mi";
+export * from "./baselines";

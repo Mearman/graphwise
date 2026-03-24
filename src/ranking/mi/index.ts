@@ -7,34 +7,12 @@
  * @module ranking/mi
  */
 
-// Types
-export type {
-	MIFunction,
-	MIVariantName,
-	MIConfig,
-	AdaptiveMIConfig,
-} from "./types";
-
-// Jaccard similarity
-export { jaccard } from "./jaccard";
-
-// Adamic-Adar index
-export { adamicAdar } from "./adamic-adar";
-
-// SCALE (Structural Coherence via Adjacency Lattice Entropy)
-export { scale } from "./scale";
-
-// SKEW (Structural Kernel Entropy Weighting)
-export { skew } from "./skew";
-
-// SPAN (Structural Pattern ANalysis)
-export { span } from "./span";
-
-// ETCH (Edge Topology Coherence via Homophily)
-export { etch } from "./etch";
-
-// NOTCH (Neighbourhood Overlap Topology Coherence via Homophily)
-export { notch } from "./notch";
-
-// Unified Adaptive MI
-export { adaptive } from "./adaptive";
+export * from "./types";
+export * from "./jaccard";
+export * from "./adamic-adar";
+export * from "./scale";
+export * from "./skew";
+export * from "./span";
+export * from "./etch";
+export * from "./notch";
+export * from "./adaptive";

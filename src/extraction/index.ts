@@ -12,14 +12,9 @@
  * @module extraction
  */
 
-export { extractEgoNetwork, type EgoNetworkOptions } from "./ego-network";
-export { extractKCore } from "./k-core";
-export { extractKTruss } from "./truss";
-export {
-	enumerateMotifs,
-	enumerateMotifsWithInstances,
-	getMotifName,
-	type MotifCensus,
-} from "./motif";
-export { extractInducedSubgraph } from "./induced-subgraph";
-export { filterSubgraph, type FilterOptions } from "./node-filter";
+export * from "./ego-network";
+export * from "./k-core";
+export * from "./truss";
+export * from "./motif";
+export * from "./induced-subgraph";
+export * from "./node-filter";

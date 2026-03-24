@@ -4,6 +4,6 @@
  * @packageDocumentation
  */
 
-export type { NodeId, NodeData, EdgeData, Direction } from "./types";
-export type { ReadableGraph, MutableGraph } from "./interfaces";
-export { AdjacencyMapGraph } from "./adjacency-map";
+export * from "./types";
+export * from "./interfaces";
+export * from "./adjacency-map";

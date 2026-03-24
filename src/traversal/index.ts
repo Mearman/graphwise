@@ -7,5 +7,5 @@
  * @module traversal
  */
 
-export { bfs, bfsWithPath, type BfsPathEntry } from "./bfs";
-export { dfs, dfsWithPath, type DfsPathEntry } from "./dfs";
+export * from "./bfs";
+export * from "./dfs";
