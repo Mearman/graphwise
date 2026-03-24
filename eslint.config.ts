@@ -41,6 +41,8 @@ const indexReExportsOnly: Rule.RuleModule = {
 		messages: {
 			noLogic:
 				"Index files must only contain re-exports (export ... from). No declarations, functions, or logic.",
+			selectiveExport:
+				"Use 'export * from \"./sibling\"' instead of selective exports. Index files must re-export everything.",
 		},
 	},
 	create(context: Rule.RuleContext) {
@@ -50,8 +52,17 @@ const indexReExportsOnly: Rule.RuleModule = {
 
 		return {
 			ExportNamedDeclaration(node) {
-				// Re-exports have a source — those are fine
-				if (node.source !== null && node.source !== undefined) return;
+				// Re-exports have a source
+				if (node.source !== null && node.source !== undefined) {
+					// Must be export * (AllExport), not selective exports
+					if (node.specifiers.length > 0) {
+						context.report({
+							node,
+							messageId: "selectiveExport",
+						});
+					}
+					return;
+				}
 				// Anything else (export function, export const, export {}) is logic
 				context.report({ node, messageId: "noLogic" });
 			},
@@ -180,8 +191,8 @@ const barrelSiblingExportsOnly: Rule.RuleModule = {
 
 /**
  * Check if a barrel export path is valid.
- * Valid: './sibling', './subdir', './subdir/nested'
- * Invalid: '../parent', './file.js', './dir/file.ts'
+ * Valid: './sibling' (direct sibling only)
+ * Invalid: '../parent', './file.js', './subdir/nested'
  */
 function isValidSiblingPath(path: string): boolean {
 	// Must start with './'
@@ -193,6 +204,9 @@ function isValidSiblingPath(path: string): boolean {
 	// Cannot have file extension at the end (no .js, .ts, .mjs, etc.)
 	// This ensures only directory imports which resolve to index files
 	if (/\.\w+$/.test(path)) return false;
+
+	// Cannot contain '/' after './' — only direct siblings allowed
+	if (path.includes("/", 2)) return false;
 
 	return true;
 }
