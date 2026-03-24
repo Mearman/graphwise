@@ -1,3 +1,9 @@
+## [1.3.1](https://github.com/Mearman/graphwise/compare/v1.3.0...v1.3.1) (2026-03-24)
+
+### Documentation
+
+* add npm and github badges to README ([e5712ba](https://github.com/Mearman/graphwise/commit/e5712ba5069ce9600581e6f4d7f9afd5485905dc))
+
 ## [1.3.0](https://github.com/Mearman/graphwise/compare/v1.2.0...v1.3.0) (2026-03-24)
 
 ### Features
