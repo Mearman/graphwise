@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  packages: write
+  id-token: write
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-quality-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-quality-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            turbo-quality-${{ runner.os }}-
+      - run: npx turbo run _typecheck _lint _test
+
+  release:
+    name: Release
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          # Do NOT set registry-url — it creates an .npmrc that overrides OIDC
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-release-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-release-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            turbo-release-${{ runner.os }}-
+      - run: npx turbo run _build
+      - name: Record pre-release version
+        id: pre
+        run: echo "version=$(npm pkg get version | tr -d '\"')" >> "$GITHUB_OUTPUT"
+      - run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish to npm via OIDC
+        run: |
+          CURRENT=$(npm pkg get version | tr -d '"')
+          if [ "$CURRENT" != "${{ steps.pre.outputs.version }}" ]; then
+            echo "Publishing $CURRENT to npm..."
+            npm publish --provenance --access public
+          else
+            echo "No new version — skipping npm publish"
+          fi
