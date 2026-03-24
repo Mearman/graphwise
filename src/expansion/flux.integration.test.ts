@@ -1,22 +1,22 @@
 /**
- * Integration test for MAZE expansion algorithm.
+ * Integration test for FLUX expansion algorithm.
  *
- * MAZE (Multi-phase Adaptive Zone Exploration) combines PIPE (phase 1),
+ * FLUX (Multi-phase Adaptive Zone Exploration) combines PIPE (phase 1),
  * SAGE (phase 2), and adaptive termination to discover paths across regions
  * of varying density. It switches strategies based on local structure and
  * discovers more paths than single-strategy algorithms.
  *
- * This test uses a three-density network (city, suburban, village). MAZE
+ * This test uses a three-density network (city, suburban, village). FLUX
  * should discover paths through all regions and total paths ≥ DOME/EDGE
  * because it adapts strategy to local density.
  */
 
 import { describe, it, expect } from "vitest";
 import { createCitySuburbanVillageFixture } from "../__test__/fixtures";
-import { maze } from "./maze";
+import { flux } from "./flux";
 import { dome } from "./dome";
-import { edge } from "./edge";
-import { pipe } from "./pipe";
+import { tide } from "./tide";
+import { warp } from "./warp";
 
 // Type guard helpers for metadata extraction
 function getStringArray(value: unknown): readonly string[] {
@@ -43,7 +43,7 @@ function getBridgeObject(value: unknown): { source: string; target: string } {
 	return { source: "", target: "" };
 }
 
-describe("MAZE integration: density-aware multi-phase exploration", () => {
+describe("FLUX integration: density-aware multi-phase exploration", () => {
 	it("discovers paths through all three density regions", () => {
 		const fixture = createCitySuburbanVillageFixture();
 		const { graph, metadata } = fixture;
@@ -51,7 +51,7 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 		const suburbanLocations = getStringArray(metadata["suburbanLocations"]);
 		const villageLocations = getStringArray(metadata["villageLocations"]);
 
-		const result = maze(graph, [
+		const result = flux(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -80,7 +80,7 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 			return regions.size >= 2;
 		});
 
-		// MAZE must discover paths spanning multiple regions
+		// FLUX must discover paths spanning multiple regions
 		expect(multiRegionPaths.length).toBeGreaterThan(0);
 		// Strong indicator of zone exploration: paths traversing all three regions
 		expect(allRegionPaths.length).toBeGreaterThan(0);
@@ -90,7 +90,7 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 		const fixture = createCitySuburbanVillageFixture();
 		const { graph } = fixture;
 
-		const mazeResult = maze(graph, [
+		const fluxResult = flux(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -100,18 +100,18 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 			{ id: "shop", role: "target" },
 		]);
 
-		const edgeResult = edge(graph, [
+		const tideResult = tide(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
 
-		expect(mazeResult.paths.length).toBeGreaterThan(0);
+		expect(fluxResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
-		expect(edgeResult.paths.length).toBeGreaterThan(0);
+		expect(tideResult.paths.length).toBeGreaterThan(0);
 
-		// MAZE combines multiple strategies, so should discover paths comparable to or exceeding individual strategies
-		expect(mazeResult.paths.length).toBeGreaterThanOrEqual(
-			Math.max(domeResult.paths.length, edgeResult.paths.length),
+		// FLUX combines multiple strategies, so should discover paths comparable to or exceeding individual strategies
+		expect(fluxResult.paths.length).toBeGreaterThanOrEqual(
+			Math.max(domeResult.paths.length, tideResult.paths.length),
 		);
 	});
 
@@ -119,14 +119,14 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 		const fixture = createCitySuburbanVillageFixture();
 		const { graph } = fixture;
 
-		const result = maze(graph, [
+		const result = flux(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
 
 		expect(result.paths.length).toBeGreaterThan(0);
 
-		// MAZE should discover paths, indicating successful strategy adaptation
+		// FLUX should discover paths, indicating successful strategy adaptation
 		expect(result.stats.nodesVisited).toBeGreaterThan(0);
 	});
 
@@ -140,7 +140,7 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 			metadata["suburbanToVillageBridge"],
 		);
 
-		const result = maze(graph, [
+		const result = flux(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -175,7 +175,7 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 		const fixture = createCitySuburbanVillageFixture();
 		const { graph } = fixture;
 
-		const result = maze(graph, [
+		const result = flux(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -197,7 +197,7 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 		const suburbanLocations = getStringArray(metadata["suburbanLocations"]);
 		const villageLocations = getStringArray(metadata["villageLocations"]);
 
-		const result = maze(graph, [
+		const result = flux(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -212,7 +212,7 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 			villageLocations.includes(n),
 		);
 
-		// MAZE should explore multiple nodes from each region, demonstrating cross-density adaptation
+		// FLUX should explore multiple nodes from each region, demonstrating cross-density adaptation
 		expect(cityNodesVisited.length).toBeGreaterThan(1);
 		expect(suburbanNodesVisited.length).toBeGreaterThan(1);
 		expect(villageNodesVisited.length).toBeGreaterThan(1);
@@ -230,7 +230,7 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 		const fixture = createCitySuburbanVillageFixture();
 		const { graph } = fixture;
 
-		const result = maze(graph, [
+		const result = flux(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -252,7 +252,7 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 		const fixture = createCitySuburbanVillageFixture();
 		const { graph } = fixture;
 
-		const result = maze(graph, [
+		const result = flux(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -266,7 +266,7 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 		const fixture = createCitySuburbanVillageFixture();
 		const { graph } = fixture;
 
-		const result = maze(graph, [
+		const result = flux(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -288,20 +288,20 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 		const fixture = createCitySuburbanVillageFixture();
 		const { graph } = fixture;
 
-		const mazeResult = maze(graph, [
+		const fluxResult = flux(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
 
-		const pipeResult = pipe(graph, [
+		const warpResult = warp(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
 
-		expect(mazeResult.paths.length).toBeGreaterThan(0);
-		expect(pipeResult.paths.length).toBeGreaterThan(0);
+		expect(fluxResult.paths.length).toBeGreaterThan(0);
+		expect(warpResult.paths.length).toBeGreaterThan(0);
 
-		// MAZE should discover valid paths
-		expect(mazeResult.stats.nodesVisited).toBeGreaterThan(0);
+		// FLUX should discover valid paths
+		expect(fluxResult.stats.nodesVisited).toBeGreaterThan(0);
 	});
 });

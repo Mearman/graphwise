@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { NodeData, EdgeData } from "../graph";
-import { maze } from "./maze";
+import { flux } from "./flux";
 import type { Seed } from "./types";
 
 interface TestNode extends NodeData {
@@ -93,10 +93,10 @@ function createBridgeGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
 	return graph;
 }
 
-describe("maze expansion", () => {
+describe("flux expansion", () => {
 	it("returns empty result for no seeds", () => {
 		const graph = createLinearGraph();
-		const result = maze(graph, []);
+		const result = flux(graph, []);
 
 		expect(result.paths).toHaveLength(0);
 		expect(result.stats.termination).toBe("exhausted");
@@ -106,7 +106,7 @@ describe("maze expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = maze(graph, seeds);
+		const result = flux(graph, seeds);
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("sampledNodes");
@@ -120,7 +120,7 @@ describe("maze expansion", () => {
 
 	it("reports algorithm name", () => {
 		const graph = createLinearGraph();
-		const result = maze(graph, [{ id: "A" }, { id: "B" }]);
+		const result = flux(graph, [{ id: "A" }, { id: "B" }]);
 
 		// MAZE wraps BASE, so algorithm name is inherited
 		expect(result.stats.algorithm).toBeDefined();
@@ -132,35 +132,35 @@ describe("maze expansion", () => {
 		graph.addNode({ id: "B", label: "B" });
 
 		const seeds: Seed[] = [{ id: "A" }, { id: "B" }];
-		const result = maze(graph, seeds);
+		const result = flux(graph, seeds);
 
 		expect(result.paths).toHaveLength(0);
 	});
 
 	it("includes duration in stats", () => {
 		const graph = createLinearGraph();
-		const result = maze(graph, [{ id: "A" }, { id: "B" }]);
+		const result = flux(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes iterations in stats", () => {
 		const graph = createLinearGraph();
-		const result = maze(graph, [{ id: "A" }, { id: "B" }]);
+		const result = flux(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.iterations).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes edges traversed in stats", () => {
 		const graph = createLinearGraph();
-		const result = maze(graph, [{ id: "A" }, { id: "B" }]);
+		const result = flux(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.edgesTraversed).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes paths found in stats", () => {
 		const graph = createLinearGraph();
-		const result = maze(graph, [{ id: "A" }, { id: "B" }]);
+		const result = flux(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.pathsFound).toBeGreaterThanOrEqual(0);
 	});
@@ -170,7 +170,7 @@ describe("maze expansion", () => {
 		const seeds: Seed[] = [{ id: "A" }, { id: "D" }];
 
 		// Low density threshold should trigger EDGE mode more often
-		const result = maze(graph, seeds, { densityThreshold: 0.1 });
+		const result = flux(graph, seeds, { densityThreshold: 0.1 });
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("stats");
@@ -181,7 +181,7 @@ describe("maze expansion", () => {
 		const seeds: Seed[] = [{ id: "A" }, { id: "F" }];
 
 		// High bridge threshold should trigger PIPE mode more often
-		const result = maze(graph, seeds, { bridgeThreshold: 0.8 });
+		const result = flux(graph, seeds, { bridgeThreshold: 0.8 });
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("stats");
@@ -191,7 +191,7 @@ describe("maze expansion", () => {
 		const graph = createBridgeGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "F" }];
 
-		const result = maze(graph, seeds, {
+		const result = flux(graph, seeds, {
 			densityThreshold: 0.3,
 			bridgeThreshold: 0.2,
 		});
@@ -204,7 +204,7 @@ describe("maze expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = maze(graph, seeds);
+		const result = flux(graph, seeds);
 
 		// MAZE should expand the graph from both seeds
 		expect(result.sampledNodes.size).toBeGreaterThan(0);
@@ -215,7 +215,7 @@ describe("maze expansion", () => {
 		const graph = createDenseGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "D" }];
 
-		const result = maze(graph, seeds);
+		const result = flux(graph, seeds);
 
 		// Dense graph should trigger EDGE mode behaviour
 		expect(result.sampledNodes.size).toBeGreaterThan(0);
@@ -226,7 +226,7 @@ describe("maze expansion", () => {
 		const graph = createBridgeGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "F" }];
 
-		const result = maze(graph, seeds);
+		const result = flux(graph, seeds);
 
 		// Bridge graph should trigger PIPE mode for bridge nodes
 		expect(result.sampledNodes.size).toBeGreaterThan(0);
@@ -237,7 +237,7 @@ describe("maze expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = maze(graph, seeds, { maxNodes: 2 });
+		const result = flux(graph, seeds, { maxNodes: 2 });
 
 		expect(result.sampledNodes.size).toBeLessThanOrEqual(2);
 	});
@@ -246,7 +246,7 @@ describe("maze expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = maze(graph, seeds, { maxIterations: 1 });
+		const result = flux(graph, seeds, { maxIterations: 1 });
 
 		expect(result.stats.iterations).toBeLessThanOrEqual(1);
 	});
@@ -255,7 +255,7 @@ describe("maze expansion", () => {
 		const graph = createDenseGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "D" }];
 
-		const result = maze(graph, seeds, { maxPaths: 1 });
+		const result = flux(graph, seeds, { maxPaths: 1 });
 
 		expect(result.paths.length).toBeLessThanOrEqual(1);
 	});
@@ -264,7 +264,7 @@ describe("maze expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }];
 
-		const result = maze(graph, seeds);
+		const result = flux(graph, seeds);
 
 		// Single seed cannot form paths between seeds
 		expect(result.paths).toHaveLength(0);
@@ -275,7 +275,7 @@ describe("maze expansion", () => {
 		const seeds: Seed[] = [{ id: "A" }, { id: "Z" }];
 
 		// Should not throw
-		const result = maze(graph, seeds);
+		const result = flux(graph, seeds);
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("stats");
@@ -285,7 +285,7 @@ describe("maze expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = maze(graph, seeds);
+		const result = flux(graph, seeds);
 
 		// Should have visitedPerFrontier array matching seeds
 		expect(result.visitedPerFrontier.length).toBeGreaterThan(0);
@@ -295,7 +295,7 @@ describe("maze expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = maze(graph, seeds);
+		const result = flux(graph, seeds);
 
 		if (result.paths.length > 0) {
 			const firstPath = result.paths[0];

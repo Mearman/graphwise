@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { NodeData, EdgeData } from "../graph";
-import { edge } from "./edge";
+import { tide } from "./tide";
 import type { Seed } from "./types";
 
 interface TestNode extends NodeData {
@@ -31,10 +31,10 @@ function createTestGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
 	return graph;
 }
 
-describe("edge expansion", () => {
+describe("tide expansion", () => {
 	it("returns empty result for no seeds", () => {
 		const graph = createTestGraph();
-		const result = edge(graph, []);
+		const result = tide(graph, []);
 
 		expect(result.paths).toHaveLength(0);
 		expect(result.stats.termination).toBe("exhausted");
@@ -44,7 +44,7 @@ describe("edge expansion", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = edge(graph, seeds);
+		const result = tide(graph, seeds);
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("sampledNodes");
@@ -54,9 +54,9 @@ describe("edge expansion", () => {
 
 	it("reports algorithm name", () => {
 		const graph = createTestGraph();
-		const result = edge(graph, [{ id: "A" }, { id: "B" }]);
+		const result = tide(graph, [{ id: "A" }, { id: "B" }]);
 
-		// EDGE wraps BASE, so algorithm name is inherited
+		// TIDE wraps BASE, so algorithm name is inherited
 		expect(result.stats.algorithm).toBeDefined();
 	});
 
@@ -65,14 +65,14 @@ describe("edge expansion", () => {
 		graph.addNode({ id: "A", label: "A" });
 		graph.addNode({ id: "B", label: "B" });
 
-		const result = edge(graph, [{ id: "A" }, { id: "B" }]);
+		const result = tide(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.paths).toHaveLength(0);
 	});
 
 	it("includes duration in stats", () => {
 		const graph = createTestGraph();
-		const result = edge(graph, [{ id: "A" }, { id: "B" }]);
+		const result = tide(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
 	});

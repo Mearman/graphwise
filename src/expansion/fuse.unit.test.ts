@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
-import { sage, type SAGEConfig } from "./sage";
+import { fuse, type FUSEConfig } from "./fuse";
 import type { Seed } from "./types";
 
 interface TestNode extends NodeData {
@@ -78,10 +78,10 @@ function fixedMI(
 	return 0.75;
 }
 
-describe("sage expansion", () => {
+describe("fuse expansion", () => {
 	it("returns empty result for no seeds", () => {
 		const graph = createLinearGraph();
-		const result = sage(graph, []);
+		const result = fuse(graph, []);
 
 		expect(result.paths).toHaveLength(0);
 		expect(result.stats.termination).toBe("exhausted");
@@ -91,7 +91,7 @@ describe("sage expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = sage(graph, seeds);
+		const result = fuse(graph, seeds);
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("sampledNodes");
@@ -109,56 +109,56 @@ describe("sage expansion", () => {
 		graph.addNode({ id: "B", label: "B" });
 
 		const seeds: Seed[] = [{ id: "A" }, { id: "B" }];
-		const result = sage(graph, seeds);
+		const result = fuse(graph, seeds);
 
 		expect(result.paths).toHaveLength(0);
 	});
 
 	it("reports algorithm name", () => {
 		const graph = createLinearGraph();
-		const result = sage(graph, [{ id: "A" }, { id: "B" }]);
+		const result = fuse(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.algorithm).toBeDefined();
 	});
 
 	it("includes duration in stats", () => {
 		const graph = createLinearGraph();
-		const result = sage(graph, [{ id: "A" }, { id: "B" }]);
+		const result = fuse(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes iterations in stats", () => {
 		const graph = createLinearGraph();
-		const result = sage(graph, [{ id: "A" }, { id: "B" }]);
+		const result = fuse(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.iterations).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes edges traversed in stats", () => {
 		const graph = createLinearGraph();
-		const result = sage(graph, [{ id: "A" }, { id: "B" }]);
+		const result = fuse(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.edgesTraversed).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes paths found in stats", () => {
 		const graph = createLinearGraph();
-		const result = sage(graph, [{ id: "A" }, { id: "B" }]);
+		const result = fuse(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.pathsFound).toBeGreaterThanOrEqual(0);
 	});
 });
 
-describe("sage with custom MI function", () => {
+describe("fuse with custom MI function", () => {
 	it("accepts custom MI function", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: SAGEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<TestNode, TestEdge> = {
 			mi: fixedMI,
 		};
 
-		const result = sage(graph, seeds, config);
+		const result = fuse(graph, seeds, config);
 
 		expect(result).toHaveProperty("paths");
 		expect(result.stats.algorithm).toBeDefined();
@@ -167,11 +167,11 @@ describe("sage with custom MI function", () => {
 	it("accepts custom salience weight", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: SAGEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<TestNode, TestEdge> = {
 			salienceWeight: 0.8,
 		};
 
-		const result = sage(graph, seeds, config);
+		const result = fuse(graph, seeds, config);
 
 		expect(result).toHaveProperty("paths");
 	});
@@ -179,11 +179,11 @@ describe("sage with custom MI function", () => {
 	it("accepts salience weight of 0 (pure degree-based)", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: SAGEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<TestNode, TestEdge> = {
 			salienceWeight: 0,
 		};
 
-		const result = sage(graph, seeds, config);
+		const result = fuse(graph, seeds, config);
 
 		expect(result).toHaveProperty("paths");
 	});
@@ -191,11 +191,11 @@ describe("sage with custom MI function", () => {
 	it("accepts salience weight of 1 (pure salience-based)", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: SAGEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<TestNode, TestEdge> = {
 			salienceWeight: 1,
 		};
 
-		const result = sage(graph, seeds, config);
+		const result = fuse(graph, seeds, config);
 
 		expect(result).toHaveProperty("paths");
 	});
@@ -203,26 +203,26 @@ describe("sage with custom MI function", () => {
 	it("accepts both custom MI and salience weight", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: SAGEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<TestNode, TestEdge> = {
 			mi: fixedMI,
 			salienceWeight: 0.3,
 		};
 
-		const result = sage(graph, seeds, config);
+		const result = fuse(graph, seeds, config);
 
 		expect(result).toHaveProperty("paths");
 	});
 });
 
-describe("sage with expansion config options", () => {
+describe("fuse with expansion config options", () => {
 	it("respects maxNodes configuration", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: SAGEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<TestNode, TestEdge> = {
 			maxNodes: 2,
 		};
 
-		const result = sage(graph, seeds, config);
+		const result = fuse(graph, seeds, config);
 
 		expect(result.stats.nodesVisited).toBeLessThanOrEqual(2);
 	});
@@ -230,11 +230,11 @@ describe("sage with expansion config options", () => {
 	it("respects maxIterations configuration", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: SAGEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<TestNode, TestEdge> = {
 			maxIterations: 1,
 		};
 
-		const result = sage(graph, seeds, config);
+		const result = fuse(graph, seeds, config);
 
 		expect(result.stats.iterations).toBeLessThanOrEqual(1);
 	});
@@ -242,34 +242,34 @@ describe("sage with expansion config options", () => {
 	it("respects maxPaths configuration", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: SAGEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<TestNode, TestEdge> = {
 			maxPaths: 1,
 		};
 
-		const result = sage(graph, seeds, config);
+		const result = fuse(graph, seeds, config);
 
 		expect(result.paths.length).toBeLessThanOrEqual(1);
 	});
 });
 
-describe("sage with single seed", () => {
+describe("fuse with single seed", () => {
 	it("returns empty paths for single seed", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }];
 
-		const result = sage(graph, seeds);
+		const result = fuse(graph, seeds);
 
 		// Single seed cannot form paths between seeds
 		expect(result.paths).toHaveLength(0);
 	});
 });
 
-describe("sage with graph containing shared neighbours", () => {
+describe("fuse with graph containing shared neighbours", () => {
 	it("handles graph with shared neighbours structure", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = sage(graph, seeds);
+		const result = fuse(graph, seeds);
 
 		// Should complete without error
 		expect(result).toHaveProperty("paths");
@@ -280,7 +280,7 @@ describe("sage with graph containing shared neighbours", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "H" }];
 
-		const result = sage(graph, seeds);
+		const result = fuse(graph, seeds);
 
 		// Should have sampled some nodes during expansion
 		expect(result.sampledNodes.size).toBeGreaterThanOrEqual(0);

@@ -7,7 +7,7 @@
  *
  * Adapts to graph structure by learning optimal MI thresholds.
  *
- * @module expansion/reach
+ * @module expansion/sift
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
@@ -44,7 +44,7 @@ export interface REACHConfig<
  *
  * Uses learned MI threshold to prioritise high-MI edges.
  */
-function reachPriority<N extends NodeData, E extends EdgeData>(
+function siftPriority<N extends NodeData, E extends EdgeData>(
 	nodeId: string,
 	context: PriorityContext<N, E>,
 	mi: (graph: ReadableGraph<N, E>, source: string, target: string) => number,
@@ -76,7 +76,7 @@ function reachPriority<N extends NodeData, E extends EdgeData>(
 }
 
 /**
- * Run REACH expansion algorithm.
+ * Run SIFT expansion algorithm.
  *
  * Two-phase adaptive expansion that learns MI thresholds
  * from initial sampling, then uses them for guided expansion.
@@ -86,7 +86,7 @@ function reachPriority<N extends NodeData, E extends EdgeData>(
  * @param config - Expansion configuration
  * @returns Expansion result with discovered paths
  */
-export function reach<N extends NodeData, E extends EdgeData>(
+export function sift<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	seeds: readonly Seed[],
 	config?: REACHConfig<N, E>,
@@ -95,7 +95,7 @@ export function reach<N extends NodeData, E extends EdgeData>(
 
 	// Run guided expansion with MI threshold
 	const priority = (nodeId: string, context: PriorityContext<N, E>): number =>
-		reachPriority(nodeId, context, mi, miThreshold);
+		siftPriority(nodeId, context, mi, miThreshold);
 
 	return base(graph, seeds, {
 		...restConfig,

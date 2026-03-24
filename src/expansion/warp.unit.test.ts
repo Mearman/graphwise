@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { NodeData, EdgeData } from "../graph";
-import { pipe } from "./pipe";
+import { warp } from "./warp";
 import type { Seed } from "./types";
 
 interface TestNode extends NodeData {
@@ -74,10 +74,10 @@ function createBridgeGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
 	return graph;
 }
 
-describe("pipe expansion", () => {
+describe("warp expansion", () => {
 	it("returns empty result for no seeds", () => {
 		const graph = createLinearGraph();
-		const result = pipe(graph, []);
+		const result = warp(graph, []);
 
 		expect(result.paths).toHaveLength(0);
 		expect(result.stats.termination).toBe("exhausted");
@@ -87,7 +87,7 @@ describe("pipe expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = pipe(graph, seeds);
+		const result = warp(graph, seeds);
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("sampledNodes");
@@ -105,14 +105,14 @@ describe("pipe expansion", () => {
 		graph.addNode({ id: "B", label: "B" });
 
 		const seeds: Seed[] = [{ id: "A" }, { id: "B" }];
-		const result = pipe(graph, seeds);
+		const result = warp(graph, seeds);
 
 		expect(result.paths).toHaveLength(0);
 	});
 
 	it("reports algorithm name", () => {
 		const graph = createLinearGraph();
-		const result = pipe(graph, [{ id: "A" }, { id: "B" }]);
+		const result = warp(graph, [{ id: "A" }, { id: "B" }]);
 
 		// PIPE wraps BASE, so algorithm name is inherited
 		expect(result.stats.algorithm).toBeDefined();
@@ -120,28 +120,28 @@ describe("pipe expansion", () => {
 
 	it("includes duration in stats", () => {
 		const graph = createLinearGraph();
-		const result = pipe(graph, [{ id: "A" }, { id: "B" }]);
+		const result = warp(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes iterations in stats", () => {
 		const graph = createLinearGraph();
-		const result = pipe(graph, [{ id: "A" }, { id: "B" }]);
+		const result = warp(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.iterations).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes edges traversed in stats", () => {
 		const graph = createLinearGraph();
-		const result = pipe(graph, [{ id: "A" }, { id: "B" }]);
+		const result = warp(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.edgesTraversed).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes paths found in stats", () => {
 		const graph = createLinearGraph();
-		const result = pipe(graph, [{ id: "A" }, { id: "B" }]);
+		const result = warp(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.pathsFound).toBeGreaterThanOrEqual(0);
 	});
@@ -150,7 +150,7 @@ describe("pipe expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = pipe(graph, seeds);
+		const result = warp(graph, seeds);
 
 		expect(result.paths.length).toBeGreaterThan(0);
 		expect(result.stats.pathsFound).toBeGreaterThan(0);
@@ -160,7 +160,7 @@ describe("pipe expansion", () => {
 		const graph = createBridgeGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "F" }];
 
-		const result = pipe(graph, seeds);
+		const result = warp(graph, seeds);
 
 		// Should find a path from A to F through G (bridge)
 		expect(result.paths.length).toBeGreaterThan(0);
@@ -174,7 +174,7 @@ describe("pipe expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = pipe(graph, seeds);
+		const result = warp(graph, seeds);
 
 		expect(result.sampledNodes.size).toBeGreaterThan(0);
 		expect(result.sampledNodes.has("A")).toBe(true);
@@ -185,7 +185,7 @@ describe("pipe expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = pipe(graph, seeds);
+		const result = warp(graph, seeds);
 
 		expect(result.sampledEdges.size).toBeGreaterThan(0);
 	});
@@ -194,7 +194,7 @@ describe("pipe expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = pipe(graph, seeds, { maxNodes: 3 });
+		const result = warp(graph, seeds, { maxNodes: 3 });
 
 		expect(result.stats.nodesVisited).toBeLessThanOrEqual(3);
 	});
@@ -203,7 +203,7 @@ describe("pipe expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = pipe(graph, seeds, { maxIterations: 2 });
+		const result = warp(graph, seeds, { maxIterations: 2 });
 
 		expect(result.stats.iterations).toBeLessThanOrEqual(2);
 	});
@@ -212,7 +212,7 @@ describe("pipe expansion", () => {
 		const graph = createBridgeGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "C" }, { id: "D" }, { id: "F" }];
 
-		const result = pipe(graph, seeds, { maxPaths: 1 });
+		const result = warp(graph, seeds, { maxPaths: 1 });
 
 		expect(result.paths.length).toBeLessThanOrEqual(1);
 	});
@@ -221,7 +221,7 @@ describe("pipe expansion", () => {
 		const graph = createLinearGraph();
 		const seeds: Seed[] = [{ id: "A" }];
 
-		const result = pipe(graph, seeds);
+		const result = warp(graph, seeds);
 
 		// Single seed cannot discover paths (no target)
 		expect(result.paths).toHaveLength(0);
@@ -234,7 +234,7 @@ describe("pipe expansion", () => {
 			{ id: "E", role: "target" },
 		];
 
-		const result = pipe(graph, seeds);
+		const result = warp(graph, seeds);
 
 		expect(result.paths.length).toBeGreaterThan(0);
 	});

@@ -1,12 +1,12 @@
 /**
- * HAE (High-Association Expansion) algorithm.
+ * LACE (Local Association Context Expansion) algorithm.
  *
  * Prioritises exploration by mutual information scores.
  * Expands high-MI edges first, favouring paths with strong associations.
  *
  * Requires MI function configuration.
  *
- * @module expansion/hae
+ * @module expansion/lace
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
@@ -20,9 +20,9 @@ import { base } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
 
 /**
- * Configuration for HAE expansion.
+ * Configuration for LACE expansion.
  */
-export interface HAEConfig<
+export interface LACEConfig<
 	N extends NodeData = NodeData,
 	E extends EdgeData = EdgeData,
 > extends ExpansionConfig<N, E> {
@@ -35,12 +35,12 @@ export interface HAEConfig<
 }
 
 /**
- * HAE priority function.
+ * LACE priority function.
  *
  * Priority = 1 - MI(source, neighbour)
  * Higher MI = lower priority value = explored first
  */
-function haePriority<N extends NodeData, E extends EdgeData>(
+function lacePriority<N extends NodeData, E extends EdgeData>(
 	nodeId: string,
 	context: PriorityContext<N, E>,
 	mi: (graph: ReadableGraph<N, E>, source: string, target: string) => number,
@@ -75,7 +75,7 @@ function haePriority<N extends NodeData, E extends EdgeData>(
 }
 
 /**
- * Run HAE expansion algorithm.
+ * Run LACE expansion algorithm.
  *
  * Expands from seeds prioritising high-MI edges.
  * Useful for finding paths with strong semantic associations.
@@ -85,15 +85,15 @@ function haePriority<N extends NodeData, E extends EdgeData>(
  * @param config - Expansion configuration with MI function
  * @returns Expansion result with discovered paths
  */
-export function hae<N extends NodeData, E extends EdgeData>(
+export function lace<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	seeds: readonly Seed[],
-	config?: HAEConfig<N, E>,
+	config?: LACEConfig<N, E>,
 ): ExpansionResult {
 	const { mi = jaccard, ...restConfig } = config ?? {};
 
 	const priority = (nodeId: string, context: PriorityContext<N, E>): number =>
-		haePriority(nodeId, context, mi);
+		lacePriority(nodeId, context, mi);
 
 	return base(graph, seeds, {
 		...restConfig,

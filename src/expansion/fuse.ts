@@ -1,5 +1,5 @@
 /**
- * SAGE (Salience-Aware Graph Expansion) algorithm.
+ * FUSE (Forward Unified Semantic Exploration-Aware Graph Expansion) algorithm.
  *
  * Two-phase expansion:
  * 1. Initial DOME-style expansion to discover candidate paths
@@ -7,7 +7,7 @@
  *
  * Combines structural exploration with semantic ranking.
  *
- * @module expansion/sage
+ * @module expansion/fuse
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
@@ -21,9 +21,9 @@ import { base } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
 
 /**
- * Configuration for SAGE expansion.
+ * Configuration for FUSE expansion.
  */
-export interface SAGEConfig<
+export interface FUSEConfig<
 	N extends NodeData = NodeData,
 	E extends EdgeData = EdgeData,
 > extends ExpansionConfig<N, E> {
@@ -38,13 +38,21 @@ export interface SAGEConfig<
 }
 
 /**
+ * @deprecated Use {@link FUSEConfig} instead.
+ */
+export type SAGEConfig<
+	N extends NodeData = NodeData,
+	E extends EdgeData = EdgeData,
+> = FUSEConfig<N, E>;
+
+/**
  * SAGE priority function.
  *
  * Combines degree with salience:
  * Priority = (1 - w) * degree + w * (1 - avg_salience)
  * Lower values = higher priority
  */
-function sagePriority<N extends NodeData, E extends EdgeData>(
+function fusePriority<N extends NodeData, E extends EdgeData>(
 	nodeId: string,
 	context: PriorityContext<N, E>,
 	mi: (graph: ReadableGraph<N, E>, source: string, target: string) => number,
@@ -77,7 +85,7 @@ function sagePriority<N extends NodeData, E extends EdgeData>(
 }
 
 /**
- * Run SAGE expansion algorithm.
+ * Run FUSE expansion algorithm.
  *
  * Combines structural exploration with semantic salience.
  * Useful for finding paths that are both short and semantically meaningful.
@@ -87,15 +95,15 @@ function sagePriority<N extends NodeData, E extends EdgeData>(
  * @param config - Expansion configuration with MI function
  * @returns Expansion result with discovered paths
  */
-export function sage<N extends NodeData, E extends EdgeData>(
+export function fuse<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	seeds: readonly Seed[],
-	config?: SAGEConfig<N, E>,
+	config?: FUSEConfig<N, E>,
 ): ExpansionResult {
 	const { mi = jaccard, salienceWeight = 0.5, ...restConfig } = config ?? {};
 
 	const priority = (nodeId: string, context: PriorityContext<N, E>): number =>
-		sagePriority(nodeId, context, mi, salienceWeight);
+		fusePriority(nodeId, context, mi, salienceWeight);
 
 	return base(graph, seeds, {
 		...restConfig,

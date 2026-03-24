@@ -6,7 +6,7 @@
  *
  * Useful for finding paths through "bridge" nodes.
  *
- * @module expansion/pipe
+ * @module expansion/warp
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
@@ -25,7 +25,7 @@ import { base } from "./base";
  * Bridge score = neighbourhood overlap with other frontiers
  * Higher bridge score = more likely to be on paths = explored first
  */
-function pipePriority<N extends NodeData, E extends EdgeData>(
+function warpPriority<N extends NodeData, E extends EdgeData>(
 	nodeId: string,
 	context: PriorityContext<N, E>,
 ): number {
@@ -54,7 +54,7 @@ function pipePriority<N extends NodeData, E extends EdgeData>(
 }
 
 /**
- * Run PIPE expansion algorithm.
+ * Run WARP expansion algorithm.
  *
  * Expands from seeds prioritising bridge nodes.
  * Useful for finding paths through structurally important nodes.
@@ -64,13 +64,13 @@ function pipePriority<N extends NodeData, E extends EdgeData>(
  * @param config - Expansion configuration
  * @returns Expansion result with discovered paths
  */
-export function pipe<N extends NodeData, E extends EdgeData>(
+export function warp<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	seeds: readonly Seed[],
 	config?: ExpansionConfig<N, E>,
 ): ExpansionResult {
 	return base(graph, seeds, {
 		...config,
-		priority: pipePriority,
+		priority: warpPriority,
 	});
 }

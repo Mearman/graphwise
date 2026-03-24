@@ -40,9 +40,10 @@ export function scale<N extends NodeData, E extends EdgeData>(
 	const n = graph.nodeCount;
 	const m = graph.edgeCount;
 
-	// For undirected graphs, each edge contributes 2 to the total degree sum
-	const densityNormaliser = graph.directed ? n * (n - 1) : 2 * n * (n - 1);
-	const density = densityNormaliser > 0 ? m / densityNormaliser : 0;
+	// ρ(G) = 2|E| / (|V|(|V|-1)) for undirected; |E| / (|V|(|V|-1)) for directed
+	const possibleEdges = n * (n - 1);
+	const density =
+		possibleEdges > 0 ? (graph.directed ? m : 2 * m) / possibleEdges : 0;
 
 	// Avoid division by zero: if density is 0, fall back to epsilon
 	if (density === 0) {

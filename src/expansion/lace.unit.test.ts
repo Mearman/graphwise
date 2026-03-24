@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { NodeData, EdgeData } from "../graph";
-import { hae } from "./hae";
-import type { HAEConfig } from "./hae";
+import { lace } from "./lace";
+import type { LACEConfig } from "./lace";
 import type { Seed } from "./types";
 import { jaccard } from "../ranking/mi/jaccard";
 
@@ -65,10 +65,10 @@ function createOverlapGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
 	return graph;
 }
 
-describe("hae expansion", () => {
+describe("lace expansion", () => {
 	it("returns empty result for no seeds", () => {
 		const graph = createTestGraph();
-		const result = hae(graph, []);
+		const result = lace(graph, []);
 
 		expect(result.paths).toHaveLength(0);
 		expect(result.stats.termination).toBe("exhausted");
@@ -78,7 +78,7 @@ describe("hae expansion", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = hae(graph, seeds);
+		const result = lace(graph, seeds);
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("sampledNodes");
@@ -90,7 +90,7 @@ describe("hae expansion", () => {
 		const graph = createTestGraph();
 		const result = hae(graph, [{ id: "A" }, { id: "B" }]);
 
-		// HAE wraps BASE, so algorithm name is inherited
+		// LACE wraps BASE, so algorithm name is inherited
 		expect(result.stats.algorithm).toBeDefined();
 	});
 
@@ -124,11 +124,11 @@ describe("hae expansion", () => {
 		expect(result).toHaveProperty("stats");
 	});
 
-	it("accepts HAEConfig with MI function", () => {
+	it("accepts LACEConfig with MI function", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const config: HAEConfig<TestNode, TestEdge> = {
+		const config: LACEConfig<TestNode, TestEdge> = {
 			mi: jaccard,
 			maxIterations: 10,
 		};
@@ -163,7 +163,7 @@ describe("hae expansion", () => {
 		const seeds: Seed[] = [{ id: "A" }, { id: "C" }];
 
 		// Should not throw when using default jaccard
-		const result = hae(graph, seeds);
+		const result = lace(graph, seeds);
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("sampledNodes");
@@ -194,7 +194,7 @@ describe("hae expansion", () => {
 		const graph = createOverlapGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "F" }];
 
-		const result = hae(graph, seeds);
+		const result = lace(graph, seeds);
 
 		// If paths are found, they should have correct structure
 		for (const path of result.paths) {

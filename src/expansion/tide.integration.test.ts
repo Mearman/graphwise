@@ -1,22 +1,22 @@
 /**
- * Integration test for EDGE expansion algorithm.
+ * Integration test for TIDE expansion algorithm.
  *
- * EDGE (Edge Entropy Gradient Exploration) targets sparse regions by using
+ * TIDE (Type-Integrated Degree Estimation) targets sparse regions by using
  * neighbourhood entropy as a priority heuristic. It explores through areas
  * with diverse neighbourhood types before exhausting tight clusters.
  *
  * This test uses a city–village network: dense city subgraph vs sparse
- * village chain. EDGE should traverse the sparse chain more efficiently
+ * village chain. TIDE should traverse the sparse chain more efficiently
  * than DOME (which uses degree-based priority) because entropy-based
  * prioritisation recognises sparse structures.
  */
 
 import { describe, it, expect } from "vitest";
 import { createCityVillageFixture } from "../__test__/fixtures";
-import { edge } from "./edge";
+import { tide } from "./tide";
 import { dome } from "./dome";
 
-describe("EDGE integration: sparse-region targeting", () => {
+describe("TIDE integration: sparse-region targeting", () => {
 	it("discovers sparse village chain faster than DOME within same node budget", () => {
 		const fixture = createCityVillageFixture();
 		const { graph } = fixture;
@@ -29,7 +29,7 @@ describe("EDGE integration: sparse-region targeting", () => {
 				: []
 			: [];
 
-		const edgeResult = edge(graph, [
+		const tideResult = tide(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -40,20 +40,20 @@ describe("EDGE integration: sparse-region targeting", () => {
 		]);
 
 		// Both should find paths
-		expect(edgeResult.paths.length).toBeGreaterThan(0);
+		expect(tideResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
 
-		// EDGE's neighbourhood degree sum prioritisation should discover
+		// TIDE's neighbourhood degree sum prioritisation should discover
 		// village-node paths more frequently than DOME's degree-only heuristic
-		const edgeVillageCount = edgeResult.paths.filter((p) =>
+		const tideVillageCount = tideResult.paths.filter((p) =>
 			p.nodes.some((n) => villageLocations.includes(n)),
 		).length;
 		const domeVillageCount = domeResult.paths.filter((p) =>
 			p.nodes.some((n) => villageLocations.includes(n)),
 		).length;
 
-		// EDGE should visit village nodes in at least as many paths as DOME
-		expect(edgeVillageCount).toBeGreaterThanOrEqual(domeVillageCount);
+		// TIDE should visit village nodes in at least as many paths as DOME
+		expect(tideVillageCount).toBeGreaterThanOrEqual(domeVillageCount);
 	});
 
 	it("explores village chain structure by recognising low-entropy regions", () => {
@@ -68,25 +68,25 @@ describe("EDGE integration: sparse-region targeting", () => {
 				: []
 			: [];
 
-		const edgeResult = edge(graph, [
+		const tideResult = tide(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
 
-		// EDGE should discover at least one path
-		expect(edgeResult.paths.length).toBeGreaterThan(0);
+		// TIDE should discover at least one path
+		expect(tideResult.paths.length).toBeGreaterThan(0);
 
-		// EDGE's first discovered path should contain village nodes
+		// TIDE's first discovered path should contain village nodes
 		// because neighbourhood degree sum prioritises sparse regions
-		for (const path of edgeResult.paths.slice(0, 1)) {
+		for (const path of tideResult.paths.slice(0, 1)) {
 			const villageNodesInPath = path.nodes.filter((n) =>
 				villageLocations.includes(n),
 			);
 			expect(villageNodesInPath.length).toBeGreaterThan(0);
 		}
 
-		// EDGE should discover multiple paths with village nodes
-		const pathsWithVillage = edgeResult.paths.filter((path) =>
+		// TIDE should discover multiple paths with village nodes
+		const pathsWithVillage = tideResult.paths.filter((path) =>
 			path.nodes.some((node) => villageLocations.includes(node)),
 		);
 		expect(pathsWithVillage.length).toBeGreaterThan(0);
@@ -104,7 +104,7 @@ describe("EDGE integration: sparse-region targeting", () => {
 				: []
 			: [];
 
-		const result = edge(graph, [
+		const result = tide(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -134,7 +134,7 @@ describe("EDGE integration: sparse-region targeting", () => {
 				: []
 			: [];
 
-		const edgeResult = edge(graph, [
+		const tideResult = tide(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -145,24 +145,24 @@ describe("EDGE integration: sparse-region targeting", () => {
 		]);
 
 		// Both should discover paths
-		expect(edgeResult.paths.length).toBeGreaterThan(0);
+		expect(tideResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
 
-		// EDGE should have spent comparable or fewer nodes on discovery
+		// TIDE should have spent comparable or fewer nodes on discovery
 		// (neighbourhood degree sum is more informative than degree alone)
-		expect(edgeResult.stats.nodesVisited).toBeLessThanOrEqual(
+		expect(tideResult.stats.nodesVisited).toBeLessThanOrEqual(
 			domeResult.stats.nodesVisited + 5,
 		);
 
-		// EDGE's neighbourhood-based approach should prioritise sparse regions,
+		// TIDE's neighbourhood-based approach should prioritise sparse regions,
 		// resulting in more village-node paths than DOME's degree-only heuristic
-		const edgeVillageCount = edgeResult.paths.filter((p) =>
+		const tideVillageCount = tideResult.paths.filter((p) =>
 			p.nodes.some((n) => villageLocations.includes(n)),
 		).length;
 		const domeVillageCount = domeResult.paths.filter((p) =>
 			p.nodes.some((n) => villageLocations.includes(n)),
 		).length;
-		expect(edgeVillageCount).toBeGreaterThanOrEqual(domeVillageCount);
+		expect(tideVillageCount).toBeGreaterThanOrEqual(domeVillageCount);
 	});
 
 	it("handles graphs with dense and sparse regions appropriately", () => {
@@ -177,7 +177,7 @@ describe("EDGE integration: sparse-region targeting", () => {
 				: []
 			: [];
 
-		const result = edge(graph, [
+		const result = tide(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
@@ -189,7 +189,7 @@ describe("EDGE integration: sparse-region targeting", () => {
 		expect(result).toHaveProperty("stats");
 
 		// Stats should be valid
-		expect(result.stats.algorithm).toBe("base"); // EDGE uses base algorithm with custom priority
+		expect(result.stats.algorithm).toBe("base"); // TIDE uses base algorithm with custom priority
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
 		expect(result.stats.nodesVisited).toBeGreaterThan(0);
 
@@ -204,12 +204,12 @@ describe("EDGE integration: sparse-region targeting", () => {
 		const fixture = createCityVillageFixture();
 		const { graph } = fixture;
 
-		const result1 = edge(graph, [
+		const result1 = tide(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);
 
-		const result2 = edge(graph, [
+		const result2 = tide(graph, [
 			{ id: "nightclub", role: "source" },
 			{ id: "shop", role: "target" },
 		]);

@@ -1,12 +1,12 @@
 /**
- * Integration test for REACH expansion algorithm.
+ * Integration test for SIFT expansion algorithm.
  *
- * REACH (Rolling Estimated Adaptive Community Heuristic) is a two-phase algorithm
+ * SIFT (Rolling Estimated Adaptive Community Heuristic) is a two-phase algorithm
  * that adapts the MI threshold during phase 2. It uses rolling MI estimates of
  * discovered path quality to decide whether to continue exploring through a node
  * or defer it.
  *
- * This test uses the quality-vs-popularity network. REACH should discover
+ * This test uses the quality-vs-popularity network. SIFT should discover
  * paths with higher mean MI than DOME by adaptively filtering for quality edges.
  */
 
@@ -16,16 +16,16 @@ import {
 	pathMI,
 	meanPathMI,
 } from "../__test__/fixtures";
-import { reach } from "./reach";
+import { sift } from "./sift";
 import { dome } from "./dome";
 import { jaccard } from "../ranking/mi";
 
-describe("REACH integration: adaptive MI filtering", () => {
+describe("SIFT integration: adaptive MI filtering", () => {
 	it("discovers paths with higher mean MI than DOME", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const reachResult = reach(
+		const siftResult = sift(
 			graph,
 			[
 				{ id: "source", role: "source" },
@@ -43,17 +43,17 @@ describe("REACH integration: adaptive MI filtering", () => {
 			{ maxNodes: 16 },
 		);
 
-		// When both algorithms discover paths, REACH's MI-threshold prioritisation
+		// When both algorithms discover paths, SIFT's MI-threshold prioritisation
 		// should yield paths with MI >= DOME's degree-only heuristic
-		if (reachResult.paths.length > 0 && domeResult.paths.length > 0) {
-			const reachMeanMI = meanPathMI(graph, reachResult.paths, jaccard);
+		if (siftResult.paths.length > 0 && domeResult.paths.length > 0) {
+			const siftMeanMI = meanPathMI(graph, siftResult.paths, jaccard);
 			const domeMeanMI = meanPathMI(graph, domeResult.paths, jaccard);
 
-			expect(reachMeanMI).toBeGreaterThanOrEqual(domeMeanMI);
+			expect(siftMeanMI).toBeGreaterThanOrEqual(domeMeanMI);
 		}
 
 		// Verify at least one algorithm discovers paths with this fixture
-		expect(reachResult.paths.length + domeResult.paths.length).toBeGreaterThan(
+		expect(siftResult.paths.length + domeResult.paths.length).toBeGreaterThan(
 			0,
 		);
 	});
@@ -62,7 +62,7 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(
+		const result = sift(
 			graph,
 			[
 				{ id: "source", role: "source" },
@@ -71,7 +71,7 @@ describe("REACH integration: adaptive MI filtering", () => {
 			{ maxNodes: 16 },
 		);
 
-		// Under budget constraint, REACH may discover few or no paths
+		// Under budget constraint, SIFT may discover few or no paths
 		// If paths are found, verify rolling MI estimates filter for higher-MI paths
 		if (result.paths.length > 0) {
 			const longerPaths = result.paths.filter((path) => path.nodes.length >= 2);
@@ -83,7 +83,7 @@ describe("REACH integration: adaptive MI filtering", () => {
 				const meanMI =
 					longerPathMIs.reduce((a, b) => a + b, 0) / longerPathMIs.length;
 
-				// REACH's rolling MI estimates should filter for higher-MI paths
+				// SIFT's rolling MI estimates should filter for higher-MI paths
 				expect(meanMI).toBeGreaterThanOrEqual(0);
 			}
 		}
@@ -96,7 +96,7 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(
+		const result = sift(
 			graph,
 			[
 				{ id: "source", role: "source" },
@@ -128,7 +128,7 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(
+		const result = sift(
 			graph,
 			[
 				{ id: "source", role: "source" },
@@ -151,7 +151,7 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(
+		const result = sift(
 			graph,
 			[
 				{ id: "source", role: "source" },
@@ -177,7 +177,7 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(
+		const result = sift(
 			graph,
 			[
 				{ id: "source", role: "source" },
@@ -186,7 +186,7 @@ describe("REACH integration: adaptive MI filtering", () => {
 			{ maxNodes: 16 },
 		);
 
-		// REACH uses rolling MI in phase 2, so iteration count reflects adaptive filtering
+		// SIFT uses rolling MI in phase 2, so iteration count reflects adaptive filtering
 		expect(result.stats.iterations).toBeGreaterThanOrEqual(0);
 
 		// Under budget constraint, verify algorithm terminates properly
@@ -199,7 +199,7 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const reachResult = reach(
+		const siftResult = sift(
 			graph,
 			[
 				{ id: "source", role: "source" },
@@ -218,16 +218,16 @@ describe("REACH integration: adaptive MI filtering", () => {
 		);
 
 		// When both algorithms discover paths under budget constraint,
-		// REACH's MI-threshold prioritisation should yield paths with MI >= DOME's
-		if (reachResult.paths.length > 0 && domeResult.paths.length > 0) {
-			const reachMeanMI = meanPathMI(graph, reachResult.paths, jaccard);
+		// SIFT's MI-threshold prioritisation should yield paths with MI >= DOME's
+		if (siftResult.paths.length > 0 && domeResult.paths.length > 0) {
+			const siftMeanMI = meanPathMI(graph, siftResult.paths, jaccard);
 			const domeMeanMI = meanPathMI(graph, domeResult.paths, jaccard);
 
-			expect(reachMeanMI).toBeGreaterThanOrEqual(domeMeanMI);
+			expect(siftMeanMI).toBeGreaterThanOrEqual(domeMeanMI);
 		}
 
 		// Verify at least one algorithm discovers paths
-		expect(reachResult.paths.length + domeResult.paths.length).toBeGreaterThan(
+		expect(siftResult.paths.length + domeResult.paths.length).toBeGreaterThan(
 			0,
 		);
 	});
@@ -236,7 +236,7 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(
+		const result = sift(
 			graph,
 			[
 				{ id: "source", role: "source" },

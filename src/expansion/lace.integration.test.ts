@@ -1,14 +1,14 @@
 /**
- * Integration test for HAE expansion algorithm.
+ * Integration test for LACE expansion algorithm.
  *
- * HAE (Heterogeneous Adaptive Entropy) is a single-phase algorithm that uses
- * a user-supplied entropy function for node prioritisation. Unlike EDGE
- * (which computes neighbourhood type entropy), HAE generalises to arbitrary
+ * LACE (Local Adaptive Community Entropy) is a single-phase algorithm that uses
+ * a user-supplied entropy function for node prioritisation. Unlike TIDE
+ * (which computes neighbourhood type entropy), LACE generalises to arbitrary
  * entropy measures.
  *
- * This test demonstrates that HAE with an MI-based entropy function discovers
+ * This test demonstrates that LACE with an MI-based entropy function discovers
  * paths with higher mean MI than DOME (which uses degree-based priority).
- * HAE's pure MI prioritisation should prefer quality edges over high-degree hubs.
+ * LACE's pure MI prioritisation should prefer quality edges over high-degree hubs.
  */
 
 import { describe, it, expect } from "vitest";
@@ -16,16 +16,16 @@ import {
 	createQualityVsPopularityFixture,
 	meanPathMI,
 } from "../__test__/fixtures";
-import { hae } from "./hae";
+import { lace } from "./lace";
 import { dome } from "./dome";
 import { jaccard } from "../ranking/mi";
 
-describe("HAE integration: user-supplied MI entropy prioritisation", () => {
+describe("LACE integration: user-supplied MI entropy prioritisation", () => {
 	it("discovers paths with higher mean Jaccard MI than DOME via MI-based priority", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const haeResult = hae(
+		const laceResult = lace(
 			graph,
 			[
 				{ id: "source", role: "source" },
@@ -43,20 +43,20 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 			{ maxNodes: 14 },
 		);
 
-		expect(haeResult.paths.length).toBeGreaterThan(0);
+		expect(laceResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
 
-		// HAE discovers paths with MI >= DOME's (pure MI-ordered priority)
-		const haeMeanMI = meanPathMI(graph, haeResult.paths, jaccard);
+		// LACE discovers paths with MI >= DOME's (pure MI-ordered priority)
+		const laceMeanMI = meanPathMI(graph, laceResult.paths, jaccard);
 		const domeMeanMI = meanPathMI(graph, domeResult.paths, jaccard);
-		expect(domeMeanMI).toBeGreaterThanOrEqual(haeMeanMI);
+		expect(domeMeanMI).toBeGreaterThanOrEqual(laceMeanMI);
 	});
 
 	it("uses provided entropy function for prioritisation", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = hae(graph, [
+		const result = lace(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -71,7 +71,7 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = hae(graph, [
+		const result = lace(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -91,7 +91,7 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = hae(graph, [
+		const result = lace(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -110,7 +110,7 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = hae(graph, [
+		const result = lace(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -132,7 +132,7 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = hae(graph, [
+		const result = lace(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -154,7 +154,7 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = hae(graph, [
+		const result = lace(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -167,7 +167,7 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const haeResult = hae(
+		const laceResult = lace(
 			graph,
 			[
 				{ id: "source", role: "source" },
@@ -185,20 +185,20 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 			{ maxNodes: 14 },
 		);
 
-		expect(haeResult.paths.length).toBeGreaterThan(0);
+		expect(laceResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
 
-		// HAE discovers paths with MI >= DOME's (pure MI-ordered priority)
-		const haeMeanMI = meanPathMI(graph, haeResult.paths, jaccard);
+		// LACE discovers paths with MI >= DOME's (pure MI-ordered priority)
+		const laceMeanMI = meanPathMI(graph, laceResult.paths, jaccard);
 		const domeMeanMI = meanPathMI(graph, domeResult.paths, jaccard);
-		expect(domeMeanMI).toBeGreaterThanOrEqual(haeMeanMI);
+		expect(domeMeanMI).toBeGreaterThanOrEqual(laceMeanMI);
 	});
 
 	it("terminates successfully with reasonable iteration count", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = hae(graph, [
+		const result = lace(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);

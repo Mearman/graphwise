@@ -1,18 +1,18 @@
 /**
- * Integration test for PIPE expansion algorithm.
+ * Integration test for WARP expansion algorithm.
  *
- * PIPE (Path Potential via Intersection Exploration) estimates path potential
+ * WARP (Path Potential via Intersection Exploration) estimates path potential
  * by counting how many other frontiers have visited a node's neighbours.
  * This encourages exploration through nodes that bridge communities.
  *
  * This test uses a three-community network with liaison bridge nodes.
- * PIPE should discover more inter-community paths than DOME or standardBfs
+ * WARP should discover more inter-community paths than DOME or standardBfs
  * within the same node budget because it explicitly targets bridge nodes.
  */
 
 import { describe, it, expect } from "vitest";
 import { createThreeCommunityFixture } from "../__test__/fixtures";
-import { pipe } from "./pipe";
+import { warp } from "./warp";
 import { dome } from "./dome";
 
 // Type guard helper for metadata extraction
@@ -23,13 +23,13 @@ function getStringArray(value: unknown): readonly string[] {
 	return [];
 }
 
-describe("PIPE integration: path-potential bridging", () => {
+describe("WARP integration: path-potential bridging", () => {
 	it("discovers more inter-community paths than DOME within same node budget", () => {
 		const fixture = createThreeCommunityFixture();
 		const { graph, metadata } = fixture;
 		const liaisons = getStringArray(metadata["liaisons"]);
 
-		const pipeResult = pipe(graph, [
+		const warpResult = warp(graph, [
 			{ id: "bob", role: "source" },
 			{ id: "mia", role: "target" },
 		]);
@@ -40,11 +40,11 @@ describe("PIPE integration: path-potential bridging", () => {
 		]);
 
 		// Both should discover paths
-		expect(pipeResult.paths.length).toBeGreaterThan(0);
+		expect(warpResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
 
 		// Count paths that use liaison nodes (inter-community bridges)
-		const pipeLiaisonPaths = pipeResult.paths.filter((path) =>
+		const pipeLiaisonPaths = warpResult.paths.filter((path) =>
 			path.nodes.some((node) => liaisons.includes(node)),
 		);
 
@@ -52,7 +52,7 @@ describe("PIPE integration: path-potential bridging", () => {
 			path.nodes.some((node) => liaisons.includes(node)),
 		);
 
-		// PIPE discovers more paths through liaison bridges than DOME
+		// WARP discovers more paths through liaison bridges than DOME
 		// because it prioritises nodes that bridge multiple frontiers
 		expect(pipeLiaisonPaths.length).toBeGreaterThanOrEqual(
 			domeLiaisonPaths.length,
@@ -64,7 +64,7 @@ describe("PIPE integration: path-potential bridging", () => {
 		const { graph, metadata } = fixture;
 		const liaisons = getStringArray(metadata["liaisons"]);
 
-		const result = pipe(graph, [
+		const result = warp(graph, [
 			{ id: "bob", role: "source" },
 			{ id: "mia", role: "target" },
 		]);
@@ -72,8 +72,8 @@ describe("PIPE integration: path-potential bridging", () => {
 		// Should discover paths that leverage liaison bridge nodes
 		expect(result.paths.length).toBeGreaterThan(0);
 
-		// PIPE's first path should use a liaison node (bridge-aware priority)
-		// This proves PIPE prioritises nodes that bridge multiple frontiers
+		// WARP's first path should use a liaison node (bridge-aware priority)
+		// This proves WARP prioritises nodes that bridge multiple frontiers
 		const firstPath = result.paths[0];
 		if (firstPath !== undefined) {
 			expect(firstPath.nodes.some((node) => liaisons.includes(node))).toBe(
@@ -93,7 +93,7 @@ describe("PIPE integration: path-potential bridging", () => {
 		const { graph, metadata } = fixture;
 		const liaisons = getStringArray(metadata["liaisons"]);
 
-		const result = pipe(graph, [
+		const result = warp(graph, [
 			{ id: "bob", role: "source" }, // In lab
 			{ id: "mia", role: "target" }, // In university
 		]);
@@ -113,7 +113,7 @@ describe("PIPE integration: path-potential bridging", () => {
 		const fixture = createThreeCommunityFixture();
 		const { graph } = fixture;
 
-		const result = pipe(graph, [
+		const result = warp(graph, [
 			{ id: "bob", role: "source" },
 			{ id: "mia", role: "target" },
 		]);
@@ -133,7 +133,7 @@ describe("PIPE integration: path-potential bridging", () => {
 		const fixture = createThreeCommunityFixture();
 		const { graph } = fixture;
 
-		const result = pipe(graph, [
+		const result = warp(graph, [
 			{ id: "bob", role: "source" },
 			{ id: "mia", role: "target" },
 		]);
@@ -150,12 +150,12 @@ describe("PIPE integration: path-potential bridging", () => {
 		const fixture = createThreeCommunityFixture();
 		const { graph } = fixture;
 
-		const result1 = pipe(graph, [
+		const result1 = warp(graph, [
 			{ id: "bob", role: "source" },
 			{ id: "mia", role: "target" },
 		]);
 
-		const result2 = pipe(graph, [
+		const result2 = warp(graph, [
 			{ id: "bob", role: "source" },
 			{ id: "mia", role: "target" },
 		]);

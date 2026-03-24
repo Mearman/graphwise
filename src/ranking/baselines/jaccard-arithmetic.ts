@@ -76,7 +76,7 @@ export function jaccardArithmetic<N extends NodeData, E extends EdgeData>(
 	const ranked: ScoredPath[] = scored
 		.map(({ path, score }) => ({
 			...path,
-			score: includeScores ? score / maxScore : score / maxScore,
+			score: includeScores ? score / maxScore : score,
 		}))
 		.sort((a, b) => b.score - a.score);
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { NodeData, EdgeData } from "../graph";
-import { reach } from "./reach";
+import { sift } from "./sift";
 import type { Seed } from "./types";
 
 interface TestNode extends NodeData {
@@ -31,10 +31,10 @@ function createTestGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
 	return graph;
 }
 
-describe("reach expansion", () => {
+describe("sift expansion", () => {
 	it("returns empty result for no seeds", () => {
 		const graph = createTestGraph();
-		const result = reach(graph, []);
+		const result = sift(graph, []);
 
 		expect(result.paths).toHaveLength(0);
 		expect(result.stats.termination).toBe("exhausted");
@@ -44,7 +44,7 @@ describe("reach expansion", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = reach(graph, seeds);
+		const result = sift(graph, seeds);
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("sampledNodes");
@@ -54,7 +54,7 @@ describe("reach expansion", () => {
 
 	it("reports algorithm name", () => {
 		const graph = createTestGraph();
-		const result = reach(graph, [{ id: "A" }, { id: "B" }]);
+		const result = sift(graph, [{ id: "A" }, { id: "B" }]);
 
 		// REACH wraps BASE, so algorithm name is inherited
 		expect(result.stats.algorithm).toBeDefined();
@@ -65,7 +65,7 @@ describe("reach expansion", () => {
 		graph.addNode({ id: "A", label: "A" });
 		graph.addNode({ id: "B", label: "B" });
 
-		const result = reach(graph, [{ id: "A" }, { id: "B" }]);
+		const result = sift(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.paths).toHaveLength(0);
 	});
@@ -74,7 +74,7 @@ describe("reach expansion", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = reach(graph, seeds, { miThreshold: 0.5 });
+		const result = sift(graph, seeds, { miThreshold: 0.5 });
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("stats");
@@ -87,7 +87,7 @@ describe("reach expansion", () => {
 		// Custom MI function that returns constant value
 		const customMi = (): number => 0.5;
 
-		const result = reach(graph, seeds, { mi: customMi });
+		const result = sift(graph, seeds, { mi: customMi });
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("stats");
@@ -97,7 +97,7 @@ describe("reach expansion", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = reach(graph, seeds, { maxNodes: 3 });
+		const result = sift(graph, seeds, { maxNodes: 3 });
 
 		expect(result.stats.nodesVisited).toBeLessThanOrEqual(3);
 	});
@@ -106,7 +106,7 @@ describe("reach expansion", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = reach(graph, seeds, { maxIterations: 2 });
+		const result = sift(graph, seeds, { maxIterations: 2 });
 
 		expect(result.stats.iterations).toBeLessThanOrEqual(2);
 	});
@@ -115,14 +115,14 @@ describe("reach expansion", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = reach(graph, seeds, { maxPaths: 1 });
+		const result = sift(graph, seeds, { maxPaths: 1 });
 
 		expect(result.paths.length).toBeLessThanOrEqual(1);
 	});
 
 	it("handles single seed", () => {
 		const graph = createTestGraph();
-		const result = reach(graph, [{ id: "A" }]);
+		const result = sift(graph, [{ id: "A" }]);
 
 		// Single seed cannot discover paths between seeds
 		expect(result.paths).toHaveLength(0);
@@ -130,7 +130,7 @@ describe("reach expansion", () => {
 
 	it("handles seed not in graph", () => {
 		const graph = createTestGraph();
-		const result = reach(graph, [{ id: "NONEXISTENT" }, { id: "A" }]);
+		const result = sift(graph, [{ id: "NONEXISTENT" }, { id: "A" }]);
 
 		// Should handle gracefully without throwing
 		expect(result).toHaveProperty("paths");
@@ -140,7 +140,7 @@ describe("reach expansion", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = reach(graph, seeds);
+		const result = sift(graph, seeds);
 
 		expect(result.visitedPerFrontier).toBeDefined();
 		expect(Array.isArray(result.visitedPerFrontier)).toBe(true);

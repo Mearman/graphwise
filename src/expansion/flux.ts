@@ -1,5 +1,5 @@
 /**
- * MAZE (Multi-Algorithm Zone Exploration) algorithm.
+ * FLUX (FlexibleAlgorithm Zone Exploration) algorithm.
  *
  * Switches between different expansion strategies based on
  * local graph density and progress.
@@ -9,7 +9,7 @@
  * - Dense regions: EDGE (expand through low-degree edges)
  * - Bridge nodes: PIPE (expand bridges)
  *
- * @module expansion/maze
+ * @module expansion/flux
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
@@ -96,7 +96,7 @@ function bridgeScore<N extends NodeData, E extends EdgeData>(
  * - Low density + low bridge: DOME mode
  * - High bridge score: PIPE mode
  */
-function mazePriority<N extends NodeData, E extends EdgeData>(
+function fluxPriority<N extends NodeData, E extends EdgeData>(
 	nodeId: string,
 	context: PriorityContext<N, E>,
 	densityThreshold: number,
@@ -127,7 +127,7 @@ function mazePriority<N extends NodeData, E extends EdgeData>(
 }
 
 /**
- * Run MAZE expansion algorithm.
+ * Run FLUX expansion algorithm.
  *
  * Adaptively switches between expansion strategies based on
  * local graph structure. Useful for heterogeneous graphs
@@ -138,7 +138,7 @@ function mazePriority<N extends NodeData, E extends EdgeData>(
  * @param config - Expansion configuration
  * @returns Expansion result with discovered paths
  */
-export function maze<N extends NodeData, E extends EdgeData>(
+export function flux<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	seeds: readonly Seed[],
 	config?: MAZEConfig<N, E>,
@@ -150,7 +150,7 @@ export function maze<N extends NodeData, E extends EdgeData>(
 	} = config ?? {};
 
 	const priority = (nodeId: string, context: PriorityContext<N, E>): number =>
-		mazePriority(nodeId, context, densityThreshold, bridgeThreshold);
+		fluxPriority(nodeId, context, densityThreshold, bridgeThreshold);
 
 	return base(graph, seeds, {
 		...restConfig,

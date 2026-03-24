@@ -1,5 +1,5 @@
 /**
- * EDGE (Edge-Degree Guided Expansion) algorithm.
+ * TIDE (Type-Integrated Degree Estimation) algorithm.
  *
  * Prioritises exploration by edge degree rather than node degree.
  * Expands edges with lower combined endpoint degrees first.
@@ -7,7 +7,7 @@
  * Useful for finding paths through sparse regions of the graph,
  * avoiding dense clusters.
  *
- * @module expansion/edge
+ * @module expansion/tide
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
@@ -20,12 +20,12 @@ import type {
 import { base } from "./base";
 
 /**
- * EDGE priority function.
+ * TIDE priority function.
  *
  * Priority = degree(source) + degree(target)
  * Lower values = higher priority (explored first)
  */
-function edgePriority<N extends NodeData, E extends EdgeData>(
+function tidePriority<N extends NodeData, E extends EdgeData>(
 	nodeId: string,
 	context: PriorityContext<N, E>,
 ): number {
@@ -41,7 +41,7 @@ function edgePriority<N extends NodeData, E extends EdgeData>(
 }
 
 /**
- * Run EDGE expansion algorithm.
+ * Run TIDE expansion algorithm.
  *
  * Expands from seeds prioritising low-degree edges first.
  * Useful for avoiding hubs and exploring sparse regions.
@@ -51,13 +51,13 @@ function edgePriority<N extends NodeData, E extends EdgeData>(
  * @param config - Expansion configuration
  * @returns Expansion result with discovered paths
  */
-export function edge<N extends NodeData, E extends EdgeData>(
+export function tide<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	seeds: readonly Seed[],
 	config?: ExpansionConfig<N, E>,
 ): ExpansionResult {
 	return base(graph, seeds, {
 		...config,
-		priority: edgePriority,
+		priority: tidePriority,
 	});
 }

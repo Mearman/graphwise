@@ -1,14 +1,14 @@
 /**
- * Integration test for SAGE expansion algorithm.
+ * Integration test for FUSE expansion algorithm.
  *
- * SAGE (Salience-guided Adaptive Graph Expansion) is a two-phase algorithm
+ * FUSE (Salience-guided Adaptive Graph Expansion) is a two-phase algorithm
  * that accumulates salience feedback from discovered paths. Early high-MI paths
- * guide later exploration, causing SAGE to discover more high-quality paths
+ * guide later exploration, causing FUSE to discover more high-quality paths
  * than single-phase algorithms like DOME within the same node budget.
  *
  * This test uses the quality-vs-popularity network where two paths exist:
  * one via a famous hub (low MI) and one via specialist clusters (high MI).
- * SAGE should preferentially discover the specialist path due to salience
+ * FUSE should preferentially discover the specialist path due to salience
  * accumulation.
  */
 
@@ -17,19 +17,19 @@ import {
 	createQualityVsPopularityFixture,
 	meanPathMI,
 } from "../__test__/fixtures";
-import { sage } from "./sage";
+import { fuse } from "./fuse";
 import { dome } from "./dome";
 import { jaccard } from "../ranking/mi";
 
-describe("SAGE integration: salience-guided discovery", () => {
+describe("FUSE integration: salience-guided discovery", () => {
 	it("discovers high-MI paths with limited budget via salience weighting", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
 		// With maxNodes: 10, exploration is constrained but not so tight that no paths
-		// can be discovered. SAGE's salience weighting should discover higher-MI paths
+		// can be discovered. FUSE's salience weighting should discover higher-MI paths
 		// than DOME's degree-only heuristic.
-		const sageResult = sage(
+		const fuseResult = fuse(
 			graph,
 			[
 				{ id: "source", role: "source" },
@@ -47,27 +47,27 @@ describe("SAGE integration: salience-guided discovery", () => {
 			{ maxNodes: 10 },
 		);
 
-		expect(sageResult.paths.length).toBeGreaterThan(0);
+		expect(fuseResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
 
 		// Calculate mean MI for paths discovered by each algorithm
-		const sageMeanMI = meanPathMI(graph, sageResult.paths, jaccard);
+		const fuseMeanMI = meanPathMI(graph, fuseResult.paths, jaccard);
 		const domeMeanMI = meanPathMI(graph, domeResult.paths, jaccard);
 
-		// SAGE should discover paths with equal or higher MI on average.
-		// With budget constraint, salience feedback guides SAGE to allocate
+		// FUSE should discover paths with equal or higher MI on average.
+		// With budget constraint, salience feedback guides FUSE to allocate
 		// its limited nodes towards high-MI specialist paths rather than
-		// just following degree, giving SAGE a measurable advantage.
-		expect(sageMeanMI).toBeGreaterThanOrEqual(domeMeanMI);
+		// just following degree, giving FUSE a measurable advantage.
+		expect(fuseMeanMI).toBeGreaterThanOrEqual(domeMeanMI);
 	});
 
 	it("prioritises specialist cluster paths when under budget constraint", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		// With limited budget, SAGE should discover specialist-cluster paths
+		// With limited budget, FUSE should discover specialist-cluster paths
 		// because salience accumulation ranks them higher than fame_connector.
-		const result = sage(
+		const result = fuse(
 			graph,
 			[
 				{ id: "source", role: "source" },
@@ -93,7 +93,7 @@ describe("SAGE integration: salience-guided discovery", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = sage(graph, [
+		const result = fuse(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -103,7 +103,7 @@ describe("SAGE integration: salience-guided discovery", () => {
 			(p) => p.salience !== undefined,
 		);
 
-		// SAGE should record salience on at least some paths
+		// FUSE should record salience on at least some paths
 		// (phase 2 accumulates salience from discovered paths)
 		expect(pathsWithSalience.length).toBeGreaterThanOrEqual(0);
 
@@ -115,7 +115,7 @@ describe("SAGE integration: salience-guided discovery", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = sage(graph, [
+		const result = fuse(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -134,7 +134,7 @@ describe("SAGE integration: salience-guided discovery", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = sage(graph, [
+		const result = fuse(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -156,7 +156,7 @@ describe("SAGE integration: salience-guided discovery", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = sage(graph, [
+		const result = fuse(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -181,7 +181,7 @@ describe("SAGE integration: salience-guided discovery", () => {
 		// Without maxNodes config, both algorithms exhaust the graph completely.
 		// They should discover the same set of paths (salience only matters when
 		// exploration is constrained and nodes must be prioritised).
-		const sageFullResult = sage(graph, [
+		const fuseFullResult = fuse(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -192,14 +192,14 @@ describe("SAGE integration: salience-guided discovery", () => {
 		]);
 
 		// Without budget constraint, both discover the same number of paths
-		expect(sageFullResult.paths.length).toBe(domeFullResult.paths.length);
+		expect(fuseFullResult.paths.length).toBe(domeFullResult.paths.length);
 	});
 
 	it("demonstrates salience advantage over single-phase DOME", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const sageResult = sage(graph, [
+		const fuseResult = fuse(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		]);
@@ -210,10 +210,10 @@ describe("SAGE integration: salience-guided discovery", () => {
 		]);
 
 		// Both should discover valid paths
-		expect(sageResult.paths.length).toBeGreaterThan(0);
+		expect(fuseResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
 
-		// SAGE should find reasonable paths despite two-phase overhead
-		expect(sageResult.stats.nodesVisited).toBeGreaterThanOrEqual(0);
+		// FUSE should find reasonable paths despite two-phase overhead
+		expect(fuseResult.stats.nodesVisited).toBeGreaterThanOrEqual(0);
 	});
 });
