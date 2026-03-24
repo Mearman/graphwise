@@ -3,6 +3,7 @@
 		"target": "ESNext",
 		"module": "ESNext",
 		"moduleResolution": "bundler",
+		"rootDir": "src",
 		"lib": ["ES2022", "DOM"],
 		"incremental": true,
 		"strict": true,
