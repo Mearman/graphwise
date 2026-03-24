@@ -1,3 +1,27 @@
+## [1.2.0](https://github.com/Mearman/graphwise/compare/v1.1.1...v1.2.0) (2026-03-24)
+
+### Features
+
+* **expansion:** add baseline expansion algorithms ([81b6522](https://github.com/Mearman/graphwise/commit/81b652295307795cee11ee86a6be6a932d8989f0))
+* **ranking:** add baselines barrel export module ([0e07b09](https://github.com/Mearman/graphwise/commit/0e07b097da93a97197eaf47792acf7030ebc61f5))
+* **ranking:** add distance and aggregate baseline ranking algorithms ([41705b9](https://github.com/Mearman/graphwise/commit/41705b92004580cdb4eaa18efc766bdec6c5b128))
+* **ranking:** add similarity and spectral baseline ranking algorithms ([93b7278](https://github.com/Mearman/graphwise/commit/93b7278a23c67708cdee824f8efa22787430c0dc))
+* **ranking:** add structural baseline ranking algorithms ([8d9a6dd](https://github.com/Mearman/graphwise/commit/8d9a6dddfe1681124f1d39b38b8553e6ea96a78a))
+
+### Bug Fixes
+
+* **extraction:** resolve exactOptionalPropertyTypes in motif enumeration ([a0a6784](https://github.com/Mearman/graphwise/commit/a0a678475fe6aebc56348d18cd7dd9fbefa3c69f))
+* **gpu:** resolve exactOptionalPropertyTypes in context and buffers ([d27f439](https://github.com/Mearman/graphwise/commit/d27f43943374cf15aa2bb5510ef1953dcc8996a7))
+
+### Code Refactoring
+
+* convert all index files to pure export * pattern ([272a50a](https://github.com/Mearman/graphwise/commit/272a50ae1c21c42853b963e053d554a87eca8903))
+
+### Miscellaneous Chores
+
+* **build:** add DOM library support to TypeScript configuration ([2b5ecca](https://github.com/Mearman/graphwise/commit/2b5ecca8fd8f5daecaf5d114666f7720d1822f2a))
+* **build:** enforce direct-sibling barrel exports and pure re-export pattern ([6b27b23](https://github.com/Mearman/graphwise/commit/6b27b23f13fd66ed43540ccbd9129f5b676b567f))
+
 ## [1.1.1](https://github.com/Mearman/graphwise/compare/v1.1.0...v1.1.1) (2026-03-24)
 
 ### Continuous Integration
