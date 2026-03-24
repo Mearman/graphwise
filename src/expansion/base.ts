@@ -69,6 +69,8 @@ export function base<N extends NodeData, E extends EdgeData>(
 
 	// Initialise frontiers - one per seed
 	const numFrontiers = seeds.length;
+	const allVisited = new Set<NodeId>();
+	const combinedVisited = new Map<NodeId, number>();
 	const visitedByFrontier: Map<NodeId, number>[] = [];
 	const predecessors: Map<NodeId, NodeId | null>[] = [];
 	const queues: PriorityQueue<QueueEntry>[] = [];
@@ -85,12 +87,15 @@ export function base<N extends NodeData, E extends EdgeData>(
 		// Note: seed is NOT marked as visited here - it will be marked when processed
 		// like any other node. This allows the seed to be properly expanded.
 		predecessors[i]?.set(seedNode, null);
+		combinedVisited.set(seedNode, i);
+		allVisited.add(seedNode);
 
 		const context = createPriorityContext(
 			graph,
 			seedNode,
 			i,
-			visitedByFrontier,
+			combinedVisited,
+			allVisited,
 			[],
 			0,
 		);
@@ -106,8 +111,7 @@ export function base<N extends NodeData, E extends EdgeData>(
 		);
 	}
 
-	const allVisited = new Set<NodeId>();
-	const sampledEdges = new Set<string>();
+	const sampledEdgeMap = new Map<NodeId, Set<NodeId>>();
 	const discoveredPaths: ExpansionPath[] = [];
 	let iterations = 0;
 	let edgesTraversed = 0;
@@ -168,6 +172,7 @@ export function base<N extends NodeData, E extends EdgeData>(
 
 		// Mark visited
 		frontierVisited.set(nodeId, activeFrontier);
+		combinedVisited.set(nodeId, activeFrontier);
 		if (predecessor !== null) {
 			const predMap = predecessors[activeFrontier];
 			if (predMap !== undefined) {
@@ -213,11 +218,14 @@ export function base<N extends NodeData, E extends EdgeData>(
 			edgesTraversed++;
 
 			// Track sampled edge
-			const edgeKey =
-				nodeId < neighbour
-					? `${nodeId}::${neighbour}`
-					: `${neighbour}::${nodeId}`;
-			sampledEdges.add(edgeKey);
+			const [s, t] =
+				nodeId < neighbour ? [nodeId, neighbour] : [neighbour, nodeId];
+			let targets = sampledEdgeMap.get(s);
+			if (targets === undefined) {
+				targets = new Set();
+				sampledEdgeMap.set(s, targets);
+			}
+			targets.add(t);
 
 			// Skip if already visited by this frontier
 			const frontierVisited = visitedByFrontier[activeFrontier];
@@ -229,7 +237,8 @@ export function base<N extends NodeData, E extends EdgeData>(
 				graph,
 				neighbour,
 				activeFrontier,
-				visitedByFrontier,
+				combinedVisited,
+				allVisited,
 				discoveredPaths,
 				iterations + 1,
 			);
@@ -254,14 +263,9 @@ export function base<N extends NodeData, E extends EdgeData>(
 
 	// Convert sampled edges to tuples
 	const edgeTuples = new Set<readonly [NodeId, NodeId]>();
-	for (const edgeKey of sampledEdges) {
-		const parts = edgeKey.split("::");
-		if (parts.length === 2) {
-			const source = parts[0];
-			const target = parts[1];
-			if (source !== undefined && target !== undefined) {
-				edgeTuples.add([source, target] as const);
-			}
+	for (const [source, targets] of sampledEdgeMap) {
+		for (const target of targets) {
+			edgeTuples.add([source, target] as const);
 		}
 	}
 
@@ -289,19 +293,11 @@ function createPriorityContext<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	nodeId: NodeId,
 	frontierIndex: number,
-	visitedByFrontier: readonly Map<NodeId, number>[],
+	combinedVisited: ReadonlyMap<NodeId, number>,
+	allVisited: ReadonlySet<NodeId>,
 	discoveredPaths: readonly ExpansionPath[],
 	iteration: number,
 ): PriorityContext<N, E> {
-	const combinedVisited = new Map<NodeId, number>();
-	for (const frontierMap of visitedByFrontier) {
-		for (const [id, idx] of frontierMap) {
-			combinedVisited.set(id, idx);
-		}
-	}
-
-	const allVisited = new Set<NodeId>(combinedVisited.keys());
-
 	return {
 		graph,
 		degree: graph.degree(nodeId),
