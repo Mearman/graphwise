@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { createTwoDepartmentFixture } from "../../__test__/fixtures";
 import { span } from "./span";
+import { neighbourSet, neighbourOverlap } from "../../utils";
+import { localClusteringCoefficient } from "../../utils";
 
 describe("SPAN MI variant (bridge reward)", () => {
 	it("rewards structural holes and bridge edges by penalising high-clustering neighbourhoods", () => {
@@ -16,7 +18,7 @@ describe("SPAN MI variant (bridge reward)", () => {
 		expect(metadata["engineeringDepartment"]).toBeDefined();
 		expect(metadata["bottleneckEdge"]).toBeDefined();
 
-		// Get the bottleneck (bridge) edge
+		// Get the bridge edge
 		const bridgeEdgeValue = metadata["bottleneckEdge"];
 		if (
 			typeof bridgeEdgeValue !== "object" ||
@@ -35,8 +37,8 @@ describe("SPAN MI variant (bridge reward)", () => {
 		expect(bridgeEdge.target).toBe("frank");
 
 		// Pick a within-department edge for comparison
-		// Marketing internal: Alice-Carol (both high clustering, neighbours overlap)
-		const withinDept = { source: "alice", target: "carol" };
+		// Marketing internal: David-Emma (both in marketing, high clustering)
+		const withinDept = { source: "david", target: "emma" };
 
 		// Verify edges exist
 		const bridgeSource = bridgeEdge.source;
@@ -44,37 +46,70 @@ describe("SPAN MI variant (bridge reward)", () => {
 		expect(graph.getEdge(bridgeSource, bridgeTarget)).toBeDefined();
 		expect(graph.getEdge(withinDept.source, withinDept.target)).toBeDefined();
 
+		// Compute clustering coefficients for both edges
+		const ccBridgeSource = localClusteringCoefficient(graph, bridgeSource);
+		const ccBridgeTarget = localClusteringCoefficient(graph, bridgeTarget);
+		const ccWithinSource = localClusteringCoefficient(graph, withinDept.source);
+		const ccWithinTarget = localClusteringCoefficient(graph, withinDept.target);
+
+		// Within-cluster edge (David-Emma) should have higher clustering than bridge
+		const maxCcWithin = Math.max(ccWithinSource, ccWithinTarget);
+		const maxCcBridge = Math.max(ccBridgeSource, ccBridgeTarget);
+		expect(maxCcWithin).toBeGreaterThan(maxCcBridge);
+
 		// Compute Jaccard for both edges
-		// bridge and within jaccard values
+		const sourceBridgeNeighbours = neighbourSet(
+			graph,
+			bridgeSource,
+			bridgeTarget,
+		);
+		const targetBridgeNeighbours = neighbourSet(
+			graph,
+			bridgeTarget,
+			bridgeSource,
+		);
+		const bridgeOverlap = neighbourOverlap(
+			sourceBridgeNeighbours,
+			targetBridgeNeighbours,
+		);
+		const jaccardBridge =
+			bridgeOverlap.union > 0
+				? bridgeOverlap.intersection / bridgeOverlap.union
+				: 0;
+
+		const sourceWithinNeighbours = neighbourSet(
+			graph,
+			withinDept.source,
+			withinDept.target,
+		);
+		const targetWithinNeighbours = neighbourSet(
+			graph,
+			withinDept.target,
+			withinDept.source,
+		);
+		const withinOverlap = neighbourOverlap(
+			sourceWithinNeighbours,
+			targetWithinNeighbours,
+		);
+		const jaccardWithin =
+			withinOverlap.union > 0
+				? withinOverlap.intersection / withinOverlap.union
+				: 0;
 
 		// Compute SPAN scores
 		const spanBridge = span(graph, bridgeSource, bridgeTarget);
 		const spanWithin = span(graph, withinDept.source, withinDept.target);
 
-		// Alice and Carol are in the dense Marketing cluster, so they have high clustering coefficients.
-		// Carol is in Marketing (high cc), and Frank is in Engineering (high cc).
-		// However, as a bridge edge, Carol-Frank connects two clusters with lower effective clustering.
-
 		// The key assertion: SPAN = Jaccard * (1 - max(cc))
-		// If both endpoints have high clustering (tight cluster), penalty is large (1 - max(cc) is small)
-		// If endpoints span clusters, penalty is smaller (1 - max(cc) is larger)
+		// Bridge edges have lower clustering coefficients, so the penalty (1 - max(cc)) is larger.
+		// Within-cluster edges have higher clustering coefficients, so the penalty is smaller.
+		// This overcomes the potential Jaccard difference, rewarding bridge edges with SPAN(bridge) > SPAN(within).
 
-		// For within-cluster Alice-Carol: both have high cc, so penalty is large
-		// For bridge Carol-Frank: Frank has lower cc relative to cluster, so penalty is smaller
+		expect(spanBridge).toBeGreaterThan(spanWithin);
 
-		// We expect SPAN(bridge) may be higher than SPAN(within) if the clustering coefficients differ enough
-
-		// At minimum, both should be positive and defined
-		expect(spanBridge).toBeGreaterThan(0);
-		expect(spanWithin).toBeGreaterThan(0);
-
-		// The key insight is that SPAN penalises high-clustering edges.
-		// Even if Jaccard is 0, SPAN's logic is consistent with the MI formula.
-		// We verify that both are computed and positive when clustering is moderate.
-
-		// Both should be positive or epsilon
-		expect(spanBridge).toBeGreaterThanOrEqual(0);
-		expect(spanWithin).toBeGreaterThanOrEqual(0);
+		// Verify Jaccard scores: Jaccard within the cluster should be similar or favour the bridge
+		// (The bridge now has reasonable overlap due to multiple cross-department connections)
+		expect(jaccardWithin).toBeGreaterThanOrEqual(jaccardBridge);
 	});
 
 	it("upweights bridge edges with low clustering coefficients", () => {

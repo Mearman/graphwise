@@ -39,7 +39,7 @@ export function createTwoDepartmentFixture(): TestGraphFixture {
 	}
 
 	// Marketing internal connections: dense mesh-like structure
-	// Each person knows 2-3 others within department
+	// Each person knows 3-4 others within department, forming multiple triangles
 	graph.addEdge({ source: "alice", target: "bob", type: "knows", weight: 1 });
 	graph.addEdge({
 		source: "alice",
@@ -47,8 +47,20 @@ export function createTwoDepartmentFixture(): TestGraphFixture {
 		type: "knows",
 		weight: 1,
 	});
+	graph.addEdge({
+		source: "alice",
+		target: "david",
+		type: "knows",
+		weight: 1,
+	});
 	graph.addEdge({ source: "bob", target: "carol", type: "knows", weight: 1 });
 	graph.addEdge({ source: "bob", target: "david", type: "knows", weight: 1 });
+	graph.addEdge({
+		source: "bob",
+		target: "emma",
+		type: "knows",
+		weight: 1,
+	});
 	graph.addEdge({
 		source: "carol",
 		target: "david",
@@ -102,11 +114,25 @@ export function createTwoDepartmentFixture(): TestGraphFixture {
 		weight: 1,
 	});
 
-	// Cross-department: single project connection
+	// Cross-department: multiple bridge connections
 	// Carol (marketing) and Frank (engineering) worked on a shared project
 	graph.addEdge({
 		source: "carol",
 		target: "frank",
+		type: "collaborated",
+		weight: 1,
+	});
+	// Emma (marketing) and Frank (engineering) also collaborated
+	graph.addEdge({
+		source: "emma",
+		target: "frank",
+		type: "collaborated",
+		weight: 1,
+	});
+	// Carol (marketing) and Grace (engineering) collaborated on another project
+	graph.addEdge({
+		source: "carol",
+		target: "grace",
 		type: "collaborated",
 		weight: 1,
 	});
