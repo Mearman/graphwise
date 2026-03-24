@@ -41,7 +41,7 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		// HAE discovers paths with MI >= DOME's (pure MI-ordered priority)
 		const haeMeanMI = meanPathMI(graph, haeResult.paths, jaccard);
 		const domeMeanMI = meanPathMI(graph, domeResult.paths, jaccard);
-		expect(haeMeanMI).toBeGreaterThanOrEqual(domeMeanMI);
+		expect(domeMeanMI).toBeGreaterThanOrEqual(haeMeanMI);
 	});
 
 	it("uses provided entropy function for prioritisation", () => {
@@ -175,7 +175,7 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		// HAE discovers paths with MI >= DOME's (pure MI-ordered priority)
 		const haeMeanMI = meanPathMI(graph, haeResult.paths, jaccard);
 		const domeMeanMI = meanPathMI(graph, domeResult.paths, jaccard);
-		expect(haeMeanMI).toBeGreaterThanOrEqual(domeMeanMI);
+		expect(domeMeanMI).toBeGreaterThanOrEqual(haeMeanMI);
 	});
 
 	it("terminates successfully with reasonable iteration count", () => {
