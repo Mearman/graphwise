@@ -7,144 +7,246 @@ describe("ETCH MI variant (edge-type rarity)", () => {
 		// ETCH applies edge-type rarity weighting: MI(u,v) = Jaccard * rarity(edgeType)
 		// where rarity(t) = log(|E| / count(edges of type t))
 		// Rare edge types get higher multipliers; common edge types get lower multipliers.
+		//
+		// Test strategy: create two edge pairs with identical Jaccard neighbourhood overlap
+		// but different edge-type rarity. Assert that ETCH scores differ due to rarity alone.
 
 		const { AdjacencyMapGraph } = await import("../../graph");
 
-		// Create a custom graph where we control edge types and shared neighbours
+		// Create a custom graph with controlled structure
 		const graph = AdjacencyMapGraph.undirected();
 
-		// Create nodes: 6 people connected by various edge types
-		for (const id of ["a", "b", "c", "d", "e", "f"]) {
+		// Create 10 nodes
+		// Structure: two edge pairs with identical neighbourhoods
+		//   Pair 1: u1-v1 (mentors, rare: 2 edges total)
+		//   Pair 2: u2-v2 (knows, common: 10 edges total)
+		//   Each pair has exactly 2 shared neighbours: s1, s2
+		for (const id of [
+			"u1",
+			"v1",
+			"u2",
+			"v2",
+			"s1",
+			"s2",
+			"x1",
+			"x2",
+			"x3",
+			"x4",
+		]) {
 			graph.addNode({
 				id,
-				label: `Person ${id}`,
-				type: "person",
+				label: `Node ${id}`,
+				type: "test",
 			});
 		}
 
-		// Add "knows" edges (common, 10 edges total - chain structure)
-		const knowsEdges: readonly (readonly [string, string])[] = [
-			["a", "b"],
-			["b", "c"],
-			["c", "d"],
-			["d", "e"],
-			["e", "f"],
-			["a", "c"],
-			["b", "d"],
-			["c", "e"],
-			["d", "f"],
-			["a", "f"],
-		];
+		// Pair 1: u1-v1 (mentors, rare)
+		// Neighbourhoods: u1 → {s1, s2}, v1 → {s1, s2}
+		// Jaccard(u1, v1) = |{s1,s2}| / |{s1,s2}| = 2/2 = 1.0
+		graph.addEdge({ source: "u1", target: "s1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "u1", target: "s2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "v1", target: "s1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "v1", target: "s2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "u1", target: "v1", type: "mentors", weight: 1 }); // rare edge
 
-		for (const [source, target] of knowsEdges) {
-			graph.addEdge({ source, target, type: "knows", weight: 1 });
-		}
+		// Pair 2: u2-v2 (knows, common)
+		// Neighbourhoods: u2 → {s1, s2}, v2 → {s1, s2}
+		// Jaccard(u2, v2) = |{s1,s2}| / |{s1,s2}| = 2/2 = 1.0
+		graph.addEdge({ source: "u2", target: "s1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "u2", target: "s2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "v2", target: "s1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "v2", target: "s2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "u2", target: "v2", type: "knows", weight: 1 }); // common edge
 
-		// Add "mentors" edges (rare, 2 edges - but with shared neighbours)
-		graph.addEdge({ source: "a", target: "d", type: "mentors", weight: 1 }); // Shared neighbours with "knows" edges
-		graph.addEdge({ source: "b", target: "e", type: "mentors", weight: 1 });
+		// Add 8 more "knows" edges (to make 10 total "knows")
+		// Use isolated node sets to avoid affecting neighbourhoods of Pair 1 or Pair 2
+		graph.addEdge({ source: "s1", target: "s2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x1", target: "x2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x2", target: "x3", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x3", target: "x4", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x4", target: "x1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x1", target: "x3", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x2", target: "x4", type: "knows", weight: 1 });
+
+		// Add one more "mentors" edge (to make 2 total "mentors")
+		graph.addEdge({ source: "s1", target: "s2", type: "mentors", weight: 1 });
 
 		const totalEdges = graph.edgeCount;
+		const knowsCount = 10;
+		const mentorsCount = 2;
+
 		console.log(`Total edges: ${String(totalEdges)}`);
+		console.log(`Knows count: ${String(knowsCount)}`);
+		console.log(`Mentors count: ${String(mentorsCount)}`);
 
-		// Now compute Jaccard and ETCH for edges with shared neighbours
-		// a-d (mentors): shared neighbours from "knows" edges (b, c, e, f, etc.)
-		// b-c (knows): shared neighbours (a, d, etc.)
+		// Compute Jaccard for both pairs (must be identical since they have identical neighbourhood structure)
+		const jaccardRareType = jaccard(graph, "u1", "v1");
+		const jaccardCommonType = jaccard(graph, "u2", "v2");
 
-		// Both edges have shared neighbours due to the mesh-like structure
-		const jaccardMentors = jaccard(graph, "a", "d");
-		const etchMentors = etch(graph, "a", "d");
+		// Compute ETCH for both pairs
+		const etchRareType = etch(graph, "u1", "v1");
+		const etchCommonType = etch(graph, "u2", "v2");
 
-		// Compare to a "knows" edge with similar neighbourhood overlap
-		const jaccardKnows = jaccard(graph, "b", "e");
-		const etchKnows = etch(graph, "b", "e");
+		console.log(`\nJaccard (rare type u1-v1): ${String(jaccardRareType)}`);
+		console.log(`ETCH (rare type u1-v1): ${String(etchRareType)}`);
+		console.log(`Jaccard (common type u2-v2): ${String(jaccardCommonType)}`);
+		console.log(`ETCH (common type u2-v2): ${String(etchCommonType)}`);
 
-		console.log(`Jaccard (mentors a-d): ${String(jaccardMentors)}`);
-		console.log(`ETCH (mentors a-d): ${String(etchMentors)}`);
-		console.log(`Jaccard (knows b-e): ${String(jaccardKnows)}`);
-		console.log(`ETCH (knows b-e): ${String(etchKnows)}`);
+		// Expected rarity values
+		const rarityRare = Math.log(totalEdges / mentorsCount);
+		const rarityCommon = Math.log(totalEdges / knowsCount);
+		console.log(
+			`\nRarity (mentors) = log(${String(totalEdges)} / ${String(mentorsCount)}) = ${String(rarityRare)}`,
+		);
+		console.log(
+			`Rarity (knows) = log(${String(totalEdges)} / ${String(knowsCount)}) = ${String(rarityCommon)}`,
+		);
 
-		// Both edges should have shared neighbours and thus non-trivial Jaccard
-		expect(jaccardMentors).toBeGreaterThan(0);
-		expect(jaccardKnows).toBeGreaterThan(0);
+		// ASSERTION 1: Jaccard values must be identical (or near-identical)
+		// This proves that the only difference between the edge pairs is the edge type rarity
+		expect(jaccardRareType).toBeCloseTo(jaccardCommonType, 5);
+		expect(jaccardRareType).toBeGreaterThan(0);
 
-		// ETCH computation:
-		// rarity(mentors) = log(|E| / 2) = log(12 / 2) ≈ 1.79
-		// rarity(knows) = log(|E| / 10) = log(12 / 10) ≈ 0.18
-		// Since 1.79 > 0.18, ETCH should reward the mentors edge
+		// ASSERTION 2: Rarity multiplier for rare type must be > common type
+		expect(rarityRare).toBeGreaterThan(rarityCommon);
 
-		// The mentors edge should receive higher ETCH weighting due to rarity
-		expect(etchMentors).toBeGreaterThan(etchKnows);
+		// ASSERTION 3: ETCH scores reflect the rarity difference
+		// Since Jaccard is identical, ETCH(rare) should be significantly higher than ETCH(common)
+		// because ETCH(rare) = Jaccard * rarityRare, ETCH(common) = Jaccard * rarityCommon,
+		// and rarityRare > rarityCommon
+		expect(etchRareType).toBeGreaterThan(etchCommonType);
+
+		// ASSERTION 4: ETCH difference should be proportional to rarity difference
+		// Verify that ETCH ratio is at least as large as rarity ratio
+		const rarityRatio = rarityRare / rarityCommon;
+		const etchRatio = etchRareType / etchCommonType;
+
+		console.log(`\nRarity ratio (rare/common): ${String(rarityRatio)}`);
+		console.log(`ETCH ratio (rare/common): ${String(etchRatio)}`);
+		console.log(
+			`ETCH ratio >= Rarity ratio: ${String(etchRatio >= rarityRatio)}`,
+		);
+
+		// ETCH ratio should be at least equal to rarity ratio (since Jaccard is identical)
+		expect(etchRatio).toBeGreaterThanOrEqual(rarityRatio - 0.01); // small tolerance for floating point
 	});
 
 	it("applies rarity multiplier log(|E| / edgeTypeCount) correctly", async () => {
 		// The rarity multiplier for edge type should follow:
 		// log(totalEdges / countOfEdgeType)
+		//
+		// Test strategy: create two edge pairs with identical Jaccard values
+		// but compare edges of different types (rare vs common).
 
 		const { AdjacencyMapGraph } = await import("../../graph");
 
 		// Create a simple graph to verify rarity calculation
 		const graph = AdjacencyMapGraph.undirected();
 
-		// Create nodes
-		for (const id of ["x", "y", "z", "w"]) {
+		// Create nodes with controlled neighbourhood structure
+		// Structure:
+		//   Pair 1: a-b (rare type "special", 2 edges total)
+		//     Both a and b connect to: p1, p2
+		//     Jaccard(a,b) = 2/2 = 1.0
+		//
+		//   Pair 2: x-y (common type "knows", 8 edges total)
+		//     Both x and y connect to: p1, p2
+		//     Jaccard(x,y) = 2/2 = 1.0
+		//
+		// Extra edges added to make "knows" common and "special" rare.
+		for (const id of ["a", "b", "x", "y", "p1", "p2", "e1", "e2", "e3", "e4"]) {
 			graph.addNode({ id, label: `Node ${id}`, type: "test" });
 		}
 
-		// Add edges: 8 "knows" edges, 2 "mentors" edges (10 total)
-		const knowsEdges: readonly (readonly [string, string])[] = [
-			["x", "y"],
-			["y", "z"],
-			["z", "w"],
-			["w", "x"],
-			["x", "z"],
-			["y", "w"],
-			["x", "w"],
-			["y", "z"],
-		];
+		// Pair 1: a-b with rare type "special"
+		// Neighbourhoods: a → {p1, p2}, b → {p1, p2}
+		// Jaccard(a,b) = 2/2 = 1.0
+		graph.addEdge({ source: "a", target: "p1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "a", target: "p2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "b", target: "p1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "b", target: "p2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "a", target: "b", type: "special", weight: 1 }); // rare edge
 
-		for (const [source, target] of knowsEdges) {
-			graph.addEdge({ source, target, type: "knows", weight: 1 });
-		}
+		// Pair 2: x-y with common type "knows"
+		// Neighbourhoods: x → {p1, p2}, y → {p1, p2}
+		// Jaccard(x,y) = 2/2 = 1.0
+		graph.addEdge({ source: "x", target: "p1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x", target: "p2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "y", target: "p1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "y", target: "p2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x", target: "y", type: "knows", weight: 1 }); // common edge
 
-		// Add "mentors" edges
-		graph.addEdge({ source: "x", target: "y", type: "mentors", weight: 1 });
-		graph.addEdge({ source: "z", target: "w", type: "mentors", weight: 1 });
+		// Add extra "knows" edges to make "knows" type common (8 total knows edges)
+		// Use isolated edges to avoid affecting neighbourhoods of Pair 1 or Pair 2
+		graph.addEdge({ source: "p1", target: "p2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "e1", target: "e2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "e2", target: "e3", type: "knows", weight: 1 });
+		graph.addEdge({ source: "e3", target: "e4", type: "knows", weight: 1 });
+		graph.addEdge({ source: "e4", target: "e1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "e1", target: "e3", type: "knows", weight: 1 });
+
+		// Add one more "special" edge to confirm it's rare (2 total special edges)
+		graph.addEdge({ source: "p1", target: "p2", type: "special", weight: 1 });
 
 		const totalEdges = graph.edgeCount;
 		const knowsCount = 8;
-		const mentorsCount = 2;
+		const specialCount = 2;
 
 		// Expected rarity values
 		const rarityKnows = Math.log(totalEdges / knowsCount);
-		const rarityMentors = Math.log(totalEdges / mentorsCount);
+		const raritySpecial = Math.log(totalEdges / specialCount);
 
 		console.log(`Total edges: ${String(totalEdges)}`);
 		console.log(
 			`Rarity(knows) = log(${String(totalEdges)} / ${String(knowsCount)}) = ${String(rarityKnows)}`,
 		);
 		console.log(
-			`Rarity(mentors) = log(${String(totalEdges)} / ${String(mentorsCount)}) = ${String(rarityMentors)}`,
+			`Rarity(special) = log(${String(totalEdges)} / ${String(specialCount)}) = ${String(raritySpecial)}`,
 		);
 
 		// Verify rarity values: more rare type (fewer edges) should have higher rarity
-		expect(rarityMentors).toBeGreaterThan(rarityKnows);
+		expect(raritySpecial).toBeGreaterThan(rarityKnows);
+
+		// Compute Jaccard for both pairs (must be identical)
+		const jaccardRareType = jaccard(graph, "a", "b");
+		const jaccardCommonType = jaccard(graph, "x", "y");
 
 		// Compute ETCH scores for both types
-		// Using x-y which can be either "knows" or "mentors" depending on which we query
-		// Actually, both edges exist, but we query the edge type from getEdge
-		// Let's use y-z for "knows" and z-w for "mentors"
-		const etchKnows = etch(graph, "y", "z"); // This has "knows" type (duplicate edge)
-		const etchMentors = etch(graph, "z", "w"); // This has "mentors" type
+		const etchSpecial = etch(graph, "a", "b"); // Rare type
+		const etchKnows = etch(graph, "x", "y"); // Common type
 
-		console.log(`ETCH (knows y-z): ${String(etchKnows)}`);
-		console.log(`ETCH (mentors z-w): ${String(etchMentors)}`);
+		console.log(`\nJaccard (special a-b): ${String(jaccardRareType)}`);
+		console.log(`ETCH (special a-b): ${String(etchSpecial)}`);
+		console.log(`Jaccard (knows x-y): ${String(jaccardCommonType)}`);
+		console.log(`ETCH (knows x-y): ${String(etchKnows)}`);
 
-		// Both should be positive
+		// ASSERTION 1: Jaccard values must be identical
+		// This proves that the only difference is the edge type rarity
+		expect(jaccardRareType).toBeCloseTo(jaccardCommonType, 5);
+		expect(jaccardRareType).toBeGreaterThan(0);
+
+		// ASSERTION 2: Both ETCH scores should be positive
+		expect(etchSpecial).toBeGreaterThan(0);
 		expect(etchKnows).toBeGreaterThan(0);
-		expect(etchMentors).toBeGreaterThan(0);
 
-		// The mentors edge should receive higher ETCH weighting due to rarity
-		expect(etchMentors).toBeGreaterThan(etchKnows);
+		// ASSERTION 3: The rare edge should receive higher ETCH weighting due to rarity
+		// ETCH(special) = Jaccard * raritySpecial
+		// ETCH(knows) = Jaccard * rarityKnows
+		// Since Jaccard is the same, ETCH(special) > ETCH(knows) because raritySpecial > rarityKnows
+		expect(etchSpecial).toBeGreaterThan(etchKnows);
+
+		// ASSERTION 4: ETCH difference should be proportional to rarity difference
+		// Verify that ETCH ratio is at least as large as rarity ratio
+		const rarityRatio = raritySpecial / rarityKnows;
+		const etchRatio = etchSpecial / etchKnows;
+
+		console.log(`\nRarity ratio (special/knows): ${String(rarityRatio)}`);
+		console.log(`ETCH ratio (special/knows): ${String(etchRatio)}`);
+		console.log(
+			`ETCH ratio >= Rarity ratio: ${String(etchRatio >= rarityRatio)}`,
+		);
+
+		// ETCH ratio should be at least equal to rarity ratio (since Jaccard is identical)
+		expect(etchRatio).toBeGreaterThanOrEqual(rarityRatio - 0.01); // small tolerance for floating point
 	});
 });

@@ -28,23 +28,20 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		const haeResult = hae(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
-		]);
+		], { maxNodes: 14 });
 
 		const domeResult = dome(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
-		]);
+		], { maxNodes: 14 });
 
 		expect(haeResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
 
-		// HAE should discover specialist paths (low-degree, high-MI)
+		// HAE discovers paths with MI >= DOME's (pure MI-ordered priority)
 		const haeMeanMI = meanPathMI(graph, haeResult.paths, jaccard);
 		const domeMeanMI = meanPathMI(graph, domeResult.paths, jaccard);
-
-		// Both algorithms should have found valid paths with reasonable MI
-		expect(haeMeanMI).toBeGreaterThan(0);
-		expect(domeMeanMI).toBeGreaterThan(0);
+		expect(haeMeanMI).toBeGreaterThanOrEqual(domeMeanMI);
 	});
 
 	it("uses provided entropy function for prioritisation", () => {
@@ -165,22 +162,20 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		const haeResult = hae(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
-		]);
+		], { maxNodes: 14 });
 
 		const domeResult = dome(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
-		]);
+		], { maxNodes: 14 });
 
 		expect(haeResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
 
-		// Both should have valid mean MI
+		// HAE discovers paths with MI >= DOME's (pure MI-ordered priority)
 		const haeMeanMI = meanPathMI(graph, haeResult.paths, jaccard);
 		const domeMeanMI = meanPathMI(graph, domeResult.paths, jaccard);
-
-		expect(haeMeanMI).toBeGreaterThan(0);
-		expect(domeMeanMI).toBeGreaterThan(0);
+		expect(haeMeanMI).toBeGreaterThanOrEqual(domeMeanMI);
 	});
 
 	it("terminates successfully with reasonable iteration count", () => {
