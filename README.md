@@ -47,6 +47,8 @@ Three key properties:
 2. **Frontier collision detection**: when a vertex is reached by multiple frontiers, the connecting path is recorded
 3. **Implicit termination**: halts when all frontier queues are empty; no depth bound or size threshold
 
+---
+
 #### DOME: Degree-Ordered Multi-seed Expansion
 
 The default priority function uses degree-based hub deferral:
@@ -54,6 +56,8 @@ The default priority function uses degree-based hub deferral:
 $$\pi(v) = \frac{\deg^{+}(v) + \deg^{-}(v)}{w_V(v) + \varepsilon}$$
 
 where $\deg^{+}(v)$ is weighted out-degree, $\deg^{-}(v)$ is weighted in-degree, $w_V(v)$ is node weight, and $\varepsilon > 0$ prevents division by zero.
+
+---
 
 #### Expansion Variants
 
@@ -73,17 +77,23 @@ where $\deg^{+}(v)$ is weighted out-degree, $\deg^{-}(v)$ is weighted in-degree,
 | **SIFT**  | MI threshold with degree fallback                      | 1      |
 | **FLUX**  | Density-adaptive strategy switching                    | 1      |
 
+---
+
 #### EDGE: Entropy-Driven Graph Expansion
 
 $$\pi_{\text{EDGE}}(v) = \frac{1}{H_{\text{local}}(v) + \varepsilon} \times \log(\deg(v) + 1)$$
 
 where $H_{\text{local}}(v) = -\sum_{\tau} p(\tau) \log p(\tau)$ is the Shannon entropy of the neighbour type distribution. Nodes bridging heterogeneous structural regimes (high entropy) are explored first.
 
+---
+
 #### PIPE: Path-potential Informed Priority Expansion
 
 $$\pi_{\text{PIPE}}(v) = \frac{\deg(v)}{1 + \mathrm{pathPotential}(v)}$$
 
 where $\mathrm{pathPotential}(v) = \lvert N(v) \cap \bigcup_{j \neq i} V_j \rvert$ counts neighbours already visited by other seed frontiers. High path potential indicates imminent path completion.
+
+---
 
 #### SAGE: Salience-Accumulation Guided Expansion
 
@@ -92,6 +102,8 @@ $$
 $$
 
 where $\text{salience}(v)$ counts discovered paths containing $v$. Salience dominates in Phase 2; degree serves as tiebreaker.
+
+---
 
 #### REACH: Retrospective Expansion with Adaptive Convergence
 
@@ -105,6 +117,8 @@ $$
 \widehat{\text{MI}}(v) = \frac{1}{\lvert \mathcal{P}\_{\text{top}} \rvert} \sum\_{p} J(N(v), N(p\_{\text{endpoint}}))
 $$
 
+---
+
 #### MAZE: Multi-frontier Adaptive Zone Expansion
 
 $$
@@ -113,11 +127,15 @@ $$
 
 Phase 1 uses PIPE's path potential until $M$ paths found. Phase 2 incorporates SAGE's salience feedback. Phase 3 evaluates diversity, path count, and salience plateau for termination.
 
+---
+
 #### TIDE: Total Interconnected Degree Expansion
 
 $$\pi_{\text{TIDE}}(v) = \deg(v) + \sum_{w \in N(v)} \deg(w)$$
 
 Nodes in sparse regions (low aggregate neighbourhood degree) are explored first. Related to EDGE but uses raw degree sums rather than entropy.
+
+---
 
 #### LACE: Local Affinity-Computed Expansion
 
@@ -125,17 +143,23 @@ $$\pi_{\text{LACE}}(v) = 1 - \overline{\text{MI}}(v, \text{frontier})$$
 
 Prioritises nodes by average MI to already-visited frontier nodes. Related to HAE but uses MI to visited nodes rather than type entropy.
 
+---
+
 #### WARP: Weighted Adjacent Reachability Priority
 
 $$\pi_{\text{WARP}}(v) = \frac{1}{1 + \text{bridge}(v)}$$
 
 Pure cross-frontier bridge score without degree normalisation. Related to PIPE but omits the degree numerator.
 
+---
+
 #### FUSE: Fused Utility-Salience Expansion
 
 $$\pi_{\text{FUSE}}(v) = (1 - w) \cdot \deg(v) + w \cdot (1 - \overline{\text{MI}})$$
 
 Single-phase weighted blend of degree and MI. Related to SAGE but uses continuous blending rather than two-phase transition.
+
+---
 
 #### SIFT: Salience-Informed Frontier Threshold
 
@@ -145,9 +169,15 @@ $$
 
 MI-threshold-based priority with degree fallback. Related to REACH but uses a hard threshold instead of continuous MI-weighted priority.
 
+---
+
 #### FLUX: Flexible Local Utility Crossover
 
 Density-adaptive strategy switching. Selects between DOME, EDGE, and PIPE modes per-node based on local graph density and cross-frontier bridge score. Related to MAZE but adapts spatially (per-node) rather than temporally (per-phase).
+
+---
+
+---
 
 ### Path Ranking: PARSE
 
@@ -235,6 +265,10 @@ where $c(\tau_u)$ is the count of nodes with the same type as $u$. Weights Jacca
 | **Betweenness**             | Fraction of shortest paths through node             |
 | **Random**                  | Uniform random score (null baseline)                |
 
+---
+
+---
+
 ### Seed Selection: GRASP
 
 **Graph-agnostic Representative seed pAir Sampling**: selects structurally representative seed pairs from an unknown graph using reservoir sampling and structural feature clustering. Operates blind: no full graph loading, no ground-truth labels, no human-defined strata.
@@ -244,6 +278,10 @@ Three phases:
 1. **Reservoir sampling**: stream graph edges; maintain a reservoir of $N$ nodes
 2. **Structural features**: for each sampled node compute $\log(\deg + 1)$, clustering coefficient, approximate PageRank
 3. **Cluster and sample**: MiniBatchKMeans into $K$ groups; sample within-cluster and cross-cluster pairs
+
+---
+
+---
 
 ## Module Exports
 
