@@ -58,12 +58,7 @@ export function sage<N extends NodeData, E extends EdgeData>(
 		// Detect phase transition: first path discovered
 		if (pathCount > 0 && !inPhase2) {
 			inPhase2 = true;
-			// Initialise salience counts from existing paths
-			for (const path of context.discoveredPaths) {
-				for (const node of path.nodes) {
-					salienceCounts.set(node, (salienceCounts.get(node) ?? 0) + 1);
-				}
-			}
+			// No scan needed — the incremental update below handles it
 		}
 
 		// Update salience counts for newly discovered paths
