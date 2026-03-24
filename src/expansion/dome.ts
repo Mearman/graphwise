@@ -32,9 +32,7 @@ export function dome<N extends NodeData, E extends EdgeData>(
 		nodeId: string,
 		context: PriorityContext<N, E>,
 	): number => {
-		// Use context to satisfy strict unused variable checks
-		void context;
-		return graph.degree(nodeId);
+		return context.degree;
 	};
 
 	return base(graph, seeds, {
@@ -56,9 +54,7 @@ export function domeHighDegree<N extends NodeData, E extends EdgeData>(
 		nodeId: string,
 		context: PriorityContext<N, E>,
 	): number => {
-		// Use context to satisfy strict unused variable checks
-		void context;
-		return -graph.degree(nodeId);
+		return -context.degree;
 	};
 
 	return base(graph, seeds, {
