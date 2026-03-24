@@ -1,16 +1,17 @@
 /**
  * SCALE (Structural Coherence via Adjacency Lattice Entropy) MI variant.
  *
- * Combines Jaccard similarity with degree ratio to capture both
- * neighbourhood overlap and degree balance.
+ * Density-normalised Jaccard, correcting for graph density variation.
+ * Formula: MI(u,v) = Jaccard(u,v) / ρ(G)
  *
- * SCALE(u,v) = 2 * Jaccard(u,v) * deg_ratio / (Jaccard(u,v) + deg_ratio)
- * where deg_ratio = min(deg(u), deg(v)) / max(deg(u), deg(v))
+ * where ρ(G) = 2 * |E| / (|V| * (|V| - 1)) for undirected graphs
+ *       ρ(G) = |E| / (|V| * (|V| - 1)) for directed graphs
  *
- * Range: [0, 1]
+ * Range: [0, ∞) but typically scales with graph density
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
+import { neighbourSet, neighbourOverlap } from "../../utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -24,39 +25,32 @@ export function scale<N extends NodeData, E extends EdgeData>(
 ): number {
 	const { epsilon = 1e-10 } = config ?? {};
 
-	// Get neighbourhoods
-	const sourceNeighbours = new Set(graph.neighbours(source));
-	const targetNeighbours = new Set(graph.neighbours(target));
-
-	// Remove self-references
-	sourceNeighbours.delete(target);
-	targetNeighbours.delete(source);
-
-	const sourceDegree = sourceNeighbours.size;
-	const targetDegree = targetNeighbours.size;
+	// Get neighbourhoods, excluding opposite endpoint
+	const sourceNeighbours = neighbourSet(graph, source, target);
+	const targetNeighbours = neighbourSet(graph, target, source);
 
 	// Compute Jaccard
-	let intersectionSize = 0;
-	for (const neighbour of sourceNeighbours) {
-		if (targetNeighbours.has(neighbour)) {
-			intersectionSize++;
-		}
-	}
+	const { intersection, union } = neighbourOverlap(
+		sourceNeighbours,
+		targetNeighbours,
+	);
+	const jaccard = union > 0 ? intersection / union : 0;
 
-	const unionSize = sourceDegree + targetDegree - intersectionSize;
-	const jaccard = unionSize > 0 ? intersectionSize / unionSize : 0;
+	// Compute graph density
+	const n = graph.nodeCount;
+	const m = graph.edgeCount;
 
-	// Compute degree ratio
-	const minDegree = Math.min(sourceDegree, targetDegree);
-	const maxDegree = Math.max(sourceDegree, targetDegree);
-	const degreeRatio = maxDegree > 0 ? minDegree / maxDegree : 0;
+	// For undirected graphs, each edge contributes 2 to the total degree sum
+	const densityNormaliser = graph.directed ? n * (n - 1) : 2 * n * (n - 1);
+	const density = densityNormaliser > 0 ? m / densityNormaliser : 0;
 
-	// Harmonic mean combination
-	if (jaccard + degreeRatio === 0) {
+	// Avoid division by zero: if density is 0, fall back to epsilon
+	if (density === 0) {
 		return epsilon;
 	}
 
-	const score = (2 * jaccard * degreeRatio) / (jaccard + degreeRatio);
+	const score = jaccard / density;
 
-	return Math.max(epsilon, Math.min(1, score));
+	// Apply epsilon floor for numerical stability
+	return Math.max(epsilon, score);
 }
