@@ -25,15 +25,23 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const haeResult = hae(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 14 });
+		const haeResult = hae(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 14 },
+		);
 
-		const domeResult = dome(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 14 });
+		const domeResult = dome(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 14 },
+		);
 
 		expect(haeResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
@@ -159,15 +167,23 @@ describe("HAE integration: user-supplied MI entropy prioritisation", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const haeResult = hae(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 14 });
+		const haeResult = hae(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 14 },
+		);
 
-		const domeResult = dome(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 14 });
+		const domeResult = dome(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 14 },
+		);
 
 		expect(haeResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
