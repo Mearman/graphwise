@@ -1,3 +1,14 @@
+## [1.4.1](https://github.com/Mearman/graphwise/compare/v1.4.0...v1.4.1) (2026-03-24)
+
+### Bug Fixes
+
+* **expansion:** remove redundant phase-transition scan in SAGE ([b21ccae](https://github.com/Mearman/graphwise/commit/b21ccae9e719e37eb94b9c65995b7853a84fdddf))
+
+### Performance Improvements
+
+* **expansion:** cache Jaccard scores in REACH to eliminate duplicate endpoint pair computations ([4ce9823](https://github.com/Mearman/graphwise/commit/4ce982328cef88b0b843aa710a09396e43fc13e0))
+* **expansion:** replace string-based edge encoding with Map in base.ts ([3039404](https://github.com/Mearman/graphwise/commit/3039404bbb03e30172917bbb6de3ebcda2ea5294))
+
 ## [1.4.0](https://github.com/Mearman/graphwise/compare/v1.3.3...v1.4.0) (2026-03-24)
 
 ### Features
