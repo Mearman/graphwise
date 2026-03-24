@@ -245,6 +245,20 @@ export class AdjacencyMapGraph<
 			);
 		}
 
+		if (!this.directed) {
+			// Canonical direction: source < target (prevents duplicate storage)
+			const [cSource, cTarget] = edge.source < edge.target
+				? [edge.source, edge.target]
+				: [edge.target, edge.source];
+			// Check if edge already exists before incrementing edgeCount
+			const sourceMap = this.adjacency.get(cSource);
+			if (sourceMap !== undefined && sourceMap.has(cTarget)) {
+				// Edge already exists — update data but don't increment count
+				sourceMap.set(cTarget, edge);
+				return this;
+			}
+		}
+
 		// Store in forward adjacency
 		let forwardMap = this.adjacency.get(edge.source);
 		if (forwardMap === undefined) {
