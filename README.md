@@ -81,25 +81,35 @@ where $H_{\text{local}}(v) = -\sum_{\tau} p(\tau) \log p(\tau)$ is the Shannon e
 
 #### PIPE: Path-potential Informed Priority Expansion
 
-$$\pi_{\text{PIPE}}(v) = \frac{\deg(v)}{1 + \text{path\_potential}(v)}$$
+$$\pi_{\text{PIPE}}(v) = \frac{\deg(v)}{1 + \mathrm{pathPotential}(v)}$$
 
-where $\text{path\_potential}(v) = |N(v) \cap \bigcup_{j \neq i} V_j|$ counts neighbours already visited by other seed frontiers. High path potential indicates imminent path completion.
+where $\mathrm{pathPotential}(v) = \lvert N(v) \cap \bigcup_{j \neq i} V_j \rvert$ counts neighbours already visited by other seed frontiers. High path potential indicates imminent path completion.
 
 #### SAGE: Salience-Accumulation Guided Expansion
 
-$$\pi_{\text{SAGE}}(v) = \begin{cases} \log(\deg(v) + 1) & \text{Phase 1 (before first path)} \\ -(\text{salience}(v) \times 1000 - \deg(v)) & \text{Phase 2 (after first path)} \end{cases}$$
+$$
+\pi_{\text{SAGE}}(v) = \begin{cases} \log(\deg(v) + 1) & \text{Phase 1 (before first path)} \\ -(\text{salience}(v) \times 1000 - \deg(v)) & \text{Phase 2 (after first path)} \end{cases}
+$$
 
 where $\text{salience}(v)$ counts discovered paths containing $v$. Salience dominates in Phase 2; degree serves as tiebreaker.
 
 #### REACH: Retrospective Expansion with Adaptive Convergence
 
-$$\pi_{\text{REACH}}(v) = \begin{cases} \log(\deg(v) + 1) & \text{Phase 1} \\ \log(\deg(v) + 1) \times (1 - \widehat{\text{MI}}(v)) & \text{Phase 2} \end{cases}$$
+$$
+\pi_{\text{REACH}}(v) = \begin{cases} \log(\deg(v) + 1) & \text{Phase 1} \\ \log(\deg(v) + 1) \times (1 - \widehat{\text{MI}}(v)) & \text{Phase 2} \end{cases}
+$$
 
-where $\widehat{\text{MI}}(v) = \frac{1}{|\mathcal{P}_{\text{top}}|} \sum_{p} J(N(v), N(p_{\text{endpoint}}))$ estimates MI via Jaccard similarity to discovered path endpoints.
+where $\widehat{\text{MI}}(v)$ estimates MI via Jaccard similarity to discovered path endpoints:
+
+$$
+\widehat{\text{MI}}(v) = \frac{1}{\lvert \mathcal{P}\_{\text{top}} \rvert} \sum\_{p} J(N(v), N(p\_{\text{endpoint}}))
+$$
 
 #### MAZE: Multi-frontier Adaptive Zone Expansion
 
-$$\pi^{(1)}(v) = \frac{\deg(v)}{1 + \text{path\_potential}(v)} \qquad \pi^{(2)}(v) = \pi^{(1)}(v) \times \frac{1}{1 + \lambda \cdot \text{salience}(v)}$$
+$$
+\pi^{(1)}(v) = \frac{\deg(v)}{1 + \mathrm{pathPotential}(v)} \qquad \pi^{(2)}(v) = \pi^{(1)}(v) \times \frac{1}{1 + \lambda \cdot \text{salience}(v)}
+$$
 
 Phase 1 uses PIPE's path potential until $M$ paths found. Phase 2 incorporates SAGE's salience feedback. Phase 3 evaluates diversity, path count, and salience plateau for termination.
 
@@ -129,7 +139,9 @@ Single-phase weighted blend of degree and MI. Related to SAGE but uses continuou
 
 #### SIFT: Salience-Informed Frontier Threshold
 
-$$\pi_{\text{SIFT}}(v) = \begin{cases} 1 - \overline{\text{MI}} & \text{if } \overline{\text{MI}} \geq \tau \\ \deg(v) + 100 & \text{otherwise} \end{cases}$$
+$$
+\pi_{\text{SIFT}}(v) = \begin{cases} 1 - \overline{\text{MI}} & \text{if } \overline{\text{MI}} \geq \tau \\ \deg(v) + 100 & \text{otherwise} \end{cases}
+$$
 
 MI-threshold-based priority with degree fallback. Related to REACH but uses a hard threshold instead of continuous MI-weighted priority.
 
@@ -215,7 +227,7 @@ where $c(\tau_u)$ is the count of nodes with the same type as $u$. Weights Jacca
 | --------------------------- | --------------------------------------------------- |
 | **Katz Index**              | $\sum_{k=1}^{\infty} \beta^k (A^k)_{st}$            |
 | **Communicability**         | $(e^A)_{st}$                                        |
-| **Resistance Distance**     | $L^{+}_{ss} + L^{+}_{tt} - 2L^{+}_{st}$             |
+| **Resistance Distance**     | $L^{+}\_{ss} + L^{+}\_{tt} - 2L^{+}\_{st}$          |
 | **Jaccard Arithmetic Mean** | $\frac{1}{k} \sum J(N(u), N(v))$                    |
 | **Degree-Sum**              | $\sum_{v \in P} \deg(v)$                            |
 | **Widest Path**             | $\min_{(u,v) \in P} w(u,v)$                         |
