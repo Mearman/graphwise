@@ -1,3 +1,9 @@
+## [1.4.2](https://github.com/Mearman/graphwise/compare/v1.4.1...v1.4.2) (2026-03-24)
+
+### Bug Fixes
+
+* **build:** correct LaTeX math rendering in README for GitHub ([63bf416](https://github.com/Mearman/graphwise/commit/63bf416e5e05a546e6a605665799bf4271f5d083))
+
 ## [1.4.1](https://github.com/Mearman/graphwise/compare/v1.4.0...v1.4.1) (2026-03-24)
 
 ### Bug Fixes

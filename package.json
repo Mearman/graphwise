@@ -1,6 +1,6 @@
 {
   "name": "graphwise",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Graph algorithms for citation network analysis - novel expansion, MI variants, and path ranking",
   "type": "module",
   "sideEffects": false,
