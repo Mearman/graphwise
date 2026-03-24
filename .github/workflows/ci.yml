@@ -18,13 +18,13 @@ jobs:
     name: Quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: "24"
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
       - run: pnpm install --frozen-lockfile
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: .turbo
           key: turbo-quality-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
@@ -39,17 +39,17 @@ jobs:
     needs: quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "24"
           # Do NOT set registry-url — it creates an .npmrc that overrides OIDC
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
       - run: pnpm install --frozen-lockfile
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: .turbo
           key: turbo-release-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
