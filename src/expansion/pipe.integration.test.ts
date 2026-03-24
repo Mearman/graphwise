@@ -1,23 +1,24 @@
 /**
- * Integration test for EDGE expansion algorithm.
+ * Integration test for PIPE expansion algorithm.
  *
- * EDGE discovers paths by prioritising nodes with diverse neighbour types.
- * High entropy (heterogeneous neighbourhoods) are expanded before low entropy
- * (homogeneous neighbourhoods).
+ * PIPE (Path-Potential Informed Priority Expansion) prioritises nodes
+ * that bridge multiple frontiers, discovering paths by focusing on
+ * connection points between seed regions.
  *
- * This test demonstrates EDGE's behaviour on a graph with mixed node types.
+ * This test demonstrates PIPE's behaviour on a graph where certain
+ * nodes act as natural bridges between seed regions.
  */
 
 import { describe, it, expect } from "vitest";
 import { createQualityVsPopularityFixture } from "../__test__/fixtures";
-import { edge } from "./edge";
+import { pipe } from "./pipe";
 
-describe("EDGE integration: entropy-driven expansion", () => {
-	it("discovers paths through diverse-type neighbourhoods", () => {
+describe("PIPE integration: path-potential informed expansion", () => {
+	it("discovers paths through bridging nodes", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = edge(graph, [
+		const result = pipe(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		] as const);
@@ -31,7 +32,7 @@ describe("EDGE integration: entropy-driven expansion", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = edge(graph, [{ id: "source" }, { id: "target" }] as const);
+		const result = pipe(graph, [{ id: "source" }, { id: "target" }] as const);
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("sampledNodes");
@@ -44,9 +45,8 @@ describe("EDGE integration: entropy-driven expansion", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = edge(graph, [{ id: "source" }, { id: "target" }] as const);
+		const result = pipe(graph, [{ id: "source" }, { id: "target" }] as const);
 
-		// Should visit at least some nodes beyond the seeds
 		expect(result.stats.nodesVisited).toBeGreaterThanOrEqual(0);
 	});
 
@@ -54,22 +54,35 @@ describe("EDGE integration: entropy-driven expansion", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = edge(graph, [{ id: "source" }, { id: "target" }] as const);
+		const result = pipe(graph, [{ id: "source" }, { id: "target" }] as const);
 
 		expect(result.stats.termination).toMatch(
 			/^(exhausted|limit|collision|error)$/,
 		);
 	});
 
+	it("identifies multiple frontiers correctly", () => {
+		const fixture = createQualityVsPopularityFixture();
+		const { graph } = fixture;
+
+		const result = pipe(graph, [
+			{ id: "source" },
+			{ id: "specialist1" },
+			{ id: "target" },
+		] as const);
+
+		// With 3 seeds, should have at most 3 frontiers
+		expect(result.visitedPerFrontier.length).toBeLessThanOrEqual(3);
+	});
+
 	it("respects maxNodes configuration", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = edge(graph, [{ id: "source" }, { id: "target" }] as const, {
+		const result = pipe(graph, [{ id: "source" }, { id: "target" }] as const, {
 			maxNodes: 5,
 		});
 
-		// Should not exceed max nodes
 		expect(result.stats.nodesVisited).toBeLessThanOrEqual(5);
 	});
 });

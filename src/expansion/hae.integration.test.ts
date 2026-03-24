@@ -1,23 +1,23 @@
 /**
- * Integration test for EDGE expansion algorithm.
+ * Integration test for HAE expansion algorithm.
  *
- * EDGE discovers paths by prioritising nodes with diverse neighbour types.
- * High entropy (heterogeneous neighbourhoods) are expanded before low entropy
- * (homogeneous neighbourhoods).
+ * HAE (Heterogeneity-Aware Expansion) generalises EDGE by allowing
+ * custom type extraction via a user-supplied typeMapper function.
  *
- * This test demonstrates EDGE's behaviour on a graph with mixed node types.
+ * This test demonstrates HAE's ability to use custom type definitions
+ * beyond the default node.type property.
  */
 
 import { describe, it, expect } from "vitest";
 import { createQualityVsPopularityFixture } from "../__test__/fixtures";
-import { edge } from "./edge";
+import { hae } from "./hae";
 
-describe("EDGE integration: entropy-driven expansion", () => {
-	it("discovers paths through diverse-type neighbourhoods", () => {
+describe("HAE integration: heterogeneity-aware expansion", () => {
+	it("discovers paths using default type mapping", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = edge(graph, [
+		const result = hae(graph, [
 			{ id: "source", role: "source" },
 			{ id: "target", role: "target" },
 		] as const);
@@ -27,11 +27,35 @@ describe("EDGE integration: entropy-driven expansion", () => {
 		expect(result.sampledNodes.size).toBeGreaterThan(0);
 	});
 
+	it("respects custom typeMapper configuration", () => {
+		const fixture = createQualityVsPopularityFixture();
+		const { graph } = fixture;
+
+		// Use a custom mapper that extracts type from node metadata
+		const result = hae(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			] as const,
+			{
+				typeMapper: (node) => {
+					// Default fallback
+					return node.type ?? "unknown";
+				},
+			},
+		);
+
+		// Should work with custom mapper
+		expect(result).toHaveProperty("paths");
+		expect(result).toHaveProperty("sampledNodes");
+	});
+
 	it("reports correct result structure", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = edge(graph, [{ id: "source" }, { id: "target" }] as const);
+		const result = hae(graph, [{ id: "source" }, { id: "target" }] as const);
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("sampledNodes");
@@ -44,9 +68,8 @@ describe("EDGE integration: entropy-driven expansion", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = edge(graph, [{ id: "source" }, { id: "target" }] as const);
+		const result = hae(graph, [{ id: "source" }, { id: "target" }] as const);
 
-		// Should visit at least some nodes beyond the seeds
 		expect(result.stats.nodesVisited).toBeGreaterThanOrEqual(0);
 	});
 
@@ -54,7 +77,7 @@ describe("EDGE integration: entropy-driven expansion", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = edge(graph, [{ id: "source" }, { id: "target" }] as const);
+		const result = hae(graph, [{ id: "source" }, { id: "target" }] as const);
 
 		expect(result.stats.termination).toMatch(
 			/^(exhausted|limit|collision|error)$/,
@@ -65,11 +88,10 @@ describe("EDGE integration: entropy-driven expansion", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = edge(graph, [{ id: "source" }, { id: "target" }] as const, {
+		const result = hae(graph, [{ id: "source" }, { id: "target" }] as const, {
 			maxNodes: 5,
 		});
 
-		// Should not exceed max nodes
 		expect(result.stats.nodesVisited).toBeLessThanOrEqual(5);
 	});
 });

@@ -53,8 +53,6 @@ export function maze<N extends NodeData, E extends EdgeData>(
 	seeds: readonly Seed[],
 	config?: ExpansionConfig<N, E>,
 ): ExpansionResult {
-	const phaseThreshold = DEFAULT_PHASE2_THRESHOLD;
-
 	// Closure state: encapsulate phase tracking and salience counts
 	const salienceCounts = new Map<NodeId, number>();
 	let inPhase2 = false;
@@ -70,7 +68,7 @@ export function maze<N extends NodeData, E extends EdgeData>(
 		const pathCount = context.discoveredPaths.length;
 
 		// Detect phase transition: threshold of paths reached
-		if (pathCount >= phaseThreshold && !inPhase2) {
+		if (pathCount >= DEFAULT_PHASE2_THRESHOLD && !inPhase2) {
 			inPhase2 = true;
 			// Initialise salience counts from existing paths
 			for (const path of context.discoveredPaths) {
