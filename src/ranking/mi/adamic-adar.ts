@@ -2,13 +2,14 @@
  * Adamic-Adar index for edge salience.
  *
  * Sum of inverse log degrees of common neighbours:
- * MI(u,v) = Σ_{z ∈ N(u) ∩ N(v)} 1 / log(deg(z))
+ * MI(u,v) = Σ_{z ∈ N(u) ∩ N(v)} 1 / log(deg(z) + 1)
  *
  * Range: [0, ∞) - higher values indicate stronger association
  * Normalised to [0, 1] by dividing by max possible value.
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
+import { neighbourSet, neighbourIntersection } from "../../utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -28,37 +29,28 @@ export function adamicAdar<N extends NodeData, E extends EdgeData>(
 ): number {
 	const { epsilon = 1e-10, normalise = true } = config ?? {};
 
-	// Get neighbourhoods
-	const sourceNeighbours = new Set(graph.neighbours(source));
-	const targetNeighbours = new Set(graph.neighbours(target));
+	// Get neighbourhoods, excluding opposite endpoint
+	const sourceNeighbours = neighbourSet(graph, source, target);
+	const targetNeighbours = neighbourSet(graph, target, source);
 
-	// Remove self-references
-	sourceNeighbours.delete(target);
-	targetNeighbours.delete(source);
+	// Compute common neighbours
+	const commonNeighbours = neighbourIntersection(
+		sourceNeighbours,
+		targetNeighbours,
+	);
 
-	// Compute common neighbours and sum inverse log degrees
+	// Sum inverse log degrees of common neighbours
 	let score = 0;
-	for (const neighbour of sourceNeighbours) {
-		if (targetNeighbours.has(neighbour)) {
-			const degree = graph.degree(neighbour);
-			if (degree > 1) {
-				score += 1 / Math.log(degree);
-			}
-		}
+	for (const neighbour of commonNeighbours) {
+		const degree = graph.degree(neighbour);
+		score += 1 / Math.log(degree + 1);
 	}
 
 	// Normalise to [0, 1] if requested
-	if (normalise) {
-		// Max possible is when all common neighbours have degree 2 (minimum for log)
-		// This is a heuristic normalisation
-		const commonCount =
-			sourceNeighbours.size < targetNeighbours.size
-				? sourceNeighbours.size
-				: targetNeighbours.size;
-		if (commonCount === 0) {
-			return 0;
-		}
-		const maxScore = commonCount / Math.log(2);
+	if (normalise && commonNeighbours.size > 0) {
+		// Max possible is when all common neighbours have minimum degree (1)
+		// 1 / log(1 + 1) = 1 / log(2)
+		const maxScore = commonNeighbours.size / Math.log(2);
 		score = score / maxScore;
 	}
 
