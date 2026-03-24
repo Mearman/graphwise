@@ -1,3 +1,9 @@
+## [1.3.2](https://github.com/Mearman/graphwise/compare/v1.3.1...v1.3.2) (2026-03-24)
+
+### Documentation
+
+* add CITATION.cff for repository citation metadata ([aa9884a](https://github.com/Mearman/graphwise/commit/aa9884a47bd9393c52d7e5d3f5d3b5a7c75511a8))
+
 ## [1.3.1](https://github.com/Mearman/graphwise/compare/v1.3.0...v1.3.1) (2026-03-24)
 
 ### Documentation
