@@ -25,15 +25,23 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const reachResult = reach(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 16 });
+		const reachResult = reach(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 16 },
+		);
 
-		const domeResult = dome(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 16 });
+		const domeResult = dome(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 16 },
+		);
 
 		// When both algorithms discover paths, REACH's MI-threshold prioritisation
 		// should yield paths with MI >= DOME's degree-only heuristic
@@ -45,17 +53,23 @@ describe("REACH integration: adaptive MI filtering", () => {
 		}
 
 		// Verify at least one algorithm discovers paths with this fixture
-		expect(reachResult.paths.length + domeResult.paths.length).toBeGreaterThan(0);
+		expect(reachResult.paths.length + domeResult.paths.length).toBeGreaterThan(
+			0,
+		);
 	});
 
 	it("adapts exploration based on rolling MI estimates", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 16 });
+		const result = reach(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 16 },
+		);
 
 		// Under budget constraint, REACH may discover few or no paths
 		// If paths are found, verify rolling MI estimates filter for higher-MI paths
@@ -63,8 +77,11 @@ describe("REACH integration: adaptive MI filtering", () => {
 			const longerPaths = result.paths.filter((path) => path.nodes.length >= 2);
 
 			if (longerPaths.length > 0) {
-				const longerPathMIs = longerPaths.map((path) => pathMI(graph, path, jaccard));
-				const meanMI = longerPathMIs.reduce((a, b) => a + b, 0) / longerPathMIs.length;
+				const longerPathMIs = longerPaths.map((path) =>
+					pathMI(graph, path, jaccard),
+				);
+				const meanMI =
+					longerPathMIs.reduce((a, b) => a + b, 0) / longerPathMIs.length;
 
 				// REACH's rolling MI estimates should filter for higher-MI paths
 				expect(meanMI).toBeGreaterThanOrEqual(0);
@@ -79,13 +96,19 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 16 });
+		const result = reach(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 16 },
+		);
 
 		// Under budget constraint, verify algorithm terminates and provides valid results
-		expect(result.stats.termination).toMatch(/^(exhausted|limit|collision|error)$/);
+		expect(result.stats.termination).toMatch(
+			/^(exhausted|limit|collision|error)$/,
+		);
 
 		// If specialist paths are discovered, verify MI-threshold prioritisation found them
 		if (result.paths.length > 0) {
@@ -105,10 +128,14 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 16 });
+		const result = reach(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 16 },
+		);
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("sampledNodes");
@@ -124,10 +151,14 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 16 });
+		const result = reach(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 16 },
+		);
 
 		const allPathNodes = new Set<string>();
 		for (const path of result.paths) {
@@ -146,31 +177,45 @@ describe("REACH integration: adaptive MI filtering", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 16 });
+		const result = reach(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 16 },
+		);
 
 		// REACH uses rolling MI in phase 2, so iteration count reflects adaptive filtering
 		expect(result.stats.iterations).toBeGreaterThanOrEqual(0);
 
 		// Under budget constraint, verify algorithm terminates properly
-		expect(result.stats.termination).toMatch(/^(exhausted|limit|collision|error)$/);
+		expect(result.stats.termination).toMatch(
+			/^(exhausted|limit|collision|error)$/,
+		);
 	});
 
 	it("compares favourably to DOME on MI-selective discovery", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const reachResult = reach(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 16 });
+		const reachResult = reach(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 16 },
+		);
 
-		const domeResult = dome(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 16 });
+		const domeResult = dome(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 16 },
+		);
 
 		// When both algorithms discover paths under budget constraint,
 		// REACH's MI-threshold prioritisation should yield paths with MI >= DOME's
@@ -182,17 +227,23 @@ describe("REACH integration: adaptive MI filtering", () => {
 		}
 
 		// Verify at least one algorithm discovers paths
-		expect(reachResult.paths.length + domeResult.paths.length).toBeGreaterThan(0);
+		expect(reachResult.paths.length + domeResult.paths.length).toBeGreaterThan(
+			0,
+		);
 	});
 
 	it("handles source-to-target seed roles consistently", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = reach(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		], { maxNodes: 16 });
+		const result = reach(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 16 },
+		);
 
 		// All discovered paths should connect source and target (bidirectional allows either direction)
 		const validPaths = result.paths.every((path) => {
