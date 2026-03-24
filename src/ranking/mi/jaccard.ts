@@ -10,6 +10,7 @@
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
+import { neighbourSet, neighbourOverlap } from "../../utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -29,32 +30,22 @@ export function jaccard<N extends NodeData, E extends EdgeData>(
 ): number {
 	const { epsilon = 1e-10 } = config ?? {};
 
-	// Get neighbourhoods
-	const sourceNeighbours = new Set(graph.neighbours(source));
-	const targetNeighbours = new Set(graph.neighbours(target));
+	// Get neighbourhoods, excluding opposite endpoint
+	const sourceNeighbours = neighbourSet(graph, source, target);
+	const targetNeighbours = neighbourSet(graph, target, source);
 
-	// Remove self-references
-	sourceNeighbours.delete(target);
-	targetNeighbours.delete(source);
-
-	// Compute intersection size
-	let intersectionSize = 0;
-	for (const neighbour of sourceNeighbours) {
-		if (targetNeighbours.has(neighbour)) {
-			intersectionSize++;
-		}
-	}
-
-	// Compute union size
-	const unionSize =
-		sourceNeighbours.size + targetNeighbours.size - intersectionSize;
+	// Compute intersection and union
+	const { intersection, union } = neighbourOverlap(
+		sourceNeighbours,
+		targetNeighbours,
+	);
 
 	// Avoid division by zero
-	if (unionSize === 0) {
+	if (union === 0) {
 		return 0;
 	}
 
-	const score = intersectionSize / unionSize;
+	const score = intersection / union;
 
 	// Apply epsilon floor for numerical stability
 	return Math.max(epsilon, score);
