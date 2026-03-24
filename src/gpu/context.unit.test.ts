@@ -175,7 +175,6 @@ describe("GPUContext", () => {
 		it("throws with unknown reason when WebGPU unavailable without reason", async () => {
 			vi.mocked(detect.detectWebGPU).mockReturnValue({
 				available: false,
-				reason: undefined,
 			});
 
 			const ctx = new GPUContext();

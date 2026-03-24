@@ -95,10 +95,14 @@ export class GPUContext {
 		// Get adapter
 		let adapter: GPUAdapter | null = null;
 
+		// Build adapter options, only including powerPreference if defined
+		const adapterOpts: GPURequestAdapterOptions =
+			options.powerPreference !== undefined
+				? { powerPreference: options.powerPreference }
+				: {};
+
 		if (typeof navigator !== "undefined" && "gpu" in navigator) {
-			adapter = await navigator.gpu.requestAdapter({
-				powerPreference: options.powerPreference,
-			});
+			adapter = await navigator.gpu.requestAdapter(adapterOpts);
 		}
 
 		// Node.js / Deno fallback via global GPU
@@ -114,9 +118,7 @@ export class GPUContext {
 				gpuDescriptor !== undefined &&
 				hasRequestAdapter(gpuDescriptor.value)
 			) {
-				adapter = await gpuDescriptor.value.requestAdapter({
-					powerPreference: options.powerPreference,
-				});
+				adapter = await gpuDescriptor.value.requestAdapter(adapterOpts);
 			}
 		}
 

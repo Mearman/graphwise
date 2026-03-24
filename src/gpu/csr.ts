@@ -199,10 +199,18 @@ export function csrToGPUBuffers(
 		device.queue.writeBuffer(valuesBuffer, 0, csr.values);
 	}
 
+	if (valuesBuffer !== undefined) {
+		return {
+			rowOffsets: rowOffsetsBuffer,
+			colIndices: colIndicesBuffer,
+			values: valuesBuffer,
+			nodeCount: csr.nodeCount,
+			edgeCount: csr.edgeCount,
+		};
+	}
 	return {
 		rowOffsets: rowOffsetsBuffer,
 		colIndices: colIndicesBuffer,
-		values: valuesBuffer,
 		nodeCount: csr.nodeCount,
 		edgeCount: csr.edgeCount,
 	};

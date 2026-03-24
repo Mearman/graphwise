@@ -437,7 +437,6 @@ describe("CSR conversion", () => {
 			const csr: CSRMatrix = {
 				rowOffsets: new Uint32Array([0, 1]),
 				colIndices: new Uint32Array([0]),
-				values: undefined,
 				nodeCount: 1,
 				edgeCount: 1,
 			};
