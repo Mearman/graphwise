@@ -169,7 +169,10 @@ function enumerate3NodeMotifs<N extends NodeData, E extends EdgeData>(
 		}
 	}
 
-	return { counts, instances };
+	if (instances !== undefined) {
+		return { counts, instances };
+	}
+	return { counts };
 }
 
 /**
@@ -254,7 +257,10 @@ function enumerate4NodeMotifs<N extends NodeData, E extends EdgeData>(
 		}
 	}
 
-	return { counts, instances };
+	if (instances !== undefined) {
+		return { counts, instances };
+	}
+	return { counts };
 }
 
 /**
