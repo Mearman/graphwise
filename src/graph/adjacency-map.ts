@@ -247,14 +247,15 @@ export class AdjacencyMapGraph<
 
 		if (!this.directed) {
 			// Canonical direction: source < target (prevents duplicate storage)
-			const [cSource, cTarget] = edge.source < edge.target
-				? [edge.source, edge.target]
-				: [edge.target, edge.source];
+			const [cSource, cTarget] =
+				edge.source < edge.target
+					? [edge.source, edge.target]
+					: [edge.target, edge.source];
 			// Check if edge already exists before incrementing edgeCount
-			const sourceMap = this.adjacency.get(cSource);
-			if (sourceMap !== undefined && sourceMap.has(cTarget)) {
+			const existingEdge = this.adjacency.get(cSource)?.get(cTarget);
+			if (existingEdge !== undefined) {
 				// Edge already exists — update data but don't increment count
-				sourceMap.set(cTarget, edge);
+				this.adjacency.get(cSource)?.set(cTarget, edge);
 				return this;
 			}
 		}

@@ -88,7 +88,7 @@ describe("lace expansion", () => {
 
 	it("reports algorithm name", () => {
 		const graph = createTestGraph();
-		const result = hae(graph, [{ id: "A" }, { id: "B" }]);
+		const result = lace(graph, [{ id: "A" }, { id: "B" }]);
 
 		// LACE wraps BASE, so algorithm name is inherited
 		expect(result.stats.algorithm).toBeDefined();
@@ -99,14 +99,14 @@ describe("lace expansion", () => {
 		graph.addNode({ id: "A", label: "A" });
 		graph.addNode({ id: "B", label: "B" });
 
-		const result = hae(graph, [{ id: "A" }, { id: "B" }]);
+		const result = lace(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.paths).toHaveLength(0);
 	});
 
 	it("includes duration in stats", () => {
 		const graph = createTestGraph();
-		const result = hae(graph, [{ id: "A" }, { id: "B" }]);
+		const result = lace(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
 	});
@@ -118,7 +118,7 @@ describe("lace expansion", () => {
 		// Custom MI function that returns fixed values
 		const customMi = (): number => 0.5;
 
-		const result = hae(graph, seeds, { mi: customMi });
+		const result = lace(graph, seeds, { mi: customMi });
 
 		expect(result).toHaveProperty("paths");
 		expect(result).toHaveProperty("stats");
@@ -133,7 +133,7 @@ describe("lace expansion", () => {
 			maxIterations: 10,
 		};
 
-		const result = hae(graph, seeds, config);
+		const result = lace(graph, seeds, config);
 
 		expect(result).toHaveProperty("paths");
 	});
@@ -142,7 +142,7 @@ describe("lace expansion", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = hae(graph, seeds, { maxIterations: 2 });
+		const result = lace(graph, seeds, { maxIterations: 2 });
 
 		// Should stop early due to iteration limit
 		expect(result.stats.iterations).toBeLessThanOrEqual(2);
@@ -152,7 +152,7 @@ describe("lace expansion", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result = hae(graph, seeds, { maxNodes: 3 });
+		const result = lace(graph, seeds, { maxNodes: 3 });
 
 		// Should stop when node limit reached
 		expect(result.sampledNodes.size).toBeLessThanOrEqual(3);
@@ -175,7 +175,7 @@ describe("lace expansion", () => {
 		graph.addNode({ id: "A", label: "A" });
 		graph.addNode({ id: "B", label: "B" });
 
-		const result = hae(graph, [{ id: "A" }, { id: "B" }]);
+		const result = lace(graph, [{ id: "A" }, { id: "B" }]);
 
 		// No paths possible without edges
 		expect(result.paths).toHaveLength(0);
@@ -185,7 +185,7 @@ describe("lace expansion", () => {
 		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
 		graph.addNode({ id: "A", label: "A" });
 
-		const result = hae(graph, [{ id: "A" }]);
+		const result = lace(graph, [{ id: "A" }]);
 
 		expect(result.paths).toHaveLength(0);
 	});
@@ -209,8 +209,8 @@ describe("lace expansion", () => {
 		const graph = createTestGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const result1 = hae(graph, seeds);
-		const result2 = hae(graph, seeds);
+		const result1 = lace(graph, seeds);
+		const result2 = lace(graph, seeds);
 
 		expect(result1.stats.nodesVisited).toBe(result2.stats.nodesVisited);
 		expect(result1.paths.length).toBe(result2.paths.length);
