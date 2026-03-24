@@ -44,23 +44,19 @@ describe("PIPE integration: path-potential bridging", () => {
 		expect(domeResult.paths.length).toBeGreaterThan(0);
 
 		// Count paths that use liaison nodes (inter-community bridges)
-		const pipeInterCommunityPaths = pipeResult.paths.filter((path) =>
+		const pipeLiaisonPaths = pipeResult.paths.filter((path) =>
 			path.nodes.some((node) => liaisons.includes(node)),
 		);
 
-		const domeInterCommunityPaths = domeResult.paths.filter((path) =>
+		const domeLiaisonPaths = domeResult.paths.filter((path) =>
 			path.nodes.some((node) => liaisons.includes(node)),
 		);
 
-		// PIPE should discover at least as many inter-community paths as DOME
-		// (or match it—the key is both discover liaison-based connections)
-		expect(pipeInterCommunityPaths.length).toBeGreaterThanOrEqual(0);
-		expect(domeInterCommunityPaths.length).toBeGreaterThanOrEqual(0);
-
-		// At least one algorithm should find inter-community paths
-		expect(
-			pipeInterCommunityPaths.length + domeInterCommunityPaths.length,
-		).toBeGreaterThan(0);
+		// PIPE discovers more paths through liaison bridges than DOME
+		// because it prioritises nodes that bridge multiple frontiers
+		expect(pipeLiaisonPaths.length).toBeGreaterThanOrEqual(
+			domeLiaisonPaths.length,
+		);
 	});
 
 	it("prioritises bridge nodes in frontier intersection", () => {
@@ -74,30 +70,43 @@ describe("PIPE integration: path-potential bridging", () => {
 		]);
 
 		// Should discover paths that leverage liaison bridge nodes
+		expect(result.paths.length).toBeGreaterThan(0);
+
+		// PIPE's first path should use a liaison node (bridge-aware priority)
+		// This proves PIPE prioritises nodes that bridge multiple frontiers
+		const firstPath = result.paths[0];
+		if (firstPath !== undefined) {
+			expect(firstPath.nodes.some((node) => liaisons.includes(node))).toBe(
+				true,
+			);
+		}
+
+		// At least some paths should use liaisons (they are critical bridges)
 		const pathsWithLiaisons = result.paths.filter((path) =>
 			path.nodes.some((node) => liaisons.includes(node)),
 		);
-
-		// At least some paths should use liaisons (they are critical bridges)
 		expect(pathsWithLiaisons.length).toBeGreaterThan(0);
 	});
 
 	it("discovers paths crossing lab → startup → university boundary", () => {
 		const fixture = createThreeCommunityFixture();
-		const { graph } = fixture;
+		const { graph, metadata } = fixture;
+		const liaisons = getStringArray(metadata["liaisons"]);
 
 		const result = pipe(graph, [
 			{ id: "bob", role: "source" }, // In lab
 			{ id: "mia", role: "target" }, // In university
 		]);
 
+		// Should discover at least one path connecting the two communities
 		expect(result.paths.length).toBeGreaterThan(0);
 
-		// At least one path should cross from lab to university or vice versa
-		// (Bob is in lab, Mia is in university)
-		// Unused: crossCommunityPaths would check cross-community paths
-		// At minimum, paths should be discovered that connect the two seeds
-		expect(result.paths.length).toBeGreaterThan(0);
+		// At least one path should cross from lab to university via liaison bridges
+		// Bob is in lab, Mia is in university—they require liaison nodes to connect
+		const pathsWithLiaisons = result.paths.filter((path) =>
+			path.nodes.some((node) => liaisons.includes(node)),
+		);
+		expect(pathsWithLiaisons.length).toBeGreaterThan(0);
 	});
 
 	it("returns well-formed expansion result with valid statistics", () => {
