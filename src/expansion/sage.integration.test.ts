@@ -22,19 +22,30 @@ import { dome } from "./dome";
 import { jaccard } from "../ranking/mi";
 
 describe("SAGE integration: salience-guided discovery", () => {
-	it("discovers more high-MI paths than DOME within same node budget", () => {
+	it("discovers high-MI paths with limited budget via salience weighting", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const sageResult = sage(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		]);
+		// With maxNodes: 10, exploration is constrained but not so tight that no paths
+		// can be discovered. SAGE's salience weighting should discover higher-MI paths
+		// than DOME's degree-only heuristic.
+		const sageResult = sage(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 10 },
+		);
 
-		const domeResult = dome(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		]);
+		const domeResult = dome(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 10 },
+		);
 
 		expect(sageResult.paths.length).toBeGreaterThan(0);
 		expect(domeResult.paths.length).toBeGreaterThan(0);
@@ -43,29 +54,38 @@ describe("SAGE integration: salience-guided discovery", () => {
 		const sageMeanMI = meanPathMI(graph, sageResult.paths, jaccard);
 		const domeMeanMI = meanPathMI(graph, domeResult.paths, jaccard);
 
-		// SAGE should discover paths with comparable or higher MI on average
-		// (salience feedback should guide towards high-quality paths)
-		expect(sageMeanMI).toBeGreaterThanOrEqual(domeMeanMI * 0.9); // Allow 10% tolerance
+		// SAGE should discover paths with equal or higher MI on average.
+		// With budget constraint, salience feedback guides SAGE to allocate
+		// its limited nodes towards high-MI specialist paths rather than
+		// just following degree, giving SAGE a measurable advantage.
+		expect(sageMeanMI).toBeGreaterThanOrEqual(domeMeanMI);
 	});
 
-	it("discovers specialist cluster paths with high MI", () => {
+	it("prioritises specialist cluster paths when under budget constraint", () => {
 		const fixture = createQualityVsPopularityFixture();
 		const { graph } = fixture;
 
-		const result = sage(graph, [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
-		]);
+		// With limited budget, SAGE should discover specialist-cluster paths
+		// because salience accumulation ranks them higher than fame_connector.
+		const result = sage(
+			graph,
+			[
+				{ id: "source", role: "source" },
+				{ id: "target", role: "target" },
+			],
+			{ maxNodes: 10 },
+		);
 
 		expect(result.paths.length).toBeGreaterThan(0);
 
-		// Check that discovered paths include specialist nodes
+		// Check that discovered paths include specialist nodes (markers of high-MI paths)
 		const specialistNodes = ["specialist1", "specialist2"];
 		const pathsWithSpecialists = result.paths.filter((path) =>
 			path.nodes.some((node) => specialistNodes.includes(node)),
 		);
 
 		// At least some paths should go through specialist clusters
+		// (this validates that salience weighting guides exploration)
 		expect(pathsWithSpecialists.length).toBeGreaterThan(0);
 	});
 
@@ -152,6 +172,27 @@ describe("SAGE integration: salience-guided discovery", () => {
 		});
 
 		expect(validPaths).toBe(true);
+	});
+
+	it("discovers same full paths as DOME without budget constraint", () => {
+		const fixture = createQualityVsPopularityFixture();
+		const { graph } = fixture;
+
+		// Without maxNodes config, both algorithms exhaust the graph completely.
+		// They should discover the same set of paths (salience only matters when
+		// exploration is constrained and nodes must be prioritised).
+		const sageFullResult = sage(graph, [
+			{ id: "source", role: "source" },
+			{ id: "target", role: "target" },
+		]);
+
+		const domeFullResult = dome(graph, [
+			{ id: "source", role: "source" },
+			{ id: "target", role: "target" },
+		]);
+
+		// Without budget constraint, both discover the same number of paths
+		expect(sageFullResult.paths.length).toBe(domeFullResult.paths.length);
 	});
 
 	it("demonstrates salience advantage over single-phase DOME", () => {
