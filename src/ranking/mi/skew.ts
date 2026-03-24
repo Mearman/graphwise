@@ -1,16 +1,14 @@
 /**
  * SKEW (Structural Kernel Entropy Weighting) MI variant.
  *
- * Weights neighbours by inverse degree (like Adamic-Adar) but
- * also considers the skew of the degree distribution.
+ * IDF-style rarity weighting on endpoints, applied to Jaccard base.
+ * Formula: MI(u,v) = Jaccard(u,v) * log(N/deg(u)+1) * log(N/deg(v)+1)
  *
- * SKEW(u,v) = sum_{w in N(u) ∩ N(v)} 1 / log(deg(w) + 1)
- *           / max weighted intersection possible
- *
- * Range: [0, 1]
+ * Range: [0, ∞) but typically [0, 1] for well-connected graphs
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
+import { neighbourSet, neighbourOverlap } from "../../utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -24,40 +22,27 @@ export function skew<N extends NodeData, E extends EdgeData>(
 ): number {
 	const { epsilon = 1e-10 } = config ?? {};
 
-	// Get neighbourhoods
-	const sourceNeighbours = new Set(graph.neighbours(source));
-	const targetNeighbours = new Set(graph.neighbours(target));
+	// Get neighbourhoods, excluding opposite endpoint
+	const sourceNeighbours = neighbourSet(graph, source, target);
+	const targetNeighbours = neighbourSet(graph, target, source);
 
-	// Remove self-references
-	sourceNeighbours.delete(target);
-	targetNeighbours.delete(source);
+	// Compute Jaccard
+	const { intersection, union } = neighbourOverlap(
+		sourceNeighbours,
+		targetNeighbours,
+	);
+	const jaccard = union > 0 ? intersection / union : 0;
 
-	// Compute weighted intersection (Adamic-Adar style)
-	let weightedIntersection = 0;
-	let commonCount = 0;
+	// Compute IDF-style weights for endpoints
+	const N = graph.nodeCount;
+	const sourceDegree = graph.degree(source);
+	const targetDegree = graph.degree(target);
 
-	for (const neighbour of sourceNeighbours) {
-		if (targetNeighbours.has(neighbour)) {
-			commonCount++;
-			const degree = graph.degree(neighbour);
-			if (degree > 1) {
-				weightedIntersection += 1 / Math.log(degree);
-			}
-		}
-	}
+	const sourceIdf = Math.log(N / (sourceDegree + 1));
+	const targetIdf = Math.log(N / (targetDegree + 1));
 
-	if (commonCount === 0) {
-		return epsilon;
-	}
+	const score = jaccard * sourceIdf * targetIdf;
 
-	// Normalise by theoretical maximum
-	const sourceDegree = sourceNeighbours.size;
-	const targetDegree = targetNeighbours.size;
-	const minDegree = Math.min(sourceDegree, targetDegree);
-
-	// Approximate max score
-	const maxScore = minDegree / Math.log(2);
-	const score = weightedIntersection / maxScore;
-
-	return Math.max(epsilon, Math.min(1, score));
+	// Apply epsilon floor for numerical stability
+	return Math.max(epsilon, score);
 }
