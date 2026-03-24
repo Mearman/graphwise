@@ -8,7 +8,7 @@ Low-dependency TypeScript graph algorithms for citation network analysis: novel 
 
 ## Features
 
-- **Expansion algorithms**: BASE, DOME, EDGE, HAE, PIPE, SAGE, REACH, MAZE + baselines
+- **Expansion algorithms**: BASE, DOME, EDGE, HAE, PIPE, SAGE, REACH, MAZE + 6 variants (TIDE, LACE, WARP, FUSE, SIFT, FLUX) + baselines
 - **MI variants**: Jaccard, Adamic-Adar, SCALE, SKEW, SPAN, ETCH, NOTCH, Unified Adaptive
 - **Path ranking**: PARSE + baselines (Katz, Communicability, PageRank, etc.)
 - **Seed selection**: GRASP, Stratified
@@ -66,6 +66,12 @@ where $\deg^{+}(v)$ is weighted out-degree, $\deg^{-}(v)$ is weighted in-degree,
 | **SAGE**  | Salience accumulation from discovered paths            | 2      |
 | **REACH** | Rolling MI estimates of discovered path quality        | 2      |
 | **MAZE**  | PIPE + SAGE + adaptive termination                     | 3      |
+| **TIDE**  | Sum of node + all-neighbour degrees                    | 1      |
+| **LACE**  | Average MI to same-frontier visited nodes              | 1      |
+| **WARP**  | Cross-frontier bridge score                            | 1      |
+| **FUSE**  | Weighted degree + MI blend                             | 1      |
+| **SIFT**  | MI threshold with degree fallback                      | 1      |
+| **FLUX**  | Density-adaptive strategy switching                    | 1      |
 
 ### Path Ranking: PARSE
 
