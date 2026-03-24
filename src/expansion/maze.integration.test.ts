@@ -58,7 +58,7 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 
 		expect(result.paths.length).toBeGreaterThan(0);
 
-		// At least one path should traverse all three regions
+		// Classify paths by regional coverage
 		const allRegionPaths = result.paths.filter((path) => {
 			const hasCityNode = path.nodes.some((n) => cityVenues.includes(n));
 			const hasSuburbanNode = path.nodes.some((n) =>
@@ -70,6 +70,19 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 			return hasCityNode && hasSuburbanNode && hasVillageNode;
 		});
 
+		const multiRegionPaths = result.paths.filter((path) => {
+			const regions = new Set<string>();
+			for (const n of path.nodes) {
+				if (cityVenues.includes(n)) regions.add("city");
+				if (suburbanLocations.includes(n)) regions.add("suburban");
+				if (villageLocations.includes(n)) regions.add("village");
+			}
+			return regions.size >= 2;
+		});
+
+		// MAZE must discover paths spanning multiple regions
+		expect(multiRegionPaths.length).toBeGreaterThan(0);
+		// Strong indicator of zone exploration: paths traversing all three regions
 		expect(allRegionPaths.length).toBeGreaterThan(0);
 	});
 
@@ -96,8 +109,10 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 		expect(domeResult.paths.length).toBeGreaterThan(0);
 		expect(edgeResult.paths.length).toBeGreaterThan(0);
 
-		// MAZE combines multiple strategies, so total paths should be reasonable
-		expect(mazeResult.paths.length).toBeGreaterThanOrEqual(0);
+		// MAZE combines multiple strategies, so should discover paths comparable to or exceeding individual strategies
+		expect(mazeResult.paths.length).toBeGreaterThanOrEqual(
+			Math.max(domeResult.paths.length, edgeResult.paths.length),
+		);
 	});
 
 	it("adapts exploration strategy to local density", () => {
@@ -197,10 +212,18 @@ describe("MAZE integration: density-aware multi-phase exploration", () => {
 			villageLocations.includes(n),
 		);
 
-		// Should explore at least one node from each region
-		expect(cityNodesVisited.length).toBeGreaterThan(0);
-		expect(suburbanNodesVisited.length).toBeGreaterThan(0);
-		expect(villageNodesVisited.length).toBeGreaterThan(0);
+		// MAZE should explore multiple nodes from each region, demonstrating cross-density adaptation
+		expect(cityNodesVisited.length).toBeGreaterThan(1);
+		expect(suburbanNodesVisited.length).toBeGreaterThan(1);
+		expect(villageNodesVisited.length).toBeGreaterThan(1);
+
+		// Multi-region visitation proves density-aware strategy switching
+		const totalRegionsExplored = [
+			cityNodesVisited.length > 0,
+			suburbanNodesVisited.length > 0,
+			villageNodesVisited.length > 0,
+		].filter(Boolean).length;
+		expect(totalRegionsExplored).toBe(3);
 	});
 
 	it("maintains consistency between discovered paths and sampledNodes", () => {
