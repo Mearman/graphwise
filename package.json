@@ -78,8 +78,8 @@
   "packageManager": "pnpm@10.27.0",
   "scripts": {
     "_typecheck": "tsc --noEmit",
-    "_lint": "eslint .",
-    "_lint:fix": "eslint . --fix",
+    "_lint": "eslint --cache",
+    "_lint:fix": "eslint --cache --fix",
     "_test": "vitest run",
     "_build": "vite build",
     "_validate": "echo 'Validation complete'",
