@@ -44,7 +44,6 @@ export default defineConfig({
 		}),
 	],
 	test: {
-		cache: true,
 		include: ["src/**/*.unit.test.ts", "src/**/*.integration.test.ts"],
 		coverage: {
 			provider: "v8",

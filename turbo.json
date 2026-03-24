@@ -1,26 +1,78 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "tsconfig.json",
+    "eslint.config.ts",
+    "vite.config.ts",
+    ".eslintignore"
+  ],
   "tasks": {
-    "_build": {
-      "dependsOn": ["_typecheck", "_lint", "_test"],
-      "outputs": ["dist/**"]
-    },
-    "_test": {
-      "dependsOn": ["_typecheck"],
-      "outputs": ["coverage/**"]
+    "_typecheck": {
+      "inputs": [
+        "src/**/*.ts",
+        "tsconfig.json"
+      ],
+      "outputs": [
+        ".tsbuildinfo"
+      ],
+      "cache": true
     },
     "_lint": {
-      "dependsOn": [],
-      "outputs": []
+      "inputs": [
+        "src/**",
+        "eslint.config.ts"
+      ],
+      "outputs": [
+        ".eslintcache"
+      ],
+      "cache": true
+    },
+    "_test": {
+      "dependsOn": [
+        "_typecheck"
+      ],
+      "inputs": [
+        "src/**/*.ts",
+        "vite.config.ts",
+        "vitest.config.ts",
+        "tsconfig.json"
+      ],
+      "outputs": [
+        "coverage/**"
+      ],
+      "cache": true
+    },
+    "_build": {
+      "dependsOn": [
+        "_typecheck",
+        "_lint",
+        "_test"
+      ],
+      "inputs": [
+        "src/**",
+        "vite.config.ts",
+        "package.json",
+        "tsconfig.json"
+      ],
+      "outputs": [
+        "dist/**"
+      ],
+      "cache": true
     },
     "_lint:fix": {
-      "outputs": []
-    },
-    "_typecheck": {
-      "outputs": []
+      "inputs": [
+        "src/**",
+        "eslint.config.ts"
+      ],
+      "outputs": [
+        ".eslintcache"
+      ],
+      "cache": false
     },
     "_validate": {
-      "dependsOn": ["_build"]
+      "dependsOn": [
+        "_build"
+      ]
     }
   }
 }
