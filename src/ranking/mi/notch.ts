@@ -1,15 +1,18 @@
 /**
  * NOTCH (Neighbourhood Overlap Topology Coherence via Homophily) MI variant.
  *
- * Combines neighbourhood overlap with degree correlation to capture
- * both local structure and global position similarity.
+ * Node-type rarity weighting applied to Jaccard base.
+ * Formula: MI(u,v) = Jaccard(u,v) * rarity(nodeType(u)) * rarity(nodeType(v))
+ * where rarity(t) = log(|V| / count(nodes with type t))
  *
- * NOTCH(u,v) = overlap * 0.6 + degree_correlation * 0.4
+ * Paths connecting nodes of rare types (fewer instances in the graph) receive higher
+ * salience, making discoveries involving unusual node types more significant.
  *
- * Range: [0, 1]
+ * Range: [0, ∞) but typically [0, 1] for well-typed nodes
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
+import { neighbourSet, neighbourOverlap, countNodesOfType } from "../../utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -23,35 +26,40 @@ export function notch<N extends NodeData, E extends EdgeData>(
 ): number {
 	const { epsilon = 1e-10 } = config ?? {};
 
-	// Get neighbourhoods
-	const sourceNeighbours = new Set(graph.neighbours(source));
-	const targetNeighbours = new Set(graph.neighbours(target));
+	// Get neighbourhoods, excluding opposite endpoint
+	const sourceNeighbours = neighbourSet(graph, source, target);
+	const targetNeighbours = neighbourSet(graph, target, source);
 
-	// Remove self-references
-	sourceNeighbours.delete(target);
-	targetNeighbours.delete(source);
+	// Compute Jaccard
+	const { intersection, union } = neighbourOverlap(
+		sourceNeighbours,
+		targetNeighbours,
+	);
+	const jaccard = union > 0 ? intersection / union : 0;
 
-	const sourceDegree = sourceNeighbours.size;
-	const targetDegree = targetNeighbours.size;
+	// Get node data
+	const sourceNode = graph.getNode(source);
+	const targetNode = graph.getNode(target);
 
-	// Component 1: Overlap coefficient
-	let intersectionSize = 0;
-	for (const neighbour of sourceNeighbours) {
-		if (targetNeighbours.has(neighbour)) {
-			intersectionSize++;
-		}
+	// If either node lacks a type, fall back to Jaccard
+	if (sourceNode?.type === undefined || targetNode?.type === undefined) {
+		return Math.max(epsilon, jaccard);
 	}
 
-	const minDegree = Math.min(sourceDegree, targetDegree);
-	const overlap = minDegree > 0 ? intersectionSize / minDegree : 0;
+	// Compute node rarity: log(total nodes / nodes of this type)
+	const sourceTypeCount = countNodesOfType(graph, sourceNode.type);
+	const targetTypeCount = countNodesOfType(graph, targetNode.type);
 
-	// Component 2: Degree correlation (similarity to ideal degree match)
-	const maxDegree = Math.max(sourceDegree, targetDegree);
-	const correlation =
-		maxDegree > 0 ? 1 - Math.abs(sourceDegree - targetDegree) / maxDegree : 1;
+	// Avoid division by zero
+	if (sourceTypeCount === 0 || targetTypeCount === 0) {
+		return Math.max(epsilon, jaccard);
+	}
 
-	// Weighted combination
-	const score = overlap * 0.6 + correlation * 0.4;
+	const sourceRarity = Math.log(graph.nodeCount / sourceTypeCount);
+	const targetRarity = Math.log(graph.nodeCount / targetTypeCount);
 
-	return Math.max(epsilon, Math.min(1, score));
+	const score = jaccard * sourceRarity * targetRarity;
+
+	// Apply epsilon floor for numerical stability
+	return Math.max(epsilon, score);
 }
