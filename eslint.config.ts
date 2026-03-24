@@ -265,9 +265,13 @@ export default defineConfig(
 			ecmaVersion: 2022,
 			parserOptions: {
 				projectService: {
-					allowDefaultProject: [".lintstagedrc.js"],
+					allowDefaultProject: [
+						".lintstagedrc.js",
+						".releaserc.js",
+						"eslint.config.ts",
+						"vite.config.ts",
+					],
 				},
-				tsconfigRootDir: import.meta.dirname,
 				lib: ["es2022", "dom"],
 			},
 		},
