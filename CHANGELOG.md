@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/Mearman/graphwise/compare/v1.1.0...v1.1.1) (2026-03-24)
+
+### Continuous Integration
+
+* update GitHub Actions to newer versions ([1431ad6](https://github.com/Mearman/graphwise/commit/1431ad689a35d52d2f0776343b9bc42a95930a82))
+
 ## [1.1.0](https://github.com/Mearman/graphwise/compare/v1.0.0...v1.1.0) (2026-03-24)
 
 ### Features
