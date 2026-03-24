@@ -23,6 +23,6 @@
 		"noPropertyAccessFromIndexSignature": true,
 		"types": ["vitest/importMeta", "@webgpu/types"]
 	},
-	"include": ["src/**/*.ts", "vite.config.ts", "eslint.config.ts"],
+	"include": ["src/**/*.ts"],
 	"exclude": ["node_modules", "dist"]
 }
