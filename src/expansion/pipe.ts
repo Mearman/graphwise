@@ -33,13 +33,13 @@ function pipePriority<N extends NodeData, E extends EdgeData>(
 	context: PriorityContext<N, E>,
 ): number {
 	const graph = context.graph;
-	const neighbours = new Set(graph.neighbours(nodeId));
+	const neighbours = graph.neighbours(nodeId);
 
 	// Count how many neighbours have been visited by OTHER frontiers
 	let pathPotential = 0;
-	for (const [visitedId, frontierIdx] of context.visitedByFrontier) {
-		// Only count if visited by a different frontier
-		if (frontierIdx !== context.frontierIndex && neighbours.has(visitedId)) {
+	for (const neighbour of neighbours) {
+		const visitedBy = context.visitedByFrontier.get(neighbour);
+		if (visitedBy !== undefined && visitedBy !== context.frontierIndex) {
 			pathPotential++;
 		}
 	}

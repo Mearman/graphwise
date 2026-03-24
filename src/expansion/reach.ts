@@ -47,6 +47,31 @@ export function reach<N extends NodeData, E extends EdgeData>(
 	// Closure state: encapsulate phase tracking
 	let inPhase2 = false;
 
+	// Closure state: cache Jaccard scores by (source, target) key
+	// Symmetric property ensures consistent ordering
+	const jaccardCache = new Map<string, number>();
+
+	/**
+	 * Compute Jaccard similarity with caching.
+	 *
+	 * Exploits symmetry of Jaccard (J(A,B) = J(B,A)) to reduce
+	 * duplicate computations when the same pair appears in multiple
+	 * discovered paths. Key format ensures consistent ordering.
+	 */
+	function cachedJaccard(source: NodeId, target: NodeId): number {
+		// Symmetric key: consistent ordering ensures cache hits
+		const key =
+			source < target ? `${source}::${target}` : `${target}::${source}`;
+
+		let score = jaccardCache.get(key);
+		if (score === undefined) {
+			score = jaccard(graph, source, target);
+			jaccardCache.set(key, score);
+		}
+
+		return score;
+	}
+
 	/**
 	 * REACH priority function with MI estimation.
 	 */
@@ -76,8 +101,9 @@ export function reach<N extends NodeData, E extends EdgeData>(
 			const toNodeId = path.toSeed.id;
 
 			// Compute Jaccard similarity between candidate node and each endpoint
-			totalMI += jaccard(graph, nodeId, fromNodeId);
-			totalMI += jaccard(graph, nodeId, toNodeId);
+			// Using cached variant to avoid recomputing identical pairs
+			totalMI += cachedJaccard(nodeId, fromNodeId);
+			totalMI += cachedJaccard(nodeId, toNodeId);
 			endpointCount += 2;
 		}
 

@@ -93,14 +93,12 @@ export function maze<N extends NodeData, E extends EdgeData>(
 
 		// Compute path potential: neighbours visited by other frontiers
 		// This is a bridge score indicating how likely this node is on important paths
-		const nodeNeighbours = new Set(graph.neighbours(nodeId));
+		const nodeNeighbours = graph.neighbours(nodeId);
 		let pathPotential = 0;
 
-		for (const [visitedId, frontierIdx] of context.visitedByFrontier) {
-			if (
-				frontierIdx !== context.frontierIndex &&
-				nodeNeighbours.has(visitedId)
-			) {
+		for (const neighbour of nodeNeighbours) {
+			const visitedBy = context.visitedByFrontier.get(neighbour);
+			if (visitedBy !== undefined && visitedBy !== context.frontierIndex) {
 				pathPotential++;
 			}
 		}
