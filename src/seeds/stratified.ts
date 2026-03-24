@@ -134,10 +134,18 @@ export function stratified(
 		const node = graph.getNode(nodeId);
 		if (node === undefined) continue;
 
-		const field = fieldClassifier({ id: nodeId, type: node.type });
+		const classifierInput: { id: NodeId; type?: string } =
+			node.type !== undefined
+				? { id: nodeId, type: node.type }
+				: { id: nodeId };
+		const field = fieldClassifier(classifierInput);
 		if (field === undefined) continue;
 
-		nodesWithFields.push({ id: nodeId, type: node.type, field });
+		const nodeWithField: { id: NodeId; type?: string; field: string } =
+			node.type !== undefined
+				? { id: nodeId, type: node.type, field }
+				: { id: nodeId, field };
+		nodesWithFields.push(nodeWithField);
 	}
 
 	const errors: Error[] = [];

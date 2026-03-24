@@ -83,7 +83,11 @@ function createTestGraph(
 	const fields = new TestFieldManager();
 
 	for (const node of nodes) {
-		graph.addNode({ id: node.id, type: node.type, field: node.field });
+		const nodeData: TestNode =
+			node.field !== undefined
+				? { id: node.id, type: node.type, field: node.field }
+				: { id: node.id, type: node.type };
+		graph.addNode(nodeData);
 		if (node.field !== undefined) {
 			fields.addNode(node.id, node.field);
 		}

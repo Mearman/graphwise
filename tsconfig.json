@@ -21,6 +21,7 @@
 		"noImplicitOverride": true,
 		"noImplicitReturns": true,
 		"noPropertyAccessFromIndexSignature": true,
+		"exactOptionalPropertyTypes": true,
 		"types": ["vitest/importMeta", "@webgpu/types"]
 	},
 	"include": ["src/**/*.ts"],
