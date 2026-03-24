@@ -1,3 +1,9 @@
+## [1.4.3](https://github.com/Mearman/graphwise/compare/v1.4.2...v1.4.3) (2026-03-24)
+
+### Documentation
+
+* add visual separators between detailed algorithm descriptions ([8847972](https://github.com/Mearman/graphwise/commit/8847972613e17736dc6d66a4cd72f0d44a47266d))
+
 ## [1.4.2](https://github.com/Mearman/graphwise/compare/v1.4.1...v1.4.2) (2026-03-24)
 
 ### Bug Fixes
