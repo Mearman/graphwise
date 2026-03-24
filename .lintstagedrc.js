@@ -4,5 +4,5 @@
  * Runs ESLint with --fix on staged TypeScript files.
  */
 export default {
-	"*.{ts,tsx}": ["eslint --fix"],
+	"*.{ts,tsx}": ["eslint --cache --fix"],
 };
