@@ -120,7 +120,7 @@ export function approximateClusteringCoefficient(
 	}
 
 	// Extrapolate from sample
-	return (triangleCount / sampled) * (possibleTriangles / possibleTriangles);
+	return triangleCount / sampled;
 }
 
 /**
