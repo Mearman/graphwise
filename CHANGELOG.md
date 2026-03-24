@@ -1,3 +1,38 @@
+## [1.4.0](https://github.com/Mearman/graphwise/compare/v1.3.3...v1.4.0) (2026-03-24)
+
+### Features
+
+* **expansion:** add missing algorithm exports and fix test formatting ([70b3d23](https://github.com/Mearman/graphwise/commit/70b3d23f52821a955b0701553b65f2b8f53dccd8))
+* **expansion:** implement correct EDGE algorithm ([a0f3633](https://github.com/Mearman/graphwise/commit/a0f363301003c6beca5acc30f5c6c2066ad612f4))
+* **expansion:** implement correct MAZE algorithm ([054ed6c](https://github.com/Mearman/graphwise/commit/054ed6cf92bcec2a8b285802b1aba7d4cf745108))
+* **expansion:** implement correct SAGE algorithm ([dc5d69f](https://github.com/Mearman/graphwise/commit/dc5d69f78405f42fa145dd686005b47f84a7d959))
+
+### Bug Fixes
+
+* **expansion:** fix LACE test function calls and remove unimplemented algorithm exports ([bc51ef7](https://github.com/Mearman/graphwise/commit/bc51ef76cb449d12f090d314f924b4f4e0c290df))
+* **expansion:** use precomputed degree from context in DOME priority function ([2a904e1](https://github.com/Mearman/graphwise/commit/2a904e1498e37a3e538719d5778bf554cb650988))
+* **graph:** prevent undirected edge count inflation on duplicate add calls ([a0dda72](https://github.com/Mearman/graphwise/commit/a0dda725f271dca42ac3363f7bb9a39621a1ba73))
+* **ranking:** correct SCALE MI density calculation for undirected graphs ([12dcd22](https://github.com/Mearman/graphwise/commit/12dcd220c2bb8ba989714c9a535dbbc7931bcbee))
+* **structures:** add indexMap for O(1) decreaseKey lookup in priority queue ([93d313e](https://github.com/Mearman/graphwise/commit/93d313eefb9ff6c56845cc79bc5ab03cc0f8f6e6))
+* **utils:** correct unbiased estimator in approximate clustering coefficient ([ec2b36b](https://github.com/Mearman/graphwise/commit/ec2b36b7489baa31e2d4819bd997093a12737c67))
+
+### Documentation
+
+* add TIDE/LACE/WARP/FUSE/SIFT/FLUX variant algorithms to README ([44e6af4](https://github.com/Mearman/graphwise/commit/44e6af426ea19297c3ed7efec1fc2228da8ccda8))
+* remove Origin column from expansion variants table ([b47b19c](https://github.com/Mearman/graphwise/commit/b47b19c8d7e66978910afeb56c363ff46d4f1d6a))
+
+### Tests
+
+* **expansion:** clean up REACH test formatting ([3fcb6eb](https://github.com/Mearman/graphwise/commit/3fcb6ebde9381cbf1c427675f865ed9d15c38703))
+* **expansion:** fix formatting for HAE test assertions ([80e98e5](https://github.com/Mearman/graphwise/commit/80e98e5993f03c63df6111278beeb81df2e52b22))
+* **expansion:** strengthen EDGE test assertions comparing village-node discovery ([bdad0d5](https://github.com/Mearman/graphwise/commit/bdad0d5a912611c8e4c02115e14da3555d9cc7a9))
+* **expansion:** strengthen HAE integration test assertions comparing MI-based priority ([ca7e0e9](https://github.com/Mearman/graphwise/commit/ca7e0e97f362b1349bf7264cad774a06dccda8fe))
+* **expansion:** strengthen HAE integration test assertions with budget constraint ([53d211e](https://github.com/Mearman/graphwise/commit/53d211efad0c8a92b6a71cdf0d7aaccebcea4f1d))
+* **expansion:** strengthen PIPE inter-community path discovery assertions ([923cd05](https://github.com/Mearman/graphwise/commit/923cd0505e931d2c6501946816297d75614e7568))
+* **expansion:** strengthen REACH integration test assertions with budget constraints ([3d162ff](https://github.com/Mearman/graphwise/commit/3d162ffc111fb6750c09675ab7bab988126c4939))
+* **ranking:** add SCALE density comparison assertions for MI variant ([1827c3a](https://github.com/Mearman/graphwise/commit/1827c3a0bbd47fcc9721cfd8acc7caf966bcf3dd))
+* **ranking:** add SPAN MI variant bridge vs within-cluster comparison assertions ([8021a22](https://github.com/Mearman/graphwise/commit/8021a22286183247563e93f78b211b1970e1be71))
+
 ## [1.3.3](https://github.com/Mearman/graphwise/compare/v1.3.2...v1.3.3) (2026-03-24)
 
 ### Documentation
