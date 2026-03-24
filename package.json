@@ -107,7 +107,7 @@
   "author": "Joseph Mearman",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Mearman/graphwise"
+    "url": "git+https://github.com/Mearman/graphwise.git"
   },
   "dependencies": {
     "zod": "^4.3.6"
