@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
       - run: pnpm install --frozen-lockfile
       - uses: actions/cache@v4
         with:
@@ -47,7 +47,7 @@ jobs:
         with:
           node-version: "24"
           # Do NOT set registry-url — it creates an .npmrc that overrides OIDC
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
       - run: pnpm install --frozen-lockfile
       - uses: actions/cache@v4
         with:
