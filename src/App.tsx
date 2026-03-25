@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState, useCallback } from "react";
+import { type ReactNode, useEffect, useCallback } from "react";
 import {
 	MantineProvider,
 	Stack,
@@ -26,6 +26,7 @@ import { useGraphStore } from "./state/graph-store";
 import { useAnimationStore } from "./state/animation-store";
 import { useColumnStore } from "./state/column-store";
 import { useGenerationStore } from "./state/generation-store";
+import { useAppStore } from "./state/app-store";
 import { runAllColumns } from "./engine/column-runner";
 import { loadFixture, fixtureNames } from "./engine/fixture-loader";
 import { generateRandomGraph } from "./engine/random-graph-generator";
@@ -61,14 +62,19 @@ function MainContent(): ReactNode {
 	const setNodeCount = useGenerationStore((state) => state.setNodeCount);
 	const setSeed = useGenerationStore((state) => state.setSeed);
 
-	const [selectedFixture, setSelectedFixture] = useState("three-community");
+	const selectedFixture = useAppStore((state) => state.selectedFixture);
+	const setSelectedFixture = useAppStore((state) => state.setSelectedFixture);
 
-	// Load initial fixture on mount
+	const graphLoadedFromUrl = useGraphStore((state) => state.graphLoadedFromUrl);
+
+	// Load initial fixture on mount (only if not loaded from URL)
 	useEffect(() => {
+		if (graphLoadedFromUrl) return;
+
 		const fixture = loadFixture("three-community");
 		setGraph(fixture.graph, fixture.directed);
 		setSeeds(fixture.seeds);
-	}, [setGraph, setSeeds]);
+	}, [graphLoadedFromUrl, setGraph, setSeeds]);
 
 	// Regenerate random graph when settings change
 	const regenerateRandomGraph = useCallback(() => {
