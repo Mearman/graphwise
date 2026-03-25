@@ -36,9 +36,13 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 	const updateNodePosition = useLayoutStore(
 		(state) => state.updateNodePosition,
 	);
+	const sharedViewport = useLayoutStore((state) => state.viewport);
+	const setViewport = useLayoutStore((state) => state.setViewport);
 
 	// Track which node is being dragged locally to prevent feedback loop
 	const draggedNodeIdRef = useRef<string | null>(null);
+	// Track when user is actively interacting (dragging) to pause viewport sync
+	const isInteractingRef = useRef(false);
 
 	// Effect 1: Element sync — add/remove nodes and edges when graph changes
 	useEffect(() => {
@@ -132,10 +136,12 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			}
 			const node = evt.target;
 			draggedNodeIdRef.current = node.id();
+			isInteractingRef.current = true;
 		};
 
 		const onDragFree = (): void => {
 			draggedNodeIdRef.current = null;
+			isInteractingRef.current = false;
 		};
 
 		cy.on("drag", "node", onDrag);
@@ -175,4 +181,53 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			}
 		});
 	}, [cy, graph, graphVersion, layoutGraphVersion, positions]);
+
+	// Effect 5: Viewport sync — propagate local viewport changes to store
+	useEffect(() => {
+		if (!cy || !graph) {
+			return;
+		}
+
+		const onViewport = (): void => {
+			// Don't sync while actively dragging a node
+			if (isInteractingRef.current) {
+				return;
+			}
+			const zoom = cy.zoom();
+			const pan = cy.pan();
+			setViewport({ zoom, pan: { x: pan.x, y: pan.y } });
+		};
+
+		cy.on("viewport", onViewport);
+
+		return () => {
+			cy.off("viewport", onViewport);
+		};
+	}, [cy, graph, setViewport]);
+
+	// Effect 6: Apply viewport updates from store
+	useEffect(() => {
+		if (!cy || !graph || !sharedViewport) {
+			return;
+		}
+
+		// Don't apply while user is interacting with this instance
+		if (isInteractingRef.current) {
+			return;
+		}
+
+		const currentZoom = cy.zoom();
+		const currentPan = cy.pan();
+		const zoomChanged = currentZoom !== sharedViewport.zoom;
+		const panChanged =
+			currentPan.x !== sharedViewport.pan.x ||
+			currentPan.y !== sharedViewport.pan.y;
+
+		if (zoomChanged || panChanged) {
+			cy.viewport({
+				zoom: sharedViewport.zoom,
+				pan: { x: sharedViewport.pan.x, y: sharedViewport.pan.y },
+			});
+		}
+	}, [cy, graph, sharedViewport]);
 }
