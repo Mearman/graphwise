@@ -3,6 +3,11 @@ import { AdjacencyMapGraph } from "../../graph";
 import type { NodeData, EdgeData } from "../../graph";
 import { jaccard } from "./jaccard";
 import { adamicAdar } from "./adamic-adar";
+import { cosine } from "./cosine";
+import { sorensen } from "./sorensen";
+import { resourceAllocation } from "./resource-allocation";
+import { overlapCoefficient } from "./overlap-coefficient";
+import { hubPromoted } from "./hub-promoted";
 import { scale } from "./scale";
 import { skew } from "./skew";
 import { span } from "./span";
@@ -427,6 +432,11 @@ describe("MI variants", () => {
 		const variants = [
 			{ name: "jaccard", fn: jaccard },
 			{ name: "adamicAdar", fn: adamicAdar },
+			{ name: "cosine", fn: cosine },
+			{ name: "sorensen", fn: sorensen },
+			{ name: "resourceAllocation", fn: resourceAllocation },
+			{ name: "overlapCoefficient", fn: overlapCoefficient },
+			{ name: "hubPromoted", fn: hubPromoted },
 			{ name: "scale", fn: scale },
 			{ name: "skew", fn: skew },
 			{ name: "span", fn: span },

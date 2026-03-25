@@ -26,6 +26,11 @@ export type MIFunction<
 export type MIVariantName =
 	| "jaccard"
 	| "adamic-adar"
+	| "cosine"
+	| "sorensen"
+	| "resource-allocation"
+	| "overlap-coefficient"
+	| "hub-promoted"
 	| "scale"
 	| "skew"
 	| "span"
