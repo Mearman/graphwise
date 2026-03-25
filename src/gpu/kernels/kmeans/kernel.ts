@@ -30,59 +30,49 @@ const KMeansAssignLayout = tgpu.bindGroupLayout({
  *   - Assign to nearest centroid
  *   - Store squared distance
  */
-const kmeansAssignPipeline = tgpu
-	.computeFn(
-		{
-			workgroupSize: [64],
-		},
-		(input: { globalInvocationId: readonly [number, number, number] }) => {
-			"use gpu";
-			const pointIdx = input.globalInvocationId[0] ?? 0;
+const kmeansAssignPipeline = (pointIdx: number): void => {
+	"use gpu";
 
-			if (pointIdx >= KMeansAssignLayout.$.pointCount) {
-				return;
-			}
+	if (pointIdx >= KMeansAssignLayout.$.pointCount) return;
 
-			// Load point coordinates
-			const point = KMeansAssignLayout.$.points[pointIdx];
-			if (point === undefined) {
-				KMeansAssignLayout.$.assignments[pointIdx] = 0;
-				KMeansAssignLayout.$.distances[pointIdx] = 0;
-				return;
-			}
+	// Load point coordinates
+	const point = KMeansAssignLayout.$.points[pointIdx];
+	if (point === undefined) {
+		KMeansAssignLayout.$.assignments[pointIdx] = 0;
+		KMeansAssignLayout.$.distances[pointIdx] = 0;
+		return;
+	}
 
-			const px = point[0] ?? 0;
-			const py = point[1] ?? 0;
-			const pz = point[2] ?? 0;
+	const px = point[0] ?? 0;
+	const py = point[1] ?? 0;
+	const pz = point[2] ?? 0;
 
-			// Find nearest centroid
-			let minDist = 1e30;
-			let minIdx = 0u;
+	// Find nearest centroid
+	let minDist = 1000000000;
+	let minIdx = 0;
 
-			for (let c = 0u; c < KMeansAssignLayout.$.k; c = c + 1u) {
-				const centroid = KMeansAssignLayout.$.centroids[c];
-				if (centroid === undefined) continue;
+	for (let c = 0; c < KMeansAssignLayout.$.k; c = c + 1) {
+		const centroid = KMeansAssignLayout.$.centroids[c];
+		if (centroid === undefined) continue;
 
-				const cx = centroid[0] ?? 0;
-				const cy = centroid[1] ?? 0;
-				const cz = centroid[2] ?? 0;
+		const cx = centroid[0] ?? 0;
+		const cy = centroid[1] ?? 0;
+		const cz = centroid[2] ?? 0;
 
-				const dx = px - cx;
-				const dy = py - cy;
-				const dz = pz - cz;
-				const distSq = dx * dx + dy * dy + dz * dz;
+		const dx = px - cx;
+		const dy = py - cy;
+		const dz = pz - cz;
+		const distSq = dx * dx + dy * dy + dz * dz;
 
-				if (distSq < minDist) {
-					minDist = distSq;
-					minIdx = c;
-				}
-			}
+		if (distSq < minDist) {
+			minDist = distSq;
+			minIdx = c;
+		}
+	}
 
-			KMeansAssignLayout.$.assignments[pointIdx] = minIdx;
-			KMeansAssignLayout.$.distances[pointIdx] = minDist;
-		},
-	)
-	.with(KMeansAssignLayout);
+	KMeansAssignLayout.$.assignments[pointIdx] = minIdx;
+	KMeansAssignLayout.$.distances[pointIdx] = minDist;
+};
 
 /**
  * Dispatch K-means assignment on GPU.
@@ -97,29 +87,29 @@ const kmeansAssignPipeline = tgpu
  */
 export function dispatchKMeansAssign(
 	root: GraphwiseGPURoot,
-	pointsBuffer: TgpuBuffer<(readonly [number, number, number])[]>,
-	centroidsBuffer: TgpuBuffer<(readonly [number, number, number])[]>,
-	assignmentsBuffer: TgpuBuffer<number[]>,
-	distancesBuffer: TgpuBuffer<number[]>,
+	pointsBuffer: any,
+	centroidsBuffer: any,
+	assignmentsBuffer: any,
+	distancesBuffer: any,
 	pointCount: number,
 	k: number,
 ): void {
-	const pipeline = root.with(kmeansAssignPipeline).createPipeline();
+	// Use the project's guarded pipeline pattern
+	const pipeline = root.createGuardedComputePipeline(kmeansAssignPipeline as any);
 
-	const bindGroup = root
-		.createBindGroup(KMeansAssignLayout, {
-			points: pointsBuffer,
-			centroids: centroidsBuffer,
-			assignments: assignmentsBuffer,
-			distances: distancesBuffer,
-			pointCount: pointCount,
-			k: k,
-		})
-		.$usage("uniform");
+	const pairCountBuffer = root.createBuffer(d.u32, pointCount).$usage("uniform");
+	const kBuffer = root.createBuffer(d.u32, k).$usage("uniform");
 
-	pipeline
-		.with(KMeansAssignLayout, bindGroup)
-		.dispatchWorkgroups(Math.ceil(pointCount / 64));
+	const bindGroup = root.createBindGroup(KMeansAssignLayout, {
+		points: pointsBuffer,
+		centroids: centroidsBuffer,
+		assignments: assignmentsBuffer,
+		distances: distancesBuffer,
+		pointCount: pairCountBuffer,
+		k: kBuffer,
+	});
+
+	pipeline.with(bindGroup).dispatchThreads(pointCount);
 }
 
 /**
@@ -129,21 +119,16 @@ export function createKMeansAssignBuffers(
 	root: GraphwiseGPURoot,
 	points: readonly (readonly [number, number, number])[],
 	centroids: readonly (readonly [number, number, number])[],
-): {
-	pointsBuffer: TgpuBuffer<(readonly [number, number, number])[]>;
-	centroidsBuffer: TgpuBuffer<(readonly [number, number, number])[]>;
-	assignmentsBuffer: TgpuBuffer<number[]>;
-	distancesBuffer: TgpuBuffer<number[]>;
-} {
+): any {
 	const pointCount = points.length;
 	const k = centroids.length;
 
 	const pointsBuffer = root
-		.createBuffer(d.arrayOf(d.vec3f, pointCount), points)
+		.createBuffer(d.arrayOf(d.vec3f, pointCount), Array.from(points) as any)
 		.$usage("storage");
 
 	const centroidsBuffer = root
-		.createBuffer(d.arrayOf(d.vec3f, k), centroids)
+		.createBuffer(d.arrayOf(d.vec3f, k), Array.from(centroids) as any)
 		.$usage("storage");
 
 	const assignmentsBuffer = root
