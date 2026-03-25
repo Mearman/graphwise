@@ -1,6 +1,5 @@
 import { type ReactNode } from "react";
 import { AppShell as MantineAppShell, Group, Title, Text } from "@mantine/core";
-import { ModeToggle } from "./ModeToggle";
 import * as styles from "./AppShell.css";
 
 interface AppShellProps {
@@ -11,14 +10,13 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	return (
 		<MantineAppShell header={{ height: 56 }} padding="md">
 			<MantineAppShell.Header className={styles.header}>
-				<Group h="100%" px="md" justify="space-between">
+				<Group h="100%" px="md">
 					<Group gap="sm">
 						<Title order={3}>Graphwise</Title>
 						<Text size="sm" c="dimmed">
 							Interactive Algorithm Visualisation
 						</Text>
 					</Group>
-					<ModeToggle />
 				</Group>
 			</MantineAppShell.Header>
 			<MantineAppShell.Main>{children}</MantineAppShell.Main>

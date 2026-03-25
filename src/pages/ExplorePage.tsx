@@ -1,15 +1,13 @@
-import { Container, Tabs, Stack, Group, Button, Box } from "@mantine/core";
+import { Container, Tabs, Stack, Box } from "@mantine/core";
 import { GraphCanvas } from "../components/graph/GraphCanvas";
 import { PlaybackControls } from "../components/animation/PlaybackControls";
 import { AnimationTimeline } from "../components/animation/AnimationTimeline";
 import { ComparisonPanel } from "../components/comparison/ComparisonPanel";
 import { RankingPanel } from "../components/ranking/RankingPanel";
 import { CopyUrlButton } from "../components/shared/CopyUrlButton";
-import { useTourStore } from "../state/tour-store";
 import { useAnimationStore } from "../state/animation-store";
 
 export function ExplorePage(): React.ReactElement {
-	const setMode = useTourStore((state) => state.setMode);
 	const frames = useAnimationStore((state) => state.frames);
 	const currentFrameIndex = useAnimationStore(
 		(state) => state.currentFrameIndex,
@@ -26,20 +24,9 @@ export function ExplorePage(): React.ReactElement {
 				p="md"
 				style={{ borderBottom: "1px solid var(--mantine-color-gray-2)" }}
 			>
-				<Group justify="space-between">
-					<Group>
-						<Button
-							variant="subtle"
-							size="sm"
-							onClick={() => {
-								setMode("tour");
-							}}
-						>
-							← Back to Tour
-						</Button>
-					</Group>
+				<div style={{ display: "flex", justifyContent: "flex-end" }}>
 					<CopyUrlButton />
-				</Group>
+				</div>
 			</Box>
 
 			<Container size="xl" style={{ flex: 1, overflow: "auto" }}>

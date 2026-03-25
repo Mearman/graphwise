@@ -6,7 +6,6 @@ import {
 	Paper,
 	Text,
 	Group,
-	Button,
 	Select,
 } from "@mantine/core";
 import { theme } from "./theme";
@@ -16,9 +15,7 @@ import { GraphToolbar } from "./components/graph/GraphToolbar";
 import { SeedPicker } from "./components/graph/SeedPicker";
 import { AnimationTimeline } from "./components/animation/AnimationTimeline";
 import { ComparisonPanel } from "./components/comparison/ComparisonPanel";
-import { TourOverlay } from "./components/tour";
 import { useUrlSync } from "./components/app/use-url-sync";
-import { useTourStore } from "./state/tour-store";
 import { useGraphStore } from "./state/graph-store";
 import { useAnimationStore } from "./state/animation-store";
 import {
@@ -43,9 +40,6 @@ function isFixtureName(value: unknown): value is FixtureName {
 }
 
 function MainContent(): ReactNode {
-	const mode = useTourStore((state) => state.mode);
-	const setMode = useTourStore((state) => state.setMode);
-
 	const graph = useGraphStore((state) => state.graph);
 	const seeds = useGraphStore((state) => state.seeds);
 	const setGraph = useGraphStore((state) => state.setGraph);
@@ -71,10 +65,6 @@ function MainContent(): ReactNode {
 		},
 		[setGraph, setSeeds],
 	);
-
-	const handleCompleteTour = useCallback(() => {
-		setMode("explore");
-	}, [setMode]);
 
 	const fixtureOptions = fixtureNames().map((name) => ({
 		value: name,
@@ -131,25 +121,6 @@ function MainContent(): ReactNode {
 					<Stack gap="md">
 						<ComparisonPanel />
 
-						{mode === "tour" ? (
-							<Paper p="sm" withBorder>
-								<Group justify="space-between">
-									<Text size="sm" fw={500}>
-										Tour Mode
-									</Text>
-									<Button
-										size="xs"
-										variant="light"
-										onClick={() => {
-											setMode("explore");
-										}}
-									>
-										Exit Tour
-									</Button>
-								</Group>
-							</Paper>
-						) : null}
-
 						<Paper p="sm" withBorder>
 							<Text size="xs" c="dimmed">
 								{Array.from(graph.nodeIds()).length} nodes, {seeds.length} seeds
@@ -158,8 +129,6 @@ function MainContent(): ReactNode {
 					</Stack>
 				</Grid.Col>
 			</Grid>
-
-			{mode === "tour" ? <TourOverlay onComplete={handleCompleteTour} /> : null}
 		</>
 	);
 }
