@@ -6,7 +6,7 @@ import type {
 } from "../engine/frame-types";
 
 interface AnimationState {
-	/** All captured frames */
+	/** All captured frames (current primary algorithm) */
 	readonly frames: readonly ExpansionAnimationFrame[];
 	/** Timeline events (path discoveries, phase transitions, termination) */
 	readonly events: readonly TimelineEvent[];
@@ -16,10 +16,17 @@ interface AnimationState {
 	readonly isPlaying: boolean;
 	/** Playback speed multiplier (1 = normal, 2 = double, 0.5 = half) */
 	readonly speed: number;
-	/** The selected algorithm name */
+	/** The selected algorithm name (primary) */
 	readonly algorithmName: string;
 
-	/** Load frames from an animation result */
+	/** Per-algorithm captured frames for comparison */
+	readonly algorithmFrames: Readonly<
+		Record<string, readonly ExpansionAnimationFrame[]>
+	>;
+	/** Shared synced frame index used for multi-algorithm playback */
+	readonly syncedFrameIndex: number;
+
+	/** Load frames from an animation result (also stored under algorithmFrames) */
 	readonly loadResult: (result: AnimationResult, algorithmName: string) => void;
 	/** Set current frame index (for scrubbing) */
 	readonly setFrame: (index: number) => void;
@@ -37,6 +44,8 @@ interface AnimationState {
 	readonly reset: () => void;
 	/** Get current frame */
 	readonly currentFrame: () => ExpansionAnimationFrame | undefined;
+	/** Set shared synced frame index for comparison playback */
+	readonly setSyncedFrameIndex: (index: number) => void;
 }
 
 export const useAnimationStore = create<AnimationState>()((set, get) => ({
@@ -47,27 +56,39 @@ export const useAnimationStore = create<AnimationState>()((set, get) => ({
 	speed: 1,
 	algorithmName: "",
 
+	algorithmFrames: {},
+	syncedFrameIndex: 0,
+
 	loadResult: (result, algorithmName) => {
-		set({
+		// Store top-level frames for backward compatibility and also keep
+		// a per-algorithm copy to support comparison views.
+		set((state) => ({
 			frames: result.frames,
 			events: result.events,
 			currentFrameIndex: 0,
 			isPlaying: false,
 			algorithmName,
-		});
+			algorithmFrames: {
+				...state.algorithmFrames,
+				[algorithmName]: result.frames,
+			},
+		}));
 	},
 
 	setFrame: (index) => {
 		const { frames } = get();
 		if (index >= 0 && index < frames.length) {
-			set({ currentFrameIndex: index });
+			set({ currentFrameIndex: index, syncedFrameIndex: index });
 		}
 	},
 
 	stepForward: () => {
 		const { currentFrameIndex, frames } = get();
 		if (currentFrameIndex < frames.length - 1) {
-			set({ currentFrameIndex: currentFrameIndex + 1 });
+			set({
+				currentFrameIndex: currentFrameIndex + 1,
+				syncedFrameIndex: currentFrameIndex + 1,
+			});
 		} else {
 			set({ isPlaying: false });
 		}
@@ -76,7 +97,10 @@ export const useAnimationStore = create<AnimationState>()((set, get) => ({
 	stepBackward: () => {
 		const { currentFrameIndex } = get();
 		if (currentFrameIndex > 0) {
-			set({ currentFrameIndex: currentFrameIndex - 1 });
+			set({
+				currentFrameIndex: currentFrameIndex - 1,
+				syncedFrameIndex: currentFrameIndex - 1,
+			});
 		}
 	},
 
@@ -100,7 +124,13 @@ export const useAnimationStore = create<AnimationState>()((set, get) => ({
 			currentFrameIndex: 0,
 			isPlaying: false,
 			algorithmName: "",
+			algorithmFrames: {},
+			syncedFrameIndex: 0,
 		});
+	},
+
+	setSyncedFrameIndex: (index) => {
+		set({ syncedFrameIndex: index, currentFrameIndex: index });
 	},
 
 	currentFrame: () => {

@@ -53,13 +53,13 @@ export function ComparisonPanel(_props: ComparisonPanelProps): ReactNode {
 
 				loadResults(storeEntries, result.totalDurationMs);
 
-				// Generate animation frames for the first algorithm
-				const firstAlgo = storeEntries.at(0);
-				if (firstAlgo !== undefined) {
-					const info = getAlgorithm(firstAlgo.algorithmName);
+				// Generate animation frames for all selected algorithms so comparison view
+				// can render each algorithm's frames independently.
+				for (const entry of storeEntries) {
+					const info = getAlgorithm(entry.algorithmName);
 					if (info !== undefined) {
 						const animResult = runWithFrameCapture(graph, seeds, info.run);
-						animationLoadResult(animResult, firstAlgo.algorithmName);
+						animationLoadResult(animResult, entry.algorithmName);
 					}
 				}
 			} catch (error) {

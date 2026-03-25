@@ -4,11 +4,23 @@ import { useAnimationStore } from "../../state/animation-store";
 
 export interface UseFrameSyncOptions {
 	readonly cy: Core | null;
+	readonly algorithmName?: string | undefined;
 }
 
 export function useFrameSync(options: UseFrameSyncOptions): void {
-	const { cy } = options;
-	const currentFrame = useAnimationStore((state) => state.currentFrame());
+	const { cy, algorithmName } = options;
+
+	const currentFrame = useAnimationStore((state) => {
+		if (algorithmName !== undefined && algorithmName !== "") {
+			const framesForAlgo = state.algorithmFrames[algorithmName] ?? [];
+			const idx =
+				typeof state.syncedFrameIndex === "number"
+					? state.syncedFrameIndex
+					: state.currentFrameIndex;
+			return framesForAlgo[idx];
+		}
+		return state.currentFrame();
+	});
 
 	useEffect(() => {
 		if (!cy || !currentFrame) {
@@ -58,5 +70,5 @@ export function useFrameSync(options: UseFrameSyncOptions): void {
 				}
 			}
 		}
-	}, [cy, currentFrame]);
+	}, [cy, currentFrame, algorithmName]);
 }

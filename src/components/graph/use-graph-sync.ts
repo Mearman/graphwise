@@ -3,16 +3,17 @@ import type { Core } from "cytoscape";
 import type { AdjacencyMapGraph } from "graphwise/graph";
 import type { Seed } from "graphwise/expansion";
 import { graphToCytoscapeElements } from "../../engine/graph-bridge";
-import { createStyles } from "./cytoscape-styles";
+import { createStyles, type RelaxedStylesheet } from "./cytoscape-styles";
 
 export interface UseGraphSyncOptions {
 	readonly cy: Core | null;
 	readonly graph: AdjacencyMapGraph | null;
 	readonly seeds: readonly Seed[];
+	readonly extraStyles?: readonly RelaxedStylesheet[];
 }
 
 export function useGraphSync(options: UseGraphSyncOptions): void {
-	const { cy, graph, seeds } = options;
+	const { cy, graph, seeds, extraStyles } = options;
 
 	useEffect(() => {
 		if (!cy || !graph) {
@@ -25,9 +26,8 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 		cy.add([...elements.nodes]);
 		cy.add([...elements.edges]);
 
-		// Apply styles - cy.style() accepts unknown[] for JSON stylesheet blocks
 		// Apply styles - cytoscape expects mutable array, so spread readonly result
-		cy.style([...createStyles(graph.directed)]);
+		cy.style([...createStyles(graph.directed), ...(extraStyles ?? [])]);
 
 		cy.layout({
 			name: "cose",
@@ -36,5 +36,5 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			fit: true,
 			padding: 50,
 		}).run();
-	}, [cy, graph, seeds]);
+	}, [cy, graph, seeds, extraStyles]);
 }

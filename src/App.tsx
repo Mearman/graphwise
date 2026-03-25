@@ -1,8 +1,17 @@
-import { type ReactNode } from "react";
-import { MantineProvider, Stack, Paper, Text, Box } from "@mantine/core";
+import { type ReactNode, useState } from "react";
+import {
+	MantineProvider,
+	Stack,
+	Paper,
+	Text,
+	Box,
+	Group,
+	Button,
+} from "@mantine/core";
 import { theme } from "./theme";
 import { AppShell } from "./components/layout/AppShell";
 import { GraphCanvas } from "./components/graph/GraphCanvas";
+import { ComparisonGraphCanvas } from "./components/comparison/ComparisonGraphCanvas";
 import { GraphToolbar } from "./components/graph/GraphToolbar";
 import { AnimationTimeline } from "./components/animation/AnimationTimeline";
 import { StatsOverlay } from "./components/animation/StatsOverlay";
@@ -33,6 +42,11 @@ function MainContent(): ReactNode {
 
 	const entries = useComparisonStore((state) => state.entries);
 	const totalDurationMs = useComparisonStore((state) => state.totalDurationMs);
+	const selectedAlgorithms = useComparisonStore(
+		(state) => state.selectedAlgorithms,
+	);
+
+	const [layoutMode, setLayoutMode] = useState<"single" | "split">("single");
 
 	return (
 		<div
@@ -62,11 +76,40 @@ function MainContent(): ReactNode {
 					withBorder
 					style={{ flex: 1, minHeight: 0, position: "relative" }}
 				>
-					<GraphCanvas />
+					{layoutMode === "single" ? (
+						<GraphCanvas />
+					) : (
+						<ComparisonGraphCanvas algorithms={selectedAlgorithms} />
+					)}
 
 					{/* Canvas Overlays */}
 					<Box style={{ position: "absolute", top: 16, left: 16, zIndex: 100 }}>
 						<GraphToolbar cy={null} />
+					</Box>
+
+					<Box
+						style={{ position: "absolute", top: 16, right: 16, zIndex: 100 }}
+					>
+						<Group>
+							<Button
+								size="xs"
+								variant={layoutMode === "single" ? "filled" : "subtle"}
+								onClick={() => {
+									setLayoutMode("single");
+								}}
+							>
+								Single
+							</Button>
+							<Button
+								size="xs"
+								variant={layoutMode === "split" ? "filled" : "subtle"}
+								onClick={() => {
+									setLayoutMode("split");
+								}}
+							>
+								Compare
+							</Button>
+						</Group>
 					</Box>
 
 					<StatsOverlay />
