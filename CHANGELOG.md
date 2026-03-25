@@ -1,3 +1,9 @@
+## [1.8.1](https://github.com/Mearman/graphwise/compare/v1.8.0...v1.8.1) (2026-03-25)
+
+### Build System
+
+* add expansion, ranking, and extraction module entries ([e08effc](https://github.com/Mearman/graphwise/commit/e08effc4ace930cb9173c6c9b343623c78c6df06))
+
 ## [1.8.0](https://github.com/Mearman/graphwise/compare/v1.7.0...v1.8.0) (2026-03-25)
 
 ### Features
