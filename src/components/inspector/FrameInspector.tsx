@@ -24,6 +24,10 @@ import { useGraphStore } from "../../state/graph-store";
 import { useComparisonStore } from "../../state/comparison-store";
 import {
 	getAlgorithm,
+	getMIVariant,
+	getRankingAlgorithm,
+	getSeedSelectionStrategy,
+	getSubgraphExtractionStrategy,
 	type ExpansionAlgorithmName,
 } from "../../engine/algorithm-registry";
 import { FrontierGauge } from "./FrontierGauge";
@@ -46,7 +50,10 @@ export function FrameInspector(_props: FrameInspectorProps): ReactNode {
 	const graph = useGraphStore((state) => state.graph);
 
 	const entries = useComparisonStore((state) => state.entries);
+	const seedEntries = useComparisonStore((state) => state.seedEntries);
 	const miEntries = useComparisonStore((state) => state.miEntries);
+	const rankingEntries = useComparisonStore((state) => state.rankingEntries);
+	const subgraphEntries = useComparisonStore((state) => state.subgraphEntries);
 	const comparisonStage = useComparisonStore((state) => state.comparisonStage);
 	const totalDurationMs = useComparisonStore((state) => state.totalDurationMs);
 
@@ -74,6 +81,20 @@ export function FrameInspector(_props: FrameInspectorProps): ReactNode {
 	const activeFrontier: 0 | 1 = currentFrame.activeFrontier === 1 ? 1 : 0;
 	const sourceSize = currentFrame.frontierSizes[0] ?? 0;
 	const targetSize = currentFrame.frontierSizes[1] ?? 0;
+	const comparisonSummary = getComparisonSummary({
+		comparisonStage,
+		seedEntries,
+		miEntries,
+		rankingEntries,
+		subgraphEntries,
+		totalDurationMs,
+	});
+	const hasComparisonResults =
+		entries.length > 0 ||
+		(comparisonStage === "mi" && miEntries.length > 0) ||
+		(comparisonStage === "seed-selection" && seedEntries.length > 0) ||
+		(comparisonStage === "ranking" && rankingEntries.length > 0) ||
+		(comparisonStage === "subgraph-extraction" && subgraphEntries.length > 0);
 
 	return (
 		<Stack gap="md">
@@ -263,19 +284,39 @@ export function FrameInspector(_props: FrameInspectorProps): ReactNode {
 						)}
 					</ActionIcon>
 				</Group>
+				{comparisonSummary ? (
+					<Paper p="xs" mt="xs" bg="gray.0" withBorder>
+						<Stack gap={4}>
+							<Group justify="space-between">
+								<Text size="xs" fw={500}>
+									{comparisonSummary.title}
+								</Text>
+								<Text size="xs" c="dimmed" ff="monospace">
+									{comparisonSummary.durationLabel}
+								</Text>
+							</Group>
+							{comparisonSummary.metrics.map((metric) => (
+								<Group key={metric.label} justify="space-between" wrap="nowrap">
+									<Text size="xs" c="dimmed">
+										{metric.label}
+									</Text>
+									<Text size="xs" ff="monospace" ta="right">
+										{metric.value}
+									</Text>
+								</Group>
+							))}
+						</Stack>
+					</Paper>
+				) : null}
 				<Collapse in={showComparison}>
 					<Box mt="xs">
-						{entries.length > 0 ? (
+						{hasComparisonResults ? (
 							<ComparisonTable
 								entries={entries}
+								seedEntries={seedEntries}
 								miEntries={miEntries}
-								comparisonStage={comparisonStage}
-								totalDurationMs={totalDurationMs}
-							/>
-						) : comparisonStage === "mi" && miEntries.length > 0 ? (
-							<ComparisonTable
-								entries={entries}
-								miEntries={miEntries}
+								rankingEntries={rankingEntries}
+								subgraphEntries={subgraphEntries}
 								comparisonStage={comparisonStage}
 								totalDurationMs={totalDurationMs}
 							/>
@@ -315,4 +356,199 @@ function isExpansionAlgorithmName(
 		"dfs-priority",
 	];
 	return validNames.includes(value);
+}
+
+interface ComparisonSummaryMetric {
+	readonly label: string;
+	readonly value: string;
+}
+
+interface ComparisonSummaryData {
+	readonly title: string;
+	readonly durationLabel: string;
+	readonly metrics: readonly ComparisonSummaryMetric[];
+}
+
+type ComparisonStateSnapshot = ReturnType<typeof useComparisonStore.getState>;
+
+interface ComparisonSummaryInput {
+	readonly comparisonStage: ComparisonStateSnapshot["comparisonStage"];
+	readonly seedEntries: ComparisonStateSnapshot["seedEntries"];
+	readonly miEntries: ComparisonStateSnapshot["miEntries"];
+	readonly rankingEntries: ComparisonStateSnapshot["rankingEntries"];
+	readonly subgraphEntries: ComparisonStateSnapshot["subgraphEntries"];
+	readonly totalDurationMs: number;
+}
+
+function getComparisonSummary(
+	input: ComparisonSummaryInput,
+): ComparisonSummaryData | null {
+	const durationLabel = `Total ${input.totalDurationMs.toFixed(1)}ms`;
+
+	if (input.comparisonStage === "seed-selection") {
+		if (input.seedEntries.length === 0) {
+			return null;
+		}
+
+		const sorted = [...input.seedEntries].sort(
+			(a, b) =>
+				b.normalised.nodesVisitedPerSeed - a.normalised.nodesVisitedPerSeed ||
+				a.strategyName.localeCompare(b.strategyName),
+		);
+		const [top] = sorted;
+		if (!top) {
+			return null;
+		}
+		const topLabel =
+			getSeedSelectionStrategy(top.strategyName)?.label ?? top.strategyName;
+		const averagePathsPerSeed =
+			sorted.reduce(
+				(sum, entry) => sum + entry.normalised.pathsFoundPerSeed,
+				0,
+			) / sorted.length;
+		const largestSeedSet = Math.max(
+			...sorted.map((entry) => entry.derivedSeeds.length),
+		);
+
+		return {
+			title: `Seed selection snapshot (${sorted.length.toString()})`,
+			durationLabel,
+			metrics: [
+				{
+					label: "Top strategy",
+					value: `${topLabel} (${top.normalised.nodesVisitedPerSeed.toFixed(2)} nodes/seed)`,
+				},
+				{
+					label: "Avg paths/seed",
+					value: averagePathsPerSeed.toFixed(2),
+				},
+				{
+					label: "Largest seed set",
+					value: largestSeedSet.toString(),
+				},
+			],
+		};
+	}
+
+	if (input.comparisonStage === "ranking") {
+		if (input.rankingEntries.length === 0) {
+			return null;
+		}
+
+		const bySalience = [...input.rankingEntries].sort(
+			(a, b) => b.meanSalience - a.meanSalience,
+		);
+		const byTime = [...input.rankingEntries].sort(
+			(a, b) => a.durationMs - b.durationMs,
+		);
+		const [best] = bySalience;
+		const [fastest] = byTime;
+		if (!best || !fastest) {
+			return null;
+		}
+		const bestLabel =
+			getRankingAlgorithm(best.rankingAlgorithmName)?.label ??
+			best.rankingAlgorithmName;
+		const fastestLabel =
+			getRankingAlgorithm(fastest.rankingAlgorithmName)?.label ??
+			fastest.rankingAlgorithmName;
+		const mostPaths = Math.max(
+			...input.rankingEntries.map((entry) => entry.pathsCount),
+		);
+
+		return {
+			title: `Ranking snapshot (${input.rankingEntries.length.toString()})`,
+			durationLabel,
+			metrics: [
+				{
+					label: "Best mean salience",
+					value: `${bestLabel} (${best.meanSalience.toFixed(4)})`,
+				},
+				{
+					label: "Most paths",
+					value: mostPaths.toString(),
+				},
+				{
+					label: "Fastest runtime",
+					value: `${fastestLabel} (${fastest.durationMs.toFixed(1)}ms)`,
+				},
+			],
+		};
+	}
+
+	if (input.comparisonStage === "subgraph-extraction") {
+		if (input.subgraphEntries.length === 0) {
+			return null;
+		}
+
+		const bySalience = [...input.subgraphEntries].sort(
+			(a, b) => b.meanSalience - a.meanSalience,
+		);
+		const byRetention = [...input.subgraphEntries].sort(
+			(a, b) => b.retentionRatio - a.retentionRatio,
+		);
+		const [bestSalience] = bySalience;
+		const [bestRetention] = byRetention;
+		if (!bestSalience || !bestRetention) {
+			return null;
+		}
+		const salienceLabel =
+			getSubgraphExtractionStrategy(bestSalience.strategyName)?.label ??
+			bestSalience.strategyName;
+		const retentionLabel =
+			getSubgraphExtractionStrategy(bestRetention.strategyName)?.label ??
+			bestRetention.strategyName;
+		const maxExtractedPaths = Math.max(
+			...input.subgraphEntries.map((entry) => entry.extractedPathsCount),
+		);
+
+		return {
+			title: `Subgraph snapshot (${input.subgraphEntries.length.toString()})`,
+			durationLabel,
+			metrics: [
+				{
+					label: "Best salience",
+					value: `${salienceLabel} (${bestSalience.meanSalience.toFixed(4)})`,
+				},
+				{
+					label: "Best retention",
+					value: `${retentionLabel} (${(bestRetention.retentionRatio * 100).toFixed(1)}%)`,
+				},
+				{
+					label: "Max extracted paths",
+					value: maxExtractedPaths.toString(),
+				},
+			],
+		};
+	}
+
+	if (input.comparisonStage === "mi") {
+		if (input.miEntries.length === 0) {
+			return null;
+		}
+
+		const [best] = [...input.miEntries].sort(
+			(a, b) => b.meanSalience - a.meanSalience,
+		);
+		if (!best) {
+			return null;
+		}
+		const variantLabel = getMIVariant(best.variant)?.label ?? best.variant;
+		return {
+			title: `MI snapshot (${input.miEntries.length.toString()})`,
+			durationLabel,
+			metrics: [
+				{
+					label: "Top variant",
+					value: `${variantLabel} (${best.meanSalience.toFixed(4)})`,
+				},
+				{
+					label: "Paths",
+					value: best.pathsCount.toString(),
+				},
+			],
+		};
+	}
+
+	return null;
 }
