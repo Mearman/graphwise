@@ -27,8 +27,10 @@ const SeedSchema = z.object({
 
 const ColumnConfigSchema = z.object({
 	id: z.string().describe("Column ID"),
-	a: z.string().describe("Expansion algorithm"),
+	a: z.string().optional().describe("Expansion algorithm"),
 	sk: z.string().optional().describe("Sort key (ranking)"),
+	mi: z.string().optional().describe("MI variant (jaccard, etc.)"),
+	ra: z.string().optional().describe("Ranking algorithm (parse, etc.)"),
 });
 
 const GraphSchema = z.object({
@@ -57,6 +59,13 @@ const SerialisedStateV2 = defineSchema(
 		c: z.array(ColumnConfigSchema).describe("Column configurations"),
 		f: z.number().optional().describe("Current animation frame index"),
 		vm: z.string().optional().describe("View mode (columns or overlay)"),
+		// Application state
+		fx: z.string().optional().describe("Selected fixture name"),
+		nc: z.number().optional().describe("Node count for random graphs"),
+		gs: z.number().optional().describe("Generation seed for random graphs"),
+		ze: z.boolean().optional().describe("Zoom enabled"),
+		pe: z.boolean().optional().describe("Pan enabled"),
+		sp: z.number().optional().describe("Playback speed"),
 	}),
 );
 
@@ -106,8 +115,11 @@ function migrateV1ToV2(
 	};
 }
 
-/** Deserialise state from URL hash */
-export function deserialiseFromHash(): SerialisedState | null {
+/** V2 state type (the current format) */
+export type SerialisedStateV2Type = z.infer<typeof SerialisedStateV2>;
+
+/** Deserialise state from URL hash (always returns V2 format) */
+export function deserialiseFromHash(): SerialisedStateV2Type | null {
 	const hash = window.location.hash;
 	if (!hash.startsWith("#data=")) return null;
 	const encoded = hash.slice("#data=".length);
