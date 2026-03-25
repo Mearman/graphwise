@@ -1,3 +1,23 @@
+## [1.6.0](https://github.com/Mearman/graphwise/compare/v1.5.2...v1.6.0) (2026-03-25)
+
+### Features
+
+* **expansion:** add generator coroutine protocol and sync/async runners ([0cc31ca](https://github.com/Mearman/graphwise/commit/0cc31ca3270e80afd24ecf1fe385782d111d6ca1))
+* **graph:** add AsyncReadableGraph interface ([d07d629](https://github.com/Mearman/graphwise/commit/d07d62944b11b26def90381ff8168d339e6f9e73))
+* **utils:** add wrapAsync test helper for AsyncReadableGraph ([6eb2d86](https://github.com/Mearman/graphwise/commit/6eb2d860e7e2f02a4ba0b26b5b672756490e096f))
+
+### Documentation
+
+* **graph:** add expansion baseline and MI baseline tables to README ([63bb8fd](https://github.com/Mearman/graphwise/commit/63bb8fd66f9a73283e7ca384ec043d01f3d952e7))
+
+### Tests
+
+* **graph:** add AsyncReadableGraph unit tests via wrapAsync ([2102f32](https://github.com/Mearman/graphwise/commit/2102f32bb5028db26264fd30b034932f0f99267f))
+
+### Miscellaneous Chores
+
+* **utils:** extend lint-staged to js, md, and json files ([f155869](https://github.com/Mearman/graphwise/commit/f1558695a89fd4f2e23b19f4c42d1d6be3d431ea))
+
 ## [1.5.2](https://github.com/Mearman/graphwise/compare/v1.5.1...v1.5.2) (2026-03-25)
 
 ### Tests
