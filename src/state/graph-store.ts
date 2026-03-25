@@ -33,6 +33,8 @@ interface GraphState {
 	} | null;
 	/** Version counter for re-render triggers */
 	readonly version: number;
+	/** Whether graph was loaded from URL (prevents default fixture load) */
+	readonly graphLoadedFromUrl: boolean;
 
 	/** Replace the entire graph */
 	readonly setGraph: (graph: AdjacencyMapGraph, directed: boolean) => void;
@@ -64,6 +66,8 @@ interface GraphState {
 	) => void;
 	/** Reset to empty graph */
 	readonly reset: () => void;
+	/** Mark that graph was loaded from URL */
+	readonly setGraphLoadedFromUrl: (loaded: boolean) => void;
 }
 
 function createEmptyGraph(): AdjacencyMapGraph {
@@ -77,6 +81,7 @@ export const useGraphStore = create<GraphState>()((set, get) => ({
 	selectedNode: null,
 	selectedEdge: null,
 	version: 0,
+	graphLoadedFromUrl: false,
 
 	setGraph: (graph, directed) => {
 		set({ graph, directed, version: get().version + 1 });
@@ -203,6 +208,11 @@ export const useGraphStore = create<GraphState>()((set, get) => ({
 			selectedNode: null,
 			selectedEdge: null,
 			version: 0,
+			graphLoadedFromUrl: false,
 		});
+	},
+
+	setGraphLoadedFromUrl: (loaded) => {
+		set({ graphLoadedFromUrl: loaded });
 	},
 }));
