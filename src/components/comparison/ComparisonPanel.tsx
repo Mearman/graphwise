@@ -7,7 +7,13 @@ import {
 	type ComparisonEntry,
 } from "../../state/comparison-store";
 import { useGraphStore } from "../../state/graph-store";
+import { useAnimationStore } from "../../state/animation-store";
 import { runComparison } from "../../engine/comparison-runner";
+import { runWithFrameCapture } from "../../engine/animation-runner";
+import {
+	getAlgorithm,
+	type ExpansionAlgorithmName,
+} from "../../engine/algorithm-registry";
 
 export type ComparisonPanelProps = Record<string, never>;
 
@@ -26,6 +32,8 @@ export function ComparisonPanel(_props: ComparisonPanelProps): ReactNode {
 	const graph = useGraphStore((state) => state.graph);
 	const seeds = useGraphStore((state) => state.seeds);
 
+	const animationLoadResult = useAnimationStore((state) => state.loadResult);
+
 	const handleRunComparison = useCallback(() => {
 		if (selectedAlgorithms.length === 0) return;
 
@@ -43,17 +51,45 @@ export function ComparisonPanel(_props: ComparisonPanelProps): ReactNode {
 				}));
 
 				loadResults(storeEntries, result.totalDurationMs);
+
+				// Generate animation frames for the first algorithm
+				const firstAlgo = storeEntries.at(0);
+				if (firstAlgo !== undefined) {
+					const info = getAlgorithm(firstAlgo.algorithmName);
+					if (info !== undefined) {
+						const animResult = runWithFrameCapture(graph, seeds, info.run);
+						animationLoadResult(animResult, firstAlgo.algorithmName);
+					}
+				}
 			} catch (error) {
 				console.error("Comparison failed:", error);
 				setRunning(false);
 			}
 		}, 10);
-	}, [selectedAlgorithms, graph, seeds, setRunning, loadResults]);
+	}, [
+		selectedAlgorithms,
+		graph,
+		seeds,
+		setRunning,
+		loadResults,
+		animationLoadResult,
+	]);
 
 	const handleReset = useCallback(() => {
 		reset();
 		clearSelection();
 	}, [reset, clearSelection]);
+
+	const handleReplay = useCallback(
+		(algorithmName: ExpansionAlgorithmName) => {
+			const info = getAlgorithm(algorithmName);
+			if (info === undefined) return;
+
+			const animResult = runWithFrameCapture(graph, seeds, info.run);
+			animationLoadResult(animResult, algorithmName);
+		},
+		[graph, seeds, animationLoadResult],
+	);
 
 	const canRun = selectedAlgorithms.length > 0 && !isRunning;
 
@@ -94,6 +130,7 @@ export function ComparisonPanel(_props: ComparisonPanelProps): ReactNode {
 						<ComparisonTable
 							entries={entries}
 							totalDurationMs={totalDurationMs}
+							onReplay={handleReplay}
 						/>
 					</>
 				) : null}
