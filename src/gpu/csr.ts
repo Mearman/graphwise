@@ -6,8 +6,10 @@
  * in three arrays: row offsets, column indices, and optional values.
  */
 
+import { d, type TgpuBuffer } from "typegpu";
 import type { NodeId, Direction, NodeData, EdgeData } from "../graph/types";
 import type { ReadableGraph } from "../graph";
+import type { GraphwiseGPURoot } from "./root";
 
 /**
  * CSR matrix representation of a graph adjacency structure.
@@ -51,17 +53,18 @@ export interface CSRGraph {
 }
 
 /**
- * Group of GPU buffers holding a CSR matrix.
+ * Group of TypeGPU typed buffers holding a CSR matrix.
  *
- * Each buffer is created with appropriate usage flags for compute operations.
+ * Uses TypeGPU's typed buffer API for type-safe GPU computation.
+ * Buffers are created with storage usage for compute operations.
  */
-export interface GPUBufferGroup {
-	/** Buffer containing rowOffsets data */
-	readonly rowOffsets: GPUBuffer;
-	/** Buffer containing colIndices data */
-	readonly colIndices: GPUBuffer;
-	/** Buffer containing values data (optional) */
-	readonly values?: GPUBuffer;
+export interface TypedBufferGroup {
+	/** Buffer containing rowOffsets data (u32 array) */
+	readonly rowOffsets: TgpuBuffer<ReturnType<typeof d.arrayOf<typeof d.u32>>>;
+	/** Buffer containing colIndices data (u32 array) */
+	readonly colIndices: TgpuBuffer<ReturnType<typeof d.arrayOf<typeof d.u32>>>;
+	/** Buffer containing values data (f32 array, optional) */
+	readonly values?: TgpuBuffer<ReturnType<typeof d.arrayOf<typeof d.f32>>>;
 	/** Number of nodes */
 	readonly nodeCount: number;
 	/** Number of edges */
@@ -158,48 +161,53 @@ export function graphToCSR<N extends NodeData, E extends EdgeData>(
 }
 
 /**
- * Create GPU buffers from a CSR matrix.
+ * Create TypeGPU typed buffers from a CSR matrix.
  *
- * Buffers are created with:
- * - rowOffsets/colIndices: STORAGE | COPY_DST
- * - values: STORAGE | COPY_DST (if present)
+ * Uses TypeGPU's typed buffer API for type-safe GPU computation.
+ * Buffers are created with storage usage for compute operations.
  *
- * @param device - GPU device to create buffers on
+ * @param root - TypeGPU root instance
  * @param csr - CSR matrix to upload
- * @returns GPU buffer group
+ * @returns Typed buffer group
+ *
+ * @example
+ * ```typescript
+ * import { initGPU, csrToTypedBuffers, graphToCSR } from "graphwise/gpu";
+ *
+ * const root = await initGPU();
+ * const { csr } = graphToCSR(graph);
+ * const buffers = csrToTypedBuffers(root, csr);
+ *
+ * // Read data back to CPU
+ * const rowOffsets = await buffers.rowOffsets.read();
+ * console.log(rowOffsets); // Uint32Array
+ * ```
  */
-export function csrToGPUBuffers(
-	device: GPUDevice,
+export function csrToTypedBuffers(
+	root: GraphwiseGPURoot,
 	csr: CSRMatrix,
-): GPUBufferGroup {
-	// Row offsets buffer
-	const rowOffsetsBuffer = device.createBuffer({
-		size: csr.rowOffsets.byteLength,
-		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-		mappedAtCreation: false,
-	});
-	device.queue.writeBuffer(rowOffsetsBuffer, 0, csr.rowOffsets);
+): TypedBufferGroup {
+	// Convert typed arrays to regular arrays for TypeGPU
+	const rowOffsetsArray = Array.from(csr.rowOffsets);
+	const colIndicesArray = Array.from(csr.colIndices);
 
-	// Column indices buffer
-	const colIndicesBuffer = device.createBuffer({
-		size: csr.colIndices.byteLength,
-		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-		mappedAtCreation: false,
-	});
-	device.queue.writeBuffer(colIndicesBuffer, 0, csr.colIndices);
+	// Row offsets buffer (u32 array)
+	const rowOffsetsBuffer = root
+		.createBuffer(d.arrayOf(d.u32, csr.rowOffsets.length), rowOffsetsArray)
+		.$usage("storage");
 
-	// Values buffer (optional)
-	let valuesBuffer: GPUBuffer | undefined;
+	// Column indices buffer (u32 array)
+	const colIndicesBuffer = root
+		.createBuffer(d.arrayOf(d.u32, csr.colIndices.length), colIndicesArray)
+		.$usage("storage");
+
+	// Values buffer (f32 array, optional)
 	if (csr.values !== undefined) {
-		valuesBuffer = device.createBuffer({
-			size: csr.values.byteLength,
-			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-			mappedAtCreation: false,
-		});
-		device.queue.writeBuffer(valuesBuffer, 0, csr.values);
-	}
+		const valuesArray = Array.from(csr.values);
+		const valuesBuffer = root
+			.createBuffer(d.arrayOf(d.f32, csr.values.length), valuesArray)
+			.$usage("storage");
 
-	if (valuesBuffer !== undefined) {
 		return {
 			rowOffsets: rowOffsetsBuffer,
 			colIndices: colIndicesBuffer,
@@ -208,47 +216,11 @@ export function csrToGPUBuffers(
 			edgeCount: csr.edgeCount,
 		};
 	}
+
 	return {
 		rowOffsets: rowOffsetsBuffer,
 		colIndices: colIndicesBuffer,
 		nodeCount: csr.nodeCount,
 		edgeCount: csr.edgeCount,
 	};
-}
-
-/**
- * Create a result buffer for reading compute output.
- *
- * @param device - GPU device
- * @param byteLength - Size of the buffer in bytes
- * @returns GPU buffer configured for map reading
- */
-export function createResultBuffer(
-	device: GPUDevice,
-	byteLength: number,
-): GPUBuffer {
-	return device.createBuffer({
-		size: byteLength,
-		usage:
-			GPUBufferUsage.STORAGE |
-			GPUBufferUsage.COPY_SRC |
-			GPUBufferUsage.MAP_READ,
-	});
-}
-
-/**
- * Read data from a GPU buffer to CPU.
- *
- * @param device - GPU device
- * @param buffer - Buffer to read from
- * @returns ArrayBuffer containing the buffer data
- */
-export async function readBufferToCPU(
-	device: GPUDevice,
-	buffer: GPUBuffer,
-): Promise<ArrayBuffer> {
-	await buffer.mapAsync(GPUMapMode.READ);
-	const data = buffer.getMappedRange().slice(0);
-	buffer.unmap();
-	return data;
 }

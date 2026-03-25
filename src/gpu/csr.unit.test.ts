@@ -1,41 +1,9 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import {
-	graphToCSR,
-	csrToGPUBuffers,
-	createResultBuffer,
-	readBufferToCPU,
-	type CSRMatrix,
-} from "./csr";
+import { describe, it, expect } from "vitest";
+import { graphToCSR, csrToTypedBuffers, type CSRMatrix } from "./csr";
+import { initGPU } from "./root";
+import { isWebGPUAvailable } from "./detect";
 import { AdjacencyMapGraph } from "../graph/adjacency-map";
 import type { NodeData, EdgeData } from "../graph/types";
-
-// Mock GPUBufferUsage global for Node.js test environment
-Object.defineProperty(globalThis, "GPUBufferUsage", {
-	value: {
-		MAP_READ: 1,
-		MAP_WRITE: 2,
-		COPY_SRC: 4,
-		COPY_DST: 8,
-		INDEX: 16,
-		VERTEX: 32,
-		UNIFORM: 64,
-		STORAGE: 128,
-		INDIRECT: 256,
-		QUERY_RESOLVE: 512,
-	},
-	configurable: true,
-	writable: true,
-});
-
-// Mock GPUMapMode global for Node.js test environment
-Object.defineProperty(globalThis, "GPUMapMode", {
-	value: {
-		READ: 1,
-		WRITE: 2,
-	},
-	configurable: true,
-	writable: true,
-});
 
 interface TestNode extends NodeData {
 	readonly label: string;
@@ -43,67 +11,6 @@ interface TestNode extends NodeData {
 
 interface TestEdge extends EdgeData {
 	readonly weight: number;
-}
-
-// Mock GPUBuffer for environments without WebGPU
-class MockGPUBuffer {
-	public size: number;
-	public usage: number;
-	public mappedAtCreation: boolean;
-	public mapped = false;
-	private data: ArrayBuffer | null = null;
-
-	constructor(descriptor: GPUBufferDescriptor) {
-		this.size = descriptor.size;
-		this.usage = descriptor.usage;
-		this.mappedAtCreation = descriptor.mappedAtCreation ?? false;
-	}
-
-	mapAsync(): Promise<void> {
-		this.mapped = true;
-		return Promise.resolve();
-	}
-
-	getMappedRange(): ArrayBuffer {
-		if (!this.mapped) {
-			throw new Error("Buffer is not mapped");
-		}
-		this.data = new ArrayBuffer(this.size);
-		return this.data;
-	}
-
-	unmap(): void {
-		this.mapped = false;
-	}
-}
-
-// Mock GPUQueue
-class MockGPUQueue {
-	writeBuffer(
-		buffer: MockGPUBuffer,
-		_offset: number,
-		data: BufferSource,
-	): void {
-		// Store the data reference for verification
-		// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-		(buffer as MockGPUBuffer & { writtenData: BufferSource }).writtenData =
-			data;
-	}
-}
-
-// Mock GPUDevice
-function createMockDevice(): GPUDevice {
-	const queue = new MockGPUQueue();
-	const device = {
-		queue,
-		createBuffer: (descriptor: GPUBufferDescriptor): GPUBuffer => {
-			const buffer = new MockGPUBuffer(descriptor);
-			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			return buffer as unknown as GPUBuffer;
-		},
-	};
-	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-	return device as unknown as GPUDevice;
 }
 
 describe("CSR conversion", () => {
@@ -397,193 +304,185 @@ describe("CSR conversion", () => {
 		});
 	});
 
-	describe("csrToGPUBuffers", () => {
-		let mockDevice: GPUDevice;
-
-		beforeEach(() => {
-			mockDevice = createMockDevice();
-		});
-
-		it("creates buffers for row offsets and column indices", () => {
-			const csr: CSRMatrix = {
-				rowOffsets: new Uint32Array([0, 2, 3, 3]),
-				colIndices: new Uint32Array([1, 2, 2]),
-				nodeCount: 3,
-				edgeCount: 3,
-			};
-
-			const result = csrToGPUBuffers(mockDevice, csr);
-			expect(result.rowOffsets).toBeDefined();
-			expect(result.colIndices).toBeDefined();
-			expect(result.nodeCount).toBe(3);
-			expect(result.edgeCount).toBe(3);
-		});
-
-		it("creates values buffer when values are present", () => {
-			const csr: CSRMatrix = {
-				rowOffsets: new Uint32Array([0, 1]),
-				colIndices: new Uint32Array([0]),
-				values: new Float32Array([1.5]),
-				nodeCount: 1,
-				edgeCount: 1,
-			};
-
-			const result = csrToGPUBuffers(mockDevice, csr);
-
-			expect(result.values).toBeDefined();
-		});
-
-		it("omits values buffer when values are undefined", () => {
-			const csr: CSRMatrix = {
-				rowOffsets: new Uint32Array([0, 1]),
-				colIndices: new Uint32Array([0]),
-				nodeCount: 1,
-				edgeCount: 1,
-			};
-
-			const result = csrToGPUBuffers(mockDevice, csr);
-
-			expect(result.values).toBeUndefined();
-		});
-
-		it("sets correct buffer sizes", () => {
-			const csr: CSRMatrix = {
-				rowOffsets: new Uint32Array([0, 2, 4]),
-				colIndices: new Uint32Array([1, 2, 0, 1]),
-				values: new Float32Array([1, 2, 3, 4]),
-				nodeCount: 2,
-				edgeCount: 4,
-			};
-
-			const result = csrToGPUBuffers(mockDevice, csr);
-
-			// Uint32Array = 4 bytes per element
-			const expectedRowOffsetsSize = 3 * 4; // 12 bytes
-			const expectedColIndicesSize = 4 * 4; // 16 bytes
-			// Float32Array = 4 bytes per element
-			const expectedValuesSize = 4 * 4; // 16 bytes
-
-			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			const rowOffsetsBuffer = result.rowOffsets as unknown as MockGPUBuffer;
-			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			const colIndicesBuffer = result.colIndices as unknown as MockGPUBuffer;
-			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			const valuesBuffer = result.values as unknown as
-				| MockGPUBuffer
-				| undefined;
-
-			expect(rowOffsetsBuffer.size).toBe(expectedRowOffsetsSize);
-			expect(colIndicesBuffer.size).toBe(expectedColIndicesSize);
-			if (valuesBuffer) {
-				expect(valuesBuffer.size).toBe(expectedValuesSize);
+	describe("csrToTypedBuffers", () => {
+		it("throws if WebGPU is unavailable", async () => {
+			const available = isWebGPUAvailable();
+			if (!available) {
+				await expect(initGPU()).rejects.toThrow(/WebGPU unavailable/);
 			}
 		});
 
-		it("returns correct GPUBufferGroup structure", () => {
-			const csr: CSRMatrix = {
-				rowOffsets: new Uint32Array([0, 0]),
-				colIndices: new Uint32Array(),
-				nodeCount: 1,
-				edgeCount: 0,
-			};
+		describe("with WebGPU available", () => {
+			it("creates typed buffers for row offsets and column indices", async () => {
+				const available = isWebGPUAvailable();
+				if (!available) {
+					return; // Skip test
+				}
 
-			const result = csrToGPUBuffers(mockDevice, csr);
-			expect("rowOffsets" in result).toBe(true);
-			expect("colIndices" in result).toBe(true);
-			expect("nodeCount" in result).toBe(true);
-			expect("edgeCount" in result).toBe(true);
-		});
-	});
+				const root = await initGPU();
+				const csr: CSRMatrix = {
+					rowOffsets: new Uint32Array([0, 2, 3, 3]),
+					colIndices: new Uint32Array([1, 2, 2]),
+					nodeCount: 3,
+					edgeCount: 3,
+				};
 
-	describe("createResultBuffer", () => {
-		let mockDevice: GPUDevice;
+				const result = csrToTypedBuffers(root, csr);
 
-		beforeEach(() => {
-			mockDevice = createMockDevice();
-		});
+				expect(result.rowOffsets).toBeDefined();
+				expect(result.colIndices).toBeDefined();
+				expect(result.nodeCount).toBe(3);
+				expect(result.edgeCount).toBe(3);
 
-		it("creates a buffer with the specified size", () => {
-			const byteLength = 1024;
-			const buffer = createResultBuffer(mockDevice, byteLength);
-			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			const mockBuffer = buffer as unknown as MockGPUBuffer;
+				root.destroy();
+			});
 
-			expect(mockBuffer.size).toBe(byteLength);
-		});
+			it("creates values buffer when values are present", async () => {
+				const available = isWebGPUAvailable();
+				if (!available) {
+					return; // Skip test
+				}
 
-		it("creates a buffer with correct usage flags", () => {
-			const buffer = createResultBuffer(mockDevice, 256);
-			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			const mockBuffer = buffer as unknown as MockGPUBuffer;
+				const root = await initGPU();
+				const csr: CSRMatrix = {
+					rowOffsets: new Uint32Array([0, 1]),
+					colIndices: new Uint32Array([0]),
+					values: new Float32Array([1.5]),
+					nodeCount: 1,
+					edgeCount: 1,
+				};
 
-			// STORAGE | COPY_SRC | MAP_READ
-			const expectedUsage =
-				GPUBufferUsage.STORAGE |
-				GPUBufferUsage.COPY_SRC |
-				GPUBufferUsage.MAP_READ;
+				const result = csrToTypedBuffers(root, csr);
 
-			expect(mockBuffer.usage).toBe(expectedUsage);
-		});
+				expect(result.values).toBeDefined();
 
-		it("handles zero-size buffer", () => {
-			const buffer = createResultBuffer(mockDevice, 0);
-			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			const mockBuffer = buffer as unknown as MockGPUBuffer;
+				root.destroy();
+			});
 
-			expect(mockBuffer.size).toBe(0);
-		});
+			it("omits values buffer when values are undefined", async () => {
+				const available = isWebGPUAvailable();
+				if (!available) {
+					return; // Skip test
+				}
 
-		it("handles large buffer sizes", () => {
-			const byteLength = 16 * 1024 * 1024; // 16 MB
-			const buffer = createResultBuffer(mockDevice, byteLength);
-			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			const mockBuffer = buffer as unknown as MockGPUBuffer;
+				const root = await initGPU();
+				const csr: CSRMatrix = {
+					rowOffsets: new Uint32Array([0, 1]),
+					colIndices: new Uint32Array([0]),
+					nodeCount: 1,
+					edgeCount: 1,
+				};
 
-			expect(mockBuffer.size).toBe(byteLength);
-		});
-	});
+				const result = csrToTypedBuffers(root, csr);
 
-	describe("readBufferToCPU", () => {
-		let mockDevice: GPUDevice;
+				expect(result.values).toBeUndefined();
 
-		beforeEach(() => {
-			mockDevice = createMockDevice();
-		});
+				root.destroy();
+			});
 
-		it("returns an ArrayBuffer", async () => {
-			const buffer = createResultBuffer(mockDevice, 16);
-			const result = await readBufferToCPU(mockDevice, buffer);
+			it("returns correct TypedBufferGroup structure", async () => {
+				const available = isWebGPUAvailable();
+				if (!available) {
+					return; // Skip test
+				}
 
-			expect(result).toBeInstanceOf(ArrayBuffer);
-		});
+				const root = await initGPU();
+				const csr: CSRMatrix = {
+					rowOffsets: new Uint32Array([0, 0]),
+					colIndices: new Uint32Array(),
+					nodeCount: 1,
+					edgeCount: 0,
+				};
 
-		it("returns an ArrayBuffer of the correct size", async () => {
-			const byteLength = 32;
-			const buffer = createResultBuffer(mockDevice, byteLength);
-			const result = await readBufferToCPU(mockDevice, buffer);
+				const result = csrToTypedBuffers(root, csr);
 
-			expect(result.byteLength).toBe(byteLength);
-		});
+				expect("rowOffsets" in result).toBe(true);
+				expect("colIndices" in result).toBe(true);
+				expect("nodeCount" in result).toBe(true);
+				expect("edgeCount" in result).toBe(true);
 
-		it("handles zero-size buffer", async () => {
-			const buffer = createResultBuffer(mockDevice, 0);
-			const result = await readBufferToCPU(mockDevice, buffer);
+				root.destroy();
+			});
 
-			expect(result.byteLength).toBe(0);
-		});
+			it("can read back rowOffsets data", async () => {
+				const available = isWebGPUAvailable();
+				if (!available) {
+					return; // Skip test
+				}
 
-		it("maps and unmaps the buffer", async () => {
-			const buffer = createResultBuffer(mockDevice, 8);
-			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			const mockBuffer = buffer as unknown as MockGPUBuffer;
+				const root = await initGPU();
+				const csr: CSRMatrix = {
+					rowOffsets: new Uint32Array([0, 2, 4]),
+					colIndices: new Uint32Array([1, 2, 0, 1]),
+					nodeCount: 2,
+					edgeCount: 4,
+				};
 
-			// Verify initial state
-			expect(mockBuffer.mapped).toBeFalsy();
+				const result = csrToTypedBuffers(root, csr);
 
-			await readBufferToCPU(mockDevice, buffer);
+				const readData = await result.rowOffsets.read();
+				expect(readData).toBeInstanceOf(Uint32Array);
+				expect(readData.length).toBe(3);
+				expect(readData[0]).toBe(0);
+				expect(readData[1]).toBe(2);
+				expect(readData[2]).toBe(4);
 
-			// Buffer should be unmapped after reading
-			expect(mockBuffer.mapped).toBeFalsy();
+				root.destroy();
+			});
+
+			it("can read back colIndices data", async () => {
+				const available = isWebGPUAvailable();
+				if (!available) {
+					return; // Skip test
+				}
+
+				const root = await initGPU();
+				const csr: CSRMatrix = {
+					rowOffsets: new Uint32Array([0, 2]),
+					colIndices: new Uint32Array([1, 2]),
+					nodeCount: 1,
+					edgeCount: 2,
+				};
+
+				const result = csrToTypedBuffers(root, csr);
+
+				const readData = await result.colIndices.read();
+				expect(readData).toBeInstanceOf(Uint32Array);
+				expect(readData.length).toBe(2);
+				expect(readData[0]).toBe(1);
+				expect(readData[1]).toBe(2);
+
+				root.destroy();
+			});
+
+			it("can read back values data", async () => {
+				const available = isWebGPUAvailable();
+				if (!available) {
+					return; // Skip test
+				}
+
+				const root = await initGPU();
+				const csr: CSRMatrix = {
+					rowOffsets: new Uint32Array([0, 2]),
+					colIndices: new Uint32Array([1, 2]),
+					values: new Float32Array([1.5, 2.5]),
+					nodeCount: 1,
+					edgeCount: 2,
+				};
+
+				const result = csrToTypedBuffers(root, csr);
+
+				expect(result.values).toBeDefined();
+				if (result.values !== undefined) {
+					const readData = await result.values.read();
+					expect(readData).toBeInstanceOf(Float32Array);
+					expect(readData.length).toBe(2);
+					expect(readData[0]).toBeCloseTo(1.5);
+					expect(readData[1]).toBeCloseTo(2.5);
+				}
+
+				root.destroy();
+			});
 		});
 	});
 
@@ -652,6 +551,33 @@ describe("CSR conversion", () => {
 			const cStart = result.csr.rowOffsets[cIndex ?? 0] ?? 0;
 			const cEnd = result.csr.rowOffsets[(cIndex ?? 0) + 1] ?? 0;
 			expect(cEnd - cStart).toBe(0);
+		});
+
+		describe("with WebGPU available", () => {
+			it("end-to-end: graph to CSR to typed buffers", async () => {
+				const available = isWebGPUAvailable();
+				if (!available) {
+					return; // Skip test
+				}
+
+				const graph = AdjacencyMapGraph.directed<TestNode, TestEdge>();
+				graph.addNode({ id: "A", label: "A" });
+				graph.addNode({ id: "B", label: "B" });
+				graph.addEdge({ source: "A", target: "B", weight: 1.5 });
+
+				const root = await initGPU();
+				const { csr } = graphToCSR(graph);
+				const buffers = csrToTypedBuffers(root, csr);
+
+				expect(buffers.nodeCount).toBe(2);
+				expect(buffers.edgeCount).toBe(1);
+
+				// Verify data round-trip
+				const rowOffsets = await buffers.rowOffsets.read();
+				expect(rowOffsets.length).toBe(3);
+
+				root.destroy();
+			});
 		});
 	});
 });
