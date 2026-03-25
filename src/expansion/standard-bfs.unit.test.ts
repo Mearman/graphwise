@@ -1,10 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { standardBfs } from "./standard-bfs";
+import { standardBfs, standardBfsAsync } from "./standard-bfs";
 import type { Seed } from "./types";
 import {
 	createLinearChainGraph,
 	createDisconnectedGraph,
 } from "../__test__/fixtures/graphs/linear-chain";
+import { wrapAsync } from "../__test__/fixtures/wrap-async";
 
 describe("standardBfs expansion", () => {
 	it("returns empty result for no seeds", () => {
@@ -54,5 +55,38 @@ describe("standardBfs expansion", () => {
 
 		expect(result.stats.nodesVisited).toBeLessThanOrEqual(2);
 		expect(result.stats.termination).toBe("limit");
+	});
+});
+
+describe("standardBfsAsync expansion", () => {
+	it("produces the same path count as standardBfs", async () => {
+		const graph = createLinearChainGraph();
+		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
+
+		const syncResult = standardBfs(graph, seeds);
+		const asyncResult = await standardBfsAsync(wrapAsync(graph), seeds);
+
+		expect(asyncResult.paths.length).toBe(syncResult.paths.length);
+		expect(asyncResult.stats.nodesVisited).toBe(syncResult.stats.nodesVisited);
+	});
+
+	it("returns empty result for no seeds", async () => {
+		const graph = createLinearChainGraph();
+
+		const result = await standardBfsAsync(wrapAsync(graph), []);
+
+		expect(result.paths).toHaveLength(0);
+		expect(result.stats.termination).toBe("exhausted");
+	});
+
+	it("handles disconnected seeds", async () => {
+		const graph = createDisconnectedGraph();
+
+		const result = await standardBfsAsync(wrapAsync(graph), [
+			{ id: "A" },
+			{ id: "B" },
+		]);
+
+		expect(result.paths).toHaveLength(0);
 	});
 });

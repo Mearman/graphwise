@@ -8,13 +8,15 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
 	ExpansionConfig,
 	PriorityContext,
 } from "./types";
-import { base } from "./base";
+import { base, baseAsync } from "./base";
+import type { AsyncExpansionConfig } from "./base";
 
 /**
  * DFS priority function: negative iteration produces LIFO ordering.
@@ -50,4 +52,20 @@ export function dfsPriority<N extends NodeData, E extends EdgeData>(
 		...config,
 		priority: dfsPriorityFn,
 	});
+}
+
+/**
+ * Run DFS-priority expansion asynchronously (LIFO discovery order).
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - Expansion and async runner configuration
+ * @returns Promise resolving to the expansion result
+ */
+export async function dfsPriorityAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	return baseAsync(graph, seeds, { ...config, priority: dfsPriorityFn });
 }

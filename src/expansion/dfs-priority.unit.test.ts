@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { NodeData, EdgeData } from "../graph";
-import { dfsPriority } from "./dfs-priority";
+import { dfsPriority, dfsPriorityAsync } from "./dfs-priority";
 import type { Seed } from "./types";
+import { wrapAsync } from "../__test__/fixtures/wrap-async";
 
 interface TestNode extends NodeData {
 	readonly label: string;
@@ -80,5 +81,40 @@ describe("dfsPriority expansion", () => {
 
 		expect(result.stats.nodesVisited).toBeLessThanOrEqual(2);
 		expect(result.stats.termination).toBe("limit");
+	});
+});
+
+describe("dfsPriorityAsync expansion", () => {
+	it("produces the same path count as dfsPriority", async () => {
+		const graph = createTestGraph();
+		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
+
+		const syncResult = dfsPriority(graph, seeds);
+		const asyncResult = await dfsPriorityAsync(wrapAsync(graph), seeds);
+
+		expect(asyncResult.paths.length).toBe(syncResult.paths.length);
+		expect(asyncResult.stats.nodesVisited).toBe(syncResult.stats.nodesVisited);
+	});
+
+	it("returns empty result for no seeds", async () => {
+		const graph = createTestGraph();
+
+		const result = await dfsPriorityAsync(wrapAsync(graph), []);
+
+		expect(result.paths).toHaveLength(0);
+		expect(result.stats.termination).toBe("exhausted");
+	});
+
+	it("handles disconnected seeds", async () => {
+		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		graph.addNode({ id: "A", label: "A" });
+		graph.addNode({ id: "B", label: "B" });
+
+		const result = await dfsPriorityAsync(wrapAsync(graph), [
+			{ id: "A" },
+			{ id: "B" },
+		]);
+
+		expect(result.paths).toHaveLength(0);
 	});
 });

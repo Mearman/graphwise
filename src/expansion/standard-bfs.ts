@@ -6,13 +6,25 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
 	ExpansionConfig,
 	PriorityContext,
 } from "./types";
-import { base } from "./base";
+import { base, baseAsync } from "./base";
+import type { AsyncExpansionConfig } from "./base";
+
+/**
+ * BFS priority: discovery iteration order (FIFO).
+ */
+function bfsPriority<N extends NodeData, E extends EdgeData>(
+	_nodeId: string,
+	context: PriorityContext<N, E>,
+): number {
+	return context.iteration;
+}
 
 /**
  * Run standard BFS expansion (FIFO discovery order).
@@ -27,18 +39,24 @@ export function standardBfs<N extends NodeData, E extends EdgeData>(
 	seeds: readonly Seed[],
 	config?: ExpansionConfig<N, E>,
 ): ExpansionResult {
-	// BFS uses iteration order (discovery order) as priority
-	const bfsPriority = (
-		_nodeId: string,
-		context: PriorityContext<N, E>,
-	): number => {
-		// Suppress unused variable warning
-		void graph;
-		return context.iteration;
-	};
-
 	return base(graph, seeds, {
 		...config,
 		priority: bfsPriority,
 	});
+}
+
+/**
+ * Run standard BFS expansion asynchronously (FIFO discovery order).
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - Expansion and async runner configuration
+ * @returns Promise resolving to the expansion result
+ */
+export async function standardBfsAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	return baseAsync(graph, seeds, { ...config, priority: bfsPriority });
 }

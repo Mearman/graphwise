@@ -7,13 +7,15 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
 	ExpansionConfig,
 	PriorityContext,
 } from "./types";
-import { base } from "./base";
+import { base, baseAsync } from "./base";
+import type { AsyncExpansionConfig } from "./base";
 
 /**
  * Deterministic seeded random number generator.
@@ -46,6 +48,26 @@ interface RandomPriorityConfig<
 }
 
 /**
+ * Async configuration for random-priority expansion.
+ */
+interface AsyncRandomPriorityConfig<
+	N extends NodeData = NodeData,
+	E extends EdgeData = EdgeData,
+> extends AsyncExpansionConfig<N, E> {
+	/** Random seed for deterministic reproducibility */
+	readonly seed?: number;
+}
+
+/**
+ * Build a seeded random priority function for a given seed value.
+ */
+function makeRandomPriorityFn<N extends NodeData, E extends EdgeData>(
+	seed: number,
+): (nodeId: string, context: PriorityContext<N, E>) => number {
+	return (nodeId: string): number => seededRandom(nodeId, seed);
+}
+
+/**
  * Run random-priority expansion (null hypothesis baseline).
  *
  * @param graph - Source graph
@@ -59,20 +81,31 @@ export function randomPriority<N extends NodeData, E extends EdgeData>(
 	config?: RandomPriorityConfig<N, E>,
 ): ExpansionResult {
 	const { seed = 0 } = config ?? {};
-
-	// Random priority: seeded hash of node ID
-	const randomPriorityFn = (
-		nodeId: string,
-		context: PriorityContext<N, E>,
-	): number => {
-		// Suppress unused variable warning
-		void context;
-		void graph;
-		return seededRandom(nodeId, seed);
-	};
-
 	return base(graph, seeds, {
 		...config,
-		priority: randomPriorityFn,
+		priority: makeRandomPriorityFn<N, E>(seed),
+	});
+}
+
+/**
+ * Run random-priority expansion asynchronously (null hypothesis baseline).
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - Expansion and async runner configuration
+ * @returns Promise resolving to the expansion result
+ */
+export async function randomPriorityAsync<
+	N extends NodeData,
+	E extends EdgeData,
+>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: AsyncRandomPriorityConfig<N, E>,
+): Promise<ExpansionResult> {
+	const { seed = 0 } = config ?? {};
+	return baseAsync(graph, seeds, {
+		...config,
+		priority: makeRandomPriorityFn<N, E>(seed),
 	});
 }
