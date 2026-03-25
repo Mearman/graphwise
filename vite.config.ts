@@ -55,7 +55,6 @@ export default defineConfig({
 			provider: "v8",
 			include: ["src/**"],
 			exclude: [
-				"src/**/*.wgsl",
 				"src/**/index.ts", // Barrel files
 				"src/**/types.ts", // Type-only files
 				"src/**/interfaces.ts", // Interface-only files
