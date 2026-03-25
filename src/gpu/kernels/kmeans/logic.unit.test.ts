@@ -135,7 +135,7 @@ describe("K-means logic", () => {
 				[10, 10],
 				[11, 11],
 			];
-			const rng = () => 0.5;
+			const rng = (): number => 0.5;
 
 			const centroids = initializeCentroidsKMeansPlusPlus(points, 2, rng);
 
@@ -169,7 +169,7 @@ describe("K-means logic", () => {
 
 			// With deterministic RNG, first centroid at index 10 (100, 100)
 			// Second centroid should be from cluster 1 (max distance from first)
-			const rng = () => 0.5;
+			const rng = (): number => 0.5;
 			const centroids = initializeCentroidsKMeansPlusPlus(points, 2, rng);
 
 			expect(centroids.length).toBe(2);
@@ -202,9 +202,13 @@ describe("K-means logic", () => {
 			const centroid0 = result.centroids[0] ?? [0, 0];
 			const centroid1 = result.centroids[1] ?? [0, 0];
 			// One centroid should be near origin, other near (10,10)
+			const c0x = centroid0[0] ?? 0;
+			const c0y = centroid0[1] ?? 0;
+			const c1x = centroid1[0] ?? 0;
+			const c1y = centroid1[1] ?? 0;
 			const nearOrigin =
-				Math.sqrt(centroid0[0]! ** 2 + centroid0[1]! ** 2) < 5 ||
-				Math.sqrt(centroid1[0]! ** 2 + centroid1[1]! ** 2) < 5;
+				Math.sqrt(c0x ** 2 + c0y ** 2) < 5 ||
+				Math.sqrt(c1x ** 2 + c1y ** 2) < 5;
 			expect(nearOrigin).toBe(true);
 		});
 

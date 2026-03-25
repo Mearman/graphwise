@@ -138,8 +138,8 @@ export function updateCentroids(
 	dimensions: number,
 ): number[][] {
 	// Initialize accumulators
-	const sums: number[][] = Array.from({ length: k }, () =>
-		Array(dimensions).fill(0),
+	const sums: number[][] = Array.from({ length: k }, (): number[] =>
+		Array.from({ length: dimensions }, (): number => 0),
 	);
 	const counts = new Uint32Array(k);
 
@@ -166,9 +166,9 @@ export function updateCentroids(
 		const count = counts[j] ?? 0;
 		if (sum === undefined || count === 0) {
 			// Keep centroid at origin if no points assigned
-			centroids.push(Array(dimensions).fill(0));
+			centroids.push(Array.from({ length: dimensions }, (): number => 0));
 		} else {
-			centroids.push(sum.map((s) => s / count));
+			centroids.push(sum.map((s: number): number => s / count));
 		}
 	}
 
@@ -323,7 +323,8 @@ export function kmeans(
 	for (let iter = 0; iter < maxIterations; iter++) {
 		// Assignment step
 		const result = assignPointsToCentroids(points, centroids);
-		assignments = result.assignments;
+		// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+		assignments = result.assignments as Uint32Array<ArrayBuffer>;
 
 		// Update step
 		const newCentroids = updateCentroids(points, assignments, k, dimensions);
