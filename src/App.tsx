@@ -42,7 +42,10 @@ function MainContent(): ReactNode {
 	const setSpeed = useAnimationStore((state) => state.setSpeed);
 
 	const entries = useComparisonStore((state) => state.entries);
+	const seedEntries = useComparisonStore((state) => state.seedEntries);
 	const miEntries = useComparisonStore((state) => state.miEntries);
+	const rankingEntries = useComparisonStore((state) => state.rankingEntries);
+	const subgraphEntries = useComparisonStore((state) => state.subgraphEntries);
 	const comparisonStage = useComparisonStore((state) => state.comparisonStage);
 	const totalDurationMs = useComparisonStore((state) => state.totalDurationMs);
 	const selectedAlgorithms = useComparisonStore(
@@ -145,11 +148,18 @@ function MainContent(): ReactNode {
 					<FrameInspector />
 
 					{entries.length > 0 ||
-					(comparisonStage === "mi" && miEntries.length > 0) ? (
+					(comparisonStage === "mi" && miEntries.length > 0) ||
+					(comparisonStage === "seed-selection" && seedEntries.length > 0) ||
+					(comparisonStage === "ranking" && rankingEntries.length > 0) ||
+					(comparisonStage === "subgraph-extraction" &&
+						subgraphEntries.length > 0) ? (
 						<Paper p="sm" withBorder>
 							<ComparisonTable
 								entries={entries}
+								seedEntries={seedEntries}
 								miEntries={miEntries}
+								rankingEntries={rankingEntries}
+								subgraphEntries={subgraphEntries}
 								comparisonStage={comparisonStage}
 								totalDurationMs={totalDurationMs}
 							/>

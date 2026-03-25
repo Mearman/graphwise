@@ -16,6 +16,12 @@ export interface ComparisonGraphCanvasProps {
 	readonly algorithms?: readonly ExpansionAlgorithmName[];
 }
 
+interface ComparisonTileProps {
+	readonly algorithmName: ExpansionAlgorithmName | undefined;
+	readonly tileIndex: number;
+	readonly color: string;
+}
+
 const PALETTE = [
 	"#ef4444",
 	"#3b82f6",
@@ -57,111 +63,103 @@ function makeAlgoStyles(
 	];
 }
 
+function getTileColor(tileIndex: number): string {
+	return PALETTE[tileIndex % PALETTE.length] ?? "#64748b";
+}
+
+function getTileChip(tileIndex: number): string {
+	return `#${String(tileIndex + 1)}`;
+}
+
+function ComparisonTile({
+	algorithmName,
+	tileIndex,
+	color,
+}: ComparisonTileProps): React.ReactElement {
+	const cyto = useCytoscape();
+	const graph = useGraphStore((s) => s.graph);
+	const seeds = useGraphStore((s) => s.seeds);
+
+	const label = algorithmName
+		? (getAlgorithm(algorithmName)?.label ?? algorithmName)
+		: "No algorithm selected";
+
+	useGraphSync({
+		cy: cyto.cy,
+		graph,
+		seeds,
+		extraStyles: makeAlgoStyles(color, graph.directed),
+	});
+	useFrameSync({ cy: cyto.cy, algorithmName });
+
+	return (
+		<div style={{ position: "relative", minHeight: 0, height: "100%" }}>
+			<Box
+				ref={cyto.containerRef}
+				className={`${styles.canvas} ${styles.transition}`}
+				data-ready={cyto.isReady.toString()}
+				style={{ width: "100%", height: "100%" }}
+			/>
+			<Group
+				gap={6}
+				style={{ position: "absolute", top: 8, left: 8, zIndex: 5 }}
+			>
+				<Badge size="xs" variant="filled" style={{ backgroundColor: color }}>
+					{getTileChip(tileIndex)}
+				</Badge>
+				<Text size="xs" fw={600} c="white">
+					{label}
+				</Text>
+			</Group>
+		</div>
+	);
+}
+
 export function ComparisonGraphCanvas({
 	algorithms,
 }: ComparisonGraphCanvasProps): React.ReactElement {
-	// Current implementation remains 2-pane while stage-comparison model evolves.
-	// The selection source now supports N algorithms and this component renders
-	// the first two as the default visual side-by-side.
-	const left = useCytoscape();
-	const right = useCytoscape();
-
-	const graph = useGraphStore((s) => s.graph);
-	const seeds = useGraphStore((s) => s.seeds);
 	const selectedAlgorithms = useComparisonStore((s) => s.selectedAlgorithms);
 	const algos = algorithms ?? selectedAlgorithms;
+	const hasVisualCompare = algos.length >= 2;
+	const visualTiles: readonly (ExpansionAlgorithmName | undefined)[] =
+		algos.length > 0 ? algos : [undefined];
 
-	const leftAlgo = algos[0];
-	const rightAlgo = algos[1];
-	const leftLabel = leftAlgo
-		? (getAlgorithm(leftAlgo)?.label ?? leftAlgo)
-		: "A";
-	const rightLabel = rightAlgo
-		? (getAlgorithm(rightAlgo)?.label ?? rightAlgo)
-		: "B";
+	return (
+		<div style={{ position: "relative", height: "100%", minHeight: 0 }}>
+			<div
+				style={{
+					display: "grid",
+					gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+					gap: 12,
+					height: "100%",
+					minHeight: 0,
+				}}
+			>
+				{visualTiles.map((algorithmName, tileIndex) => (
+					<div
+						key={algorithmName ?? `empty-${String(tileIndex)}`}
+						style={{ minHeight: 220, height: "100%" }}
+					>
+						<ComparisonTile
+							algorithmName={algorithmName}
+							tileIndex={tileIndex}
+							color={getTileColor(tileIndex)}
+						/>
+					</div>
+				))}
+			</div>
 
-	const leftColor: string = PALETTE[0] ?? "#ef4444";
-	const rightColor: string = PALETTE[1] ?? "#3b82f6";
-
-	// Apply graph and algorithm-specific styles per canvas.
-	useGraphSync({
-		cy: left.cy,
-		graph,
-		seeds,
-		extraStyles: makeAlgoStyles(leftColor, graph.directed),
-	});
-	useGraphSync({
-		cy: right.cy,
-		graph,
-		seeds,
-		extraStyles: makeAlgoStyles(rightColor, graph.directed),
-	});
-
-	// Sync frames per algorithm
-	useFrameSync({ cy: left.cy, algorithmName: leftAlgo });
-	useFrameSync({ cy: right.cy, algorithmName: rightAlgo });
-
-	// Fallback to a single canvas when fewer than 2 algorithms selected
-	if (algos.length < 2) {
-		return (
-			<div style={{ position: "relative", height: "100%" }}>
-				<Box
-					ref={left.containerRef}
-					className={`${styles.canvas} ${styles.transition}`}
-					data-ready={left.isReady.toString()}
-				/>
+			{!hasVisualCompare ? (
 				<Badge
 					size="xs"
 					variant="light"
 					color="gray"
-					style={{ position: "absolute", top: 8, left: 8, zIndex: 5 }}
+					style={{ position: "absolute", top: 8, right: 8, zIndex: 6 }}
 				>
 					Select 2+ algorithms for visual compare
 				</Badge>
-			</div>
-		);
-	}
+			) : null}
 
-	return (
-		<div style={{ display: "flex", gap: 12, height: "100%", minHeight: 0 }}>
-			<div style={{ width: "50%", position: "relative", minHeight: 0 }}>
-				<Box
-					ref={left.containerRef}
-					className={`${styles.canvas} ${styles.transition}`}
-					data-ready={left.isReady.toString()}
-					style={{ width: "100%" }}
-				/>
-				<Group
-					gap={6}
-					style={{ position: "absolute", top: 8, left: 8, zIndex: 5 }}
-				>
-					<Badge size="xs" color="red" variant="filled">
-						A
-					</Badge>
-					<Text size="xs" fw={600} c="white">
-						{leftLabel}
-					</Text>
-				</Group>
-			</div>
-			<div style={{ width: "50%", position: "relative", minHeight: 0 }}>
-				<Box
-					ref={right.containerRef}
-					className={`${styles.canvas} ${styles.transition}`}
-					data-ready={right.isReady.toString()}
-					style={{ width: "100%" }}
-				/>
-				<Group
-					gap={6}
-					style={{ position: "absolute", top: 8, left: 8, zIndex: 5 }}
-				>
-					<Badge size="xs" color="blue" variant="filled">
-						B
-					</Badge>
-					<Text size="xs" fw={600} c="white">
-						{rightLabel}
-					</Text>
-				</Group>
-			</div>
 			<Badge
 				size="sm"
 				variant="light"
