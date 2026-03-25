@@ -5,7 +5,11 @@ import type {
 	ExpansionStats,
 } from "graphwise/expansion";
 import type { ExpansionAlgorithmName } from "./algorithm-registry";
-import { getAlgorithm } from "./algorithm-registry";
+import { getAlgorithm, getMIVariant } from "./algorithm-registry";
+import type { MIVariantName } from "graphwise/ranking/mi";
+import type { ExpansionPath } from "graphwise/expansion";
+import { runRanking } from "./ranking-runner";
+import type { MIVariantComparisonEntry } from "../state/comparison-store";
 
 export interface ComparisonRunnerEntry {
 	readonly algorithmName: ExpansionAlgorithmName;
@@ -15,6 +19,11 @@ export interface ComparisonRunnerEntry {
 
 export interface ComparisonRunnerResult {
 	readonly entries: readonly ComparisonRunnerEntry[];
+	readonly totalDurationMs: number;
+}
+
+export interface MIVariantComparisonRunnerResult {
+	readonly entries: readonly MIVariantComparisonEntry[];
 	readonly totalDurationMs: number;
 }
 
@@ -50,5 +59,39 @@ export function runComparison<N extends NodeData, E extends EdgeData>(
 	return {
 		entries,
 		totalDurationMs,
+	};
+}
+
+export function runMIVariantComparison<N extends NodeData, E extends EdgeData>(
+	graph: ReadableGraph<N, E>,
+	paths: readonly ExpansionPath[],
+	variants: readonly MIVariantName[],
+): MIVariantComparisonRunnerResult {
+	const startTime = performance.now();
+	const entries: MIVariantComparisonEntry[] = [];
+
+	for (const variant of variants) {
+		const info = getMIVariant(variant);
+		if (info === undefined) {
+			console.warn(`Unknown MI variant: ${variant}`);
+			continue;
+		}
+
+		try {
+			const ranked = runRanking(graph, paths, variant);
+			entries.push({
+				variant,
+				pathsCount: ranked.paths.length,
+				meanSalience: ranked.stats.meanSalience,
+				durationMs: ranked.stats.durationMs,
+			});
+		} catch (error) {
+			console.error(`MI variant ${variant} failed:`, error);
+		}
+	}
+
+	return {
+		entries,
+		totalDurationMs: performance.now() - startTime,
 	};
 }

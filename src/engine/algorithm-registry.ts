@@ -3,6 +3,7 @@ import type {
 	ExpansionResult,
 	ExpansionConfig,
 	Seed,
+	ExpansionPath,
 } from "graphwise/expansion";
 import {
 	base,
@@ -25,6 +26,7 @@ import {
 	dfsPriority,
 } from "graphwise/expansion";
 import type { MIFunction, MIVariantName } from "graphwise/ranking/mi";
+import { parse, type PARSEResult } from "graphwise/ranking";
 import {
 	jaccard,
 	adamicAdar,
@@ -61,6 +63,14 @@ export type ExpansionAlgorithmName =
 	| "random-priority"
 	| "dfs-priority";
 
+export type RankingAlgorithmName = "parse" | "parse-stable";
+
+export type SeedSelectionStrategyName = "provided-order" | "stable-node-id";
+
+export type SubgraphExtractionStrategyName =
+	| "all-paths"
+	| "dedupe-by-signature";
+
 type ExpansionFn = <N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	seeds: readonly Seed[],
@@ -80,6 +90,58 @@ export interface MIVariantInfo {
 	readonly label: string;
 	readonly description: string;
 	readonly fn: MIFunction;
+}
+
+export interface RankingAlgorithmConfig<
+	N extends NodeData,
+	E extends EdgeData,
+> {
+	readonly mi: (
+		graph: ReadableGraph<N, E>,
+		source: string,
+		target: string,
+	) => number;
+	readonly epsilon?: number;
+	readonly includeSalience?: boolean;
+}
+
+type RankingAlgorithmFn = <N extends NodeData, E extends EdgeData>(
+	graph: ReadableGraph<N, E>,
+	paths: readonly ExpansionPath[],
+	config: RankingAlgorithmConfig<N, E>,
+) => PARSEResult;
+
+export interface RankingAlgorithmInfo {
+	readonly name: RankingAlgorithmName;
+	readonly label: string;
+	readonly description: string;
+	readonly category: "novel" | "baseline";
+	readonly run: RankingAlgorithmFn;
+}
+
+type SeedSelectionFn = <N extends NodeData, E extends EdgeData>(
+	graph: ReadableGraph<N, E>,
+	seeds: readonly Seed[],
+) => readonly Seed[];
+
+export interface SeedSelectionStrategyInfo {
+	readonly name: SeedSelectionStrategyName;
+	readonly label: string;
+	readonly description: string;
+	readonly category: "novel" | "baseline";
+	readonly run: SeedSelectionFn;
+}
+
+type SubgraphExtractionFn = (
+	paths: readonly ExpansionPath[],
+) => readonly ExpansionPath[];
+
+export interface SubgraphExtractionStrategyInfo {
+	readonly name: SubgraphExtractionStrategyName;
+	readonly label: string;
+	readonly description: string;
+	readonly category: "novel" | "baseline";
+	readonly run: SubgraphExtractionFn;
 }
 
 const EXPANSION_ALGORITHMS: readonly AlgorithmInfo[] = [
@@ -292,6 +354,101 @@ const MI_VARIANTS: readonly MIVariantInfo[] = [
 	},
 ];
 
+function normalizeProvidedSeeds<N extends NodeData, E extends EdgeData>(
+	graph: ReadableGraph<N, E>,
+	seeds: readonly Seed[],
+): readonly Seed[] {
+	const seen = new Set<string>();
+	const selected: Seed[] = [];
+
+	for (const seed of seeds) {
+		if (seen.has(seed.id) || graph.getNode(seed.id) === undefined) {
+			continue;
+		}
+		seen.add(seed.id);
+		selected.push(seed);
+	}
+
+	return selected;
+}
+
+const RANKING_ALGORITHMS: readonly RankingAlgorithmInfo[] = [
+	{
+		name: "parse",
+		label: "PARSE",
+		description: "Path salience ranking using geometric-mean MI scores",
+		category: "baseline",
+		run: (graph, paths, config) =>
+			parse(graph, paths, {
+				mi: config.mi,
+				epsilon: config.epsilon ?? 1e-10,
+				includeSalience: config.includeSalience ?? true,
+			}),
+	},
+	{
+		name: "parse-stable",
+		label: "PARSE (Stable)",
+		description: "PARSE ranking with explicit deterministic defaults",
+		category: "baseline",
+		run: (graph, paths, config) =>
+			parse(graph, paths, {
+				mi: config.mi,
+				epsilon: config.epsilon ?? 1e-10,
+				includeSalience: config.includeSalience ?? true,
+			}),
+	},
+];
+
+const SEED_SELECTION_STRATEGIES: readonly SeedSelectionStrategyInfo[] = [
+	{
+		name: "provided-order",
+		label: "Provided Order",
+		description: "Use selected seeds in user-provided order after validation",
+		category: "baseline",
+		run: normalizeProvidedSeeds,
+	},
+	{
+		name: "stable-node-id",
+		label: "Stable Node Id",
+		description: "Deterministic seed ordering sorted by node id",
+		category: "baseline",
+		run: (graph, seeds) =>
+			[...normalizeProvidedSeeds(graph, seeds)].sort((a, b) =>
+				a.id.localeCompare(b.id),
+			),
+	},
+];
+
+const SUBGRAPH_EXTRACTION_STRATEGIES: readonly SubgraphExtractionStrategyInfo[] =
+	[
+		{
+			name: "all-paths",
+			label: "All Paths",
+			description: "Pass through all discovered paths",
+			category: "baseline",
+			run: (paths) => [...paths],
+		},
+		{
+			name: "dedupe-by-signature",
+			label: "Dedupe by Signature",
+			description: "Keep the first path for each unique node sequence",
+			category: "baseline",
+			run: (paths) => {
+				const signatures = new Set<string>();
+				const result: ExpansionPath[] = [];
+				for (const path of paths) {
+					const signature = path.nodes.join("->");
+					if (signatures.has(signature)) {
+						continue;
+					}
+					signatures.add(signature);
+					result.push(path);
+				}
+				return result;
+			},
+		},
+	];
+
 export function getAlgorithm(
 	name: ExpansionAlgorithmName,
 ): AlgorithmInfo | undefined {
@@ -302,10 +459,42 @@ export function getMIVariant(name: MIVariantName): MIVariantInfo | undefined {
 	return MI_VARIANTS.find((v) => v.name === name);
 }
 
+export function getRankingAlgorithm(
+	name: RankingAlgorithmName,
+): RankingAlgorithmInfo | undefined {
+	return RANKING_ALGORITHMS.find((algorithm) => algorithm.name === name);
+}
+
+export function getSeedSelectionStrategy(
+	name: SeedSelectionStrategyName,
+): SeedSelectionStrategyInfo | undefined {
+	return SEED_SELECTION_STRATEGIES.find((strategy) => strategy.name === name);
+}
+
+export function getSubgraphExtractionStrategy(
+	name: SubgraphExtractionStrategyName,
+): SubgraphExtractionStrategyInfo | undefined {
+	return SUBGRAPH_EXTRACTION_STRATEGIES.find(
+		(strategy) => strategy.name === name,
+	);
+}
+
 export function expansionAlgorithmNames(): readonly ExpansionAlgorithmName[] {
 	return EXPANSION_ALGORITHMS.map((a) => a.name);
 }
 
 export function miVariantNames(): readonly MIVariantName[] {
 	return MI_VARIANTS.map((v) => v.name);
+}
+
+export function rankingAlgorithmNames(): readonly RankingAlgorithmName[] {
+	return RANKING_ALGORITHMS.map((algorithm) => algorithm.name);
+}
+
+export function seedSelectionStrategyNames(): readonly SeedSelectionStrategyName[] {
+	return SEED_SELECTION_STRATEGIES.map((strategy) => strategy.name);
+}
+
+export function subgraphExtractionStrategyNames(): readonly SubgraphExtractionStrategyName[] {
+	return SUBGRAPH_EXTRACTION_STRATEGIES.map((strategy) => strategy.name);
 }
