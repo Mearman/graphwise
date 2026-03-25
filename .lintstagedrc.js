@@ -5,4 +5,7 @@
  */
 export default {
 	"*.{ts,tsx}": ["eslint --cache --fix"],
+	"*.{js}": ["eslint --cache --fix"],
+	"*.{md}": ["eslint --cache --fix"],
+	"*.{json}": ["eslint --cache --fix"],
 };
