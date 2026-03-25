@@ -1,3 +1,9 @@
+## [1.9.1](https://github.com/Mearman/graphwise/compare/v1.9.0...v1.9.1) (2026-03-25)
+
+### Bug Fixes
+
+* **ci:** remove redundant npm publish step ([e126fb6](https://github.com/Mearman/graphwise/commit/e126fb6b7c9d096ee11716b04042063339eb8e7f))
+
 ## [1.9.0](https://github.com/Mearman/graphwise/compare/v1.8.1...v1.9.0) (2026-03-25)
 
 ### ⚠ BREAKING CHANGES
