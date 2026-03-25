@@ -79,7 +79,6 @@ export function ColumnHeader({ column }: ColumnHeaderProps): ReactNode {
 		return {
 			value: name,
 			label: info?.label ?? name,
-			group: info?.category === "novel" ? "Novel" : "Baseline",
 		};
 	});
 
