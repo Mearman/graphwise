@@ -43,6 +43,7 @@ interface ColumnState {
 	readonly setViewMode: (mode: ViewMode) => void;
 	readonly runAll: () => void;
 	readonly reset: () => void;
+	readonly clearResults: () => void;
 }
 
 const DEFAULT_MI_VARIANT: MIVariantName = "jaccard";
@@ -135,5 +136,16 @@ export const useColumnStore = create<ColumnState>()((set, get) => ({
 			columns: [createDefaultColumn()],
 			viewMode: "columns",
 		});
+	},
+
+	clearResults: () => {
+		set((state) => ({
+			columns: state.columns.map((col) => ({
+				...col,
+				expansionResult: null,
+				rankingResult: null,
+				isRunning: false,
+			})),
+		}));
 	},
 }));

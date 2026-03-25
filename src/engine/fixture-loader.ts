@@ -4,6 +4,7 @@ import type { Seed } from "graphwise/expansion";
 export interface DemoFixture {
 	readonly name: string;
 	readonly description: string;
+	readonly directed: boolean;
 	readonly graph: AdjacencyMapGraph;
 	readonly seeds: readonly Seed[];
 }
@@ -38,6 +39,7 @@ function createLinearChain(): DemoFixture {
 	return {
 		name: "linear-chain",
 		description: "Simple linear chain: A–B–C–D–E",
+		directed: false,
 		graph,
 		seeds: [
 			{ id: "A", role: "source" },
@@ -101,6 +103,7 @@ function createSocialHub(): DemoFixture {
 		name: "social-hub",
 		description:
 			"Social network with hub (Alice, degree 10) and niche interest clusters",
+		directed: false,
 		graph,
 		seeds: [
 			{ id: "bob", role: "source" },
@@ -177,6 +180,7 @@ function createTwoDepartment(): DemoFixture {
 		name: "two-department",
 		description:
 			"Two dense departmental clusters with cross-department bridges",
+		directed: false,
 		graph,
 		seeds: [
 			{ id: "alice", role: "source" },
@@ -290,6 +294,7 @@ function createCityVillage(): DemoFixture {
 	return {
 		name: "city-village",
 		description: "Dense city subgraph connected to sparse village chain",
+		directed: false,
 		graph,
 		seeds: [
 			{ id: "nightclub", role: "source" },
@@ -443,6 +448,7 @@ function createCitySuburbanVillage(): DemoFixture {
 		name: "city-suburban-village",
 		description:
 			"Three-density network: dense city, medium suburban, sparse village",
+		directed: false,
 		graph,
 		seeds: [
 			{ id: "nightclub", role: "source" },
@@ -660,6 +666,7 @@ function createThreeCommunity(): DemoFixture {
 		name: "three-community",
 		description:
 			"Three dense communities (lab, startup, university) connected by liaison bridges",
+		directed: false,
 		graph,
 		seeds: [
 			{ id: "bob", role: "source" },
@@ -722,6 +729,7 @@ function createTypedEntity(): DemoFixture {
 		name: "typed-entity",
 		description:
 			"Mixed entity graph with typed nodes and edges (knows/mentors/works_at)",
+		directed: true,
 		graph,
 		seeds: [
 			{ id: "a", role: "source" },
@@ -874,6 +882,7 @@ function createQualityVsPopularity(): DemoFixture {
 		name: "quality-vs-popularity",
 		description:
 			"Contrasts high-popularity low-MI path vs low-popularity high-MI path",
+		directed: false,
 		graph,
 		seeds: [
 			{ id: "source", role: "source" },

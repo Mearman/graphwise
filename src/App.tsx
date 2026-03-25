@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
 	MantineProvider,
 	Stack,
@@ -10,6 +10,7 @@ import {
 	ActionIcon,
 	SegmentedControl,
 	Popover,
+	Select,
 } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { theme } from "./theme";
@@ -23,15 +24,19 @@ import { useGraphStore } from "./state/graph-store";
 import { useAnimationStore } from "./state/animation-store";
 import { useColumnStore } from "./state/column-store";
 import { runAllColumns } from "./engine/column-runner";
+import { loadFixture, fixtureNames } from "./engine/fixture-loader";
 
 import "@mantine/core/styles.css";
 
 function MainContent(): ReactNode {
 	const seeds = useGraphStore((state) => state.seeds);
+	const setGraph = useGraphStore((state) => state.setGraph);
+	const setSeeds = useGraphStore((state) => state.setSeeds);
 	const columns = useColumnStore((state) => state.columns);
 	const viewMode = useColumnStore((state) => state.viewMode);
 	const addColumn = useColumnStore((state) => state.addColumn);
 	const setViewMode = useColumnStore((state) => state.setViewMode);
+	const clearResults = useColumnStore((state) => state.clearResults);
 
 	const isPlaying = useAnimationStore((state) => state.isPlaying);
 	const syncedFrameIndex = useAnimationStore((state) => state.syncedFrameIndex);
@@ -42,9 +47,35 @@ function MainContent(): ReactNode {
 	const speed = useAnimationStore((state) => state.speed);
 	const setSpeed = useAnimationStore((state) => state.setSpeed);
 	const maxFrameCount = useAnimationStore((state) => state.maxFrameCount());
+	const animationReset = useAnimationStore((state) => state.reset);
+
+	const [selectedFixture, setSelectedFixture] = useState("three-community");
+
+	// Load initial fixture on mount
+	useEffect(() => {
+		const fixture = loadFixture("three-community");
+		setGraph(fixture.graph, fixture.directed);
+		setSeeds(fixture.seeds);
+	}, [setGraph, setSeeds]);
 
 	const handleRunAll = (): void => {
 		runAllColumns();
+	};
+
+	const handleFixtureChange = (name: string | null): void => {
+		if (name === null) return;
+		const fixtureNames_ = fixtureNames();
+		for (const fixtureName of fixtureNames_) {
+			if (fixtureName === name) {
+				const fixture = loadFixture(fixtureName);
+				setGraph(fixture.graph, fixture.directed);
+				setSeeds(fixture.seeds);
+				animationReset();
+				clearResults();
+				setSelectedFixture(name);
+				return;
+			}
+		}
 	};
 
 	return (
@@ -56,6 +87,19 @@ function MainContent(): ReactNode {
 						Graphwise Demo
 					</Text>
 					<Group>
+						{/* Dataset Selector */}
+						<Select
+							size="xs"
+							placeholder="Dataset"
+							value={selectedFixture}
+							onChange={handleFixtureChange}
+							data={fixtureNames().map((name) => ({
+								value: name,
+								label: loadFixture(name).description,
+							}))}
+							w={220}
+						/>
+
 						{/* Seed Picker Popover */}
 						<Popover position="bottom-start">
 							<Popover.Target>
