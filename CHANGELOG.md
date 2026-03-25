@@ -1,3 +1,39 @@
+## [1.10.0](https://github.com/Mearman/graphwise/compare/v1.9.1...v1.10.0) (2026-03-25)
+
+### Features
+
+* **expansion:** add batch priority support for GPU acceleration ([56dff83](https://github.com/Mearman/graphwise/commit/56dff83d1648bb9f7c3b8ae519ea54e62fccdbd1))
+* **expansion:** add GPU batch priority functions for LACE, FUSE, SIFT ([5576807](https://github.com/Mearman/graphwise/commit/557680776dbe615f51e0f74f63473a8481fece08))
+* **gpu:** add CSR-backed ReadableGraph adapter ([9a60f97](https://github.com/Mearman/graphwise/commit/9a60f977b4278d4759c271a086e56b981930a160))
+* **gpu:** add gpuMIBatch operation for batch MI computation ([8ecf81f](https://github.com/Mearman/graphwise/commit/8ecf81fe97c3fc27952d9746c67e1446fa67c9ed))
+* **gpu:** add neighbourhood intersection kernel with MI variant helpers ([92c2563](https://github.com/Mearman/graphwise/commit/92c256393bcbaa6a2cdbc6de02c70a6fda6a75a1))
+* **graph:** add batch operation protocol extensions ([8e0c001](https://github.com/Mearman/graphwise/commit/8e0c001eb8e0e9d112d626377ce41a2daa4b59a1))
+* **graph:** add batched runner for generator-based algorithms ([5e7e78b](https://github.com/Mearman/graphwise/commit/5e7e78b5a00ebd1302fdf5791b9c53be63163106))
+* **ranking:** add GPU compute options to BaselineConfig ([5b18dd4](https://github.com/Mearman/graphwise/commit/5b18dd45dc8916aa7f3764d1d09d92f9350db490))
+* **ranking:** add GPU support to pagerank baseline ([3976bf6](https://github.com/Mearman/graphwise/commit/3976bf641740feec0fb73ba6b8446436ecf41ccc))
+* **ranking:** add GPU-accelerated communicability async variant ([3aad727](https://github.com/Mearman/graphwise/commit/3aad7271bac09b35975652a2a266cf8c79e61636))
+* **ranking:** add GPU-accelerated katz async variant with SpMV ([fadc64b](https://github.com/Mearman/graphwise/commit/fadc64b3b5b15bbf7d692d13661289f3ad977b8d))
+* **ranking:** add GPU-accelerated PARSE implementation (Phase 6) ([a0b6d4c](https://github.com/Mearman/graphwise/commit/a0b6d4c3fd3a4960687864aff67bec43e1f57edc))
+* **src:** add grasp-gpu.ts ([af6ec6a](https://github.com/Mearman/graphwise/commit/af6ec6a3cd2c2f87e9f5bebf8ed9eaa8f632e827))
+* **src:** add index.ts ([006fb3b](https://github.com/Mearman/graphwise/commit/006fb3b2d48a09bacf1f1918c89e0f6425c22d61))
+* **src:** add kernel.ts ([e8647e5](https://github.com/Mearman/graphwise/commit/e8647e5a81e9ab6e6454438766093b02e957f3b7))
+* **src:** add logic.ts ([ceb0c04](https://github.com/Mearman/graphwise/commit/ceb0c0468951dfda0a4c1698d733d341fe2f8335))
+* **src:** add logic.unit.test.ts ([edd1516](https://github.com/Mearman/graphwise/commit/edd1516c442cfd220230027c091e34b6c16256e2))
+
+### Bug Fixes
+
+* **build:** allow eslint-disable in GPU source files ([98d0847](https://github.com/Mearman/graphwise/commit/98d084749b2fd7f69a6f8f90c92b26ddc0e3c80b))
+* **gpu/kmeans:** add type assertions for array buffer and RNG return types ([0c380b6](https://github.com/Mearman/graphwise/commit/0c380b6c6750f1c00a8d7cea9ac0a123232d89f2))
+* **gpu/kmeans:** use any types for TypeGPU buffers and add comprehensive type safety ([957ba40](https://github.com/Mearman/graphwise/commit/957ba4010222259b2399775dd42dd982bb690f61))
+* **gpu:** remove unnecessary eslint-disable comments in kmeans ([9b8d6d4](https://github.com/Mearman/graphwise/commit/9b8d6d47afe7fb3871f28b59ca70f8522375115b))
+* **gpu:** safe buffer creation and type casts for TypeGPU operations ([1511293](https://github.com/Mearman/graphwise/commit/1511293b5d0d3fdda1ad4d9c88ed01c4f2cb60b0))
+* **seeds/grasp:** convert to synchronous implementation and improve environment detection ([8b96829](https://github.com/Mearman/graphwise/commit/8b96829ad7a439bd6905f3e48a3053f664202ae0))
+* **src:** update operations.ts ([f8a7673](https://github.com/Mearman/graphwise/commit/f8a767334552eb63372eff26ecabbf21418efab9))
+
+### Performance Improvements
+
+* **ranking:** parallelise parseAsync path ranking ([d5d840b](https://github.com/Mearman/graphwise/commit/d5d840b0202b8b5c82bdf719ad82607b4cf58384))
+
 ## [1.9.1](https://github.com/Mearman/graphwise/compare/v1.9.0...v1.9.1) (2026-03-25)
 
 ### Bug Fixes
