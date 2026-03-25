@@ -28,9 +28,20 @@ import { useComparisonStore } from "../../state/comparison-store";
 import { useAnimationStore } from "../../state/animation-store";
 import { runComparison } from "../../engine/comparison-runner";
 import { runMIVariantComparison } from "../../engine/comparison-runner";
+import { runRankingComparison } from "../../engine/comparison-runner";
+import { runSeedSelectionComparison } from "../../engine/comparison-runner";
+import { runSubgraphExtractionComparison } from "../../engine/comparison-runner";
 import { runWithFrameCapture } from "../../engine/animation-runner";
 import { runRanking } from "../../engine/ranking-runner";
-import { getAlgorithm } from "../../engine/algorithm-registry";
+import {
+	getAlgorithm,
+	getRankingAlgorithm,
+	getSeedSelectionStrategy,
+	getSubgraphExtractionStrategy,
+	rankingAlgorithmNames,
+	seedSelectionStrategyNames,
+	subgraphExtractionStrategyNames,
+} from "../../engine/algorithm-registry";
 import {
 	loadFixture,
 	fixtureNames,
@@ -118,9 +129,34 @@ export function PipelinePanel(_props: PipelinePanelProps): ReactNode {
 	const animationLoadResult = useAnimationStore((state) => state.loadResult);
 	const loadResults = useComparisonStore((state) => state.loadResults);
 	const loadMIResults = useComparisonStore((state) => state.loadMIResults);
+	const loadRankingResults = useComparisonStore(
+		(state) => state.loadRankingResults,
+	);
+	const loadSubgraphResults = useComparisonStore(
+		(state) => state.loadSubgraphResults,
+	);
 	const selectedMIVariants = useComparisonStore(
 		(state) => state.selectedMIVariants,
 	);
+	const selectedRankingAlgorithms = useComparisonStore(
+		(state) => state.selectedRankingAlgorithms,
+	);
+	const setSelectedRankingAlgorithms = useComparisonStore(
+		(state) => state.setSelectedRankingAlgorithms,
+	);
+	const selectedSeedStrategies = useComparisonStore(
+		(state) => state.selectedSeedStrategies,
+	);
+	const selectedSubgraphStrategies = useComparisonStore(
+		(state) => state.selectedSubgraphStrategies,
+	);
+	const toggleSeedStrategy = useComparisonStore(
+		(state) => state.toggleSeedStrategy,
+	);
+	const toggleSubgraphStrategy = useComparisonStore(
+		(state) => state.toggleSubgraphStrategy,
+	);
+	const loadSeedResults = useComparisonStore((state) => state.loadSeedResults);
 	const comparisonIsRunning = useComparisonStore((state) => state.isRunning);
 	const setComparisonRunning = useComparisonStore((state) => state.setRunning);
 
@@ -201,6 +237,34 @@ export function PipelinePanel(_props: PipelinePanelProps): ReactNode {
 		animationLoadResult,
 	]);
 
+	const handleRunSeedStrategyComparison = useCallback(() => {
+		if (primaryAlgorithm === null) return;
+		if (selectedSeedStrategies.length === 0) return;
+
+		setComparisonRunning(true);
+		setTimeout(() => {
+			try {
+				const result = runSeedSelectionComparison(
+					graph,
+					seeds,
+					selectedSeedStrategies,
+					primaryAlgorithm,
+				);
+				loadSeedResults(result.entries, result.totalDurationMs);
+			} catch (error) {
+				console.error("Seed strategy comparison failed:", error);
+				setComparisonRunning(false);
+			}
+		}, 10);
+	}, [
+		primaryAlgorithm,
+		selectedSeedStrategies,
+		graph,
+		seeds,
+		loadSeedResults,
+		setComparisonRunning,
+	]);
+
 	const handleRunRanking = useCallback(() => {
 		if (expansionResult === null) return;
 
@@ -229,6 +293,11 @@ export function PipelinePanel(_props: PipelinePanelProps): ReactNode {
 
 	const canRunExpansion =
 		primaryAlgorithm !== null && seeds.length >= 2 && !comparisonIsRunning;
+	const canRunSeedComparison =
+		primaryAlgorithm !== null &&
+		seeds.length >= 2 &&
+		selectedSeedStrategies.length > 0 &&
+		!comparisonIsRunning;
 
 	const canRunRanking =
 		expansionResult !== null &&
@@ -261,11 +330,90 @@ export function PipelinePanel(_props: PipelinePanelProps): ReactNode {
 		setComparisonRunning,
 	]);
 
+	const handleRunRankingComparison = useCallback(() => {
+		if (expansionResult === null) return;
+		if (selectedRankingAlgorithms.length === 0) return;
+
+		setComparisonRunning(true);
+		setTimeout(() => {
+			try {
+				const result = runRankingComparison(
+					graph,
+					expansionResult.paths,
+					selectedMIVariant,
+					selectedRankingAlgorithms,
+				);
+				loadRankingResults(result.entries, result.totalDurationMs);
+			} catch (error) {
+				console.error("Ranking comparison failed:", error);
+				setComparisonRunning(false);
+			}
+		}, 10);
+	}, [
+		expansionResult,
+		selectedRankingAlgorithms,
+		selectedMIVariant,
+		graph,
+		loadRankingResults,
+		setComparisonRunning,
+	]);
+
+	const handleRunSubgraphComparison = useCallback(() => {
+		if (expansionResult === null) return;
+		if (selectedSubgraphStrategies.length === 0) return;
+
+		setComparisonRunning(true);
+		setTimeout(() => {
+			try {
+				const result = runSubgraphExtractionComparison(
+					graph,
+					expansionResult.paths,
+					selectedSubgraphStrategies,
+					selectedMIVariant,
+				);
+				loadSubgraphResults(result.entries, result.totalDurationMs);
+			} catch (error) {
+				console.error("Subgraph extraction comparison failed:", error);
+				setComparisonRunning(false);
+			}
+		}, 10);
+	}, [
+		expansionResult,
+		selectedSubgraphStrategies,
+		selectedMIVariant,
+		graph,
+		loadSubgraphResults,
+		setComparisonRunning,
+	]);
+
 	const canRunMIComparison =
 		expansionResult !== null &&
 		expansionResult.paths.length > 0 &&
 		selectedMIVariants.length > 0 &&
 		!comparisonIsRunning;
+
+	const canRunRankingComparison =
+		expansionResult !== null &&
+		expansionResult.paths.length > 0 &&
+		selectedRankingAlgorithms.length > 0 &&
+		!comparisonIsRunning;
+
+	const canRunSubgraphComparison =
+		expansionResult !== null &&
+		expansionResult.paths.length > 0 &&
+		selectedSubgraphStrategies.length > 0 &&
+		!comparisonIsRunning;
+
+	const rankingAlgorithmOptions = rankingAlgorithmNames().map((name) => ({
+		value: name,
+		label: getRankingAlgorithm(name)?.label ?? name,
+	}));
+	const subgraphStrategyOptions = subgraphExtractionStrategyNames().map(
+		(name) => ({
+			value: name,
+			label: getSubgraphExtractionStrategy(name)?.label ?? name,
+		}),
+	);
 
 	return (
 		<Accordion
@@ -308,6 +456,49 @@ export function PipelinePanel(_props: PipelinePanelProps): ReactNode {
 						</Paper>
 
 						<SeedPicker />
+
+						<Paper p="sm" withBorder>
+							<Stack gap="xs">
+								<Text size="xs" fw={500}>
+									Seed Strategy Comparison
+								</Text>
+								<Text size="xs" c="dimmed">
+									Run downstream expansion for each selected seed strategy using
+									the primary algorithm.
+								</Text>
+								{seedSelectionStrategyNames().map((strategyName) => {
+									const info = getSeedSelectionStrategy(strategyName);
+									const checked = selectedSeedStrategies.includes(strategyName);
+									return (
+										<Button
+											key={strategyName}
+											size="xs"
+											variant={checked ? "filled" : "light"}
+											color={checked ? "blue" : "gray"}
+											justify="space-between"
+											onClick={() => {
+												toggleSeedStrategy(strategyName);
+											}}
+											fullWidth
+										>
+											<Text size="xs" fw={500}>
+												{info?.label ?? strategyName}
+											</Text>
+										</Button>
+									);
+								})}
+								<Button
+									size="xs"
+									variant="light"
+									onClick={handleRunSeedStrategyComparison}
+									disabled={!canRunSeedComparison}
+									loading={comparisonIsRunning}
+									fullWidth
+								>
+									Compare Seed Strategies
+								</Button>
+							</Stack>
+						</Paper>
 
 						<Text size="xs" c="dimmed">
 							Select at least 2 seed nodes for bidirectional expansion
@@ -387,6 +578,101 @@ export function PipelinePanel(_props: PipelinePanelProps): ReactNode {
 						>
 							Compare MI Variants
 						</Button>
+
+						<Paper p="sm" withBorder>
+							<Stack gap="xs">
+								<Text size="xs" fw={500}>
+									Ranking Algorithm Comparison
+								</Text>
+								<Text size="xs" c="dimmed">
+									Run multiple ranking algorithms against the same candidate
+									paths from expansion.
+								</Text>
+								<Group gap={6} wrap="wrap">
+									{rankingAlgorithmOptions.map((option) => {
+										const isSelected = selectedRankingAlgorithms.includes(
+											option.value,
+										);
+										return (
+											<Button
+												key={option.value}
+												size="xs"
+												variant={isSelected ? "filled" : "light"}
+												color={isSelected ? "violet" : "gray"}
+												onClick={() => {
+													if (isSelected) {
+														setSelectedRankingAlgorithms(
+															selectedRankingAlgorithms.filter(
+																(name) => name !== option.value,
+															),
+														);
+													} else {
+														setSelectedRankingAlgorithms([
+															...selectedRankingAlgorithms,
+															option.value,
+														]);
+													}
+												}}
+											>
+												{option.label}
+											</Button>
+										);
+									})}
+								</Group>
+								<Button
+									size="xs"
+									variant="light"
+									onClick={handleRunRankingComparison}
+									disabled={!canRunRankingComparison}
+									loading={comparisonIsRunning}
+									fullWidth
+								>
+									Compare Ranking Algorithms
+								</Button>
+							</Stack>
+						</Paper>
+
+						<Paper p="sm" withBorder>
+							<Stack gap="xs">
+								<Text size="xs" fw={500}>
+									Subgraph Extraction Comparison
+								</Text>
+								<Text size="xs" c="dimmed">
+									Compare extraction retention and downstream ranking metrics
+									across deterministic subgraph strategies.
+								</Text>
+								<Group gap={6} wrap="wrap">
+									{subgraphStrategyOptions.map((option) => {
+										const isSelected = selectedSubgraphStrategies.includes(
+											option.value,
+										);
+										return (
+											<Button
+												key={option.value}
+												size="xs"
+												variant={isSelected ? "filled" : "light"}
+												color={isSelected ? "teal" : "gray"}
+												onClick={() => {
+													toggleSubgraphStrategy(option.value);
+												}}
+											>
+												{option.label}
+											</Button>
+										);
+									})}
+								</Group>
+								<Button
+									size="xs"
+									variant="light"
+									onClick={handleRunSubgraphComparison}
+									disabled={!canRunSubgraphComparison}
+									loading={comparisonIsRunning}
+									fullWidth
+								>
+									Compare Subgraph Strategies
+								</Button>
+							</Stack>
+						</Paper>
 
 						{rankingResult !== null ? (
 							<Stack gap="xs">
