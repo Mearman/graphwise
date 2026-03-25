@@ -1,5 +1,1 @@
-export { PipelinePanel, type PipelinePanelProps } from "./PipelinePanel";
-export {
-	MIVariantSelector,
-	type MIVariantSelectorProps,
-} from "./MIVariantSelector";
+// Pipeline components have been replaced by column-based architecture
