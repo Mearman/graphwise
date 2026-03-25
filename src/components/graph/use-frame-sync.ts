@@ -13,11 +13,16 @@ export function useFrameSync(options: UseFrameSyncOptions): void {
 	const currentFrame = useAnimationStore((state) => {
 		if (algorithmName !== undefined && algorithmName !== "") {
 			const framesForAlgo = state.algorithmFrames[algorithmName] ?? [];
+			if (framesForAlgo.length === 0) return undefined;
+
 			const idx =
 				typeof state.syncedFrameIndex === "number"
 					? state.syncedFrameIndex
 					: state.currentFrameIndex;
-			return framesForAlgo[idx];
+
+			// Clamp index to array bounds - show final frame when synced index exceeds frame count
+			const clampedIdx = Math.min(idx, framesForAlgo.length - 1);
+			return framesForAlgo[clampedIdx];
 		}
 		return state.currentFrame();
 	});

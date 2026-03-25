@@ -46,6 +46,8 @@ interface AnimationState {
 	readonly currentFrame: () => ExpansionAnimationFrame | undefined;
 	/** Set shared synced frame index for comparison playback */
 	readonly setSyncedFrameIndex: (index: number) => void;
+	/** Get maximum frame count across all algorithms */
+	readonly maxFrameCount: () => number;
 }
 
 export const useAnimationStore = create<AnimationState>()((set, get) => ({
@@ -137,5 +139,16 @@ export const useAnimationStore = create<AnimationState>()((set, get) => ({
 		const { frames, currentFrameIndex } = get();
 		const frame = frames[currentFrameIndex];
 		return frame;
+	},
+
+	maxFrameCount: () => {
+		const { algorithmFrames } = get();
+		let max = 0;
+		for (const frames of Object.values(algorithmFrames)) {
+			if (frames.length > max) {
+				max = frames.length;
+			}
+		}
+		return max;
 	},
 }));

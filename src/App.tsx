@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode } from "react";
 import {
 	MantineProvider,
 	Stack,
@@ -40,18 +40,7 @@ function MainContent(): ReactNode {
 	);
 	const speed = useAnimationStore((state) => state.speed);
 	const setSpeed = useAnimationStore((state) => state.setSpeed);
-	const algorithmFrames = useAnimationStore((state) => state.algorithmFrames);
-
-	// Calculate max frame count across all algorithms
-	const maxFrameCount = useMemo(() => {
-		let max = 0;
-		for (const frames of Object.values(algorithmFrames)) {
-			if (frames.length > max) {
-				max = frames.length;
-			}
-		}
-		return max;
-	}, [algorithmFrames]);
+	const maxFrameCount = useAnimationStore((state) => state.maxFrameCount());
 
 	const handleRunAll = (): void => {
 		runAllColumns();
