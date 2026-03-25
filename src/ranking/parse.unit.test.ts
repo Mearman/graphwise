@@ -2,8 +2,10 @@ import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { NodeData, EdgeData } from "../graph";
 import type { ExpansionPath } from "../expansion/types";
-import { parse } from "./parse";
+import { wrapAsync } from "../__test__/fixtures/wrap-async";
+import { parse, parseAsync } from "./parse";
 import { adamicAdar } from "./mi";
+import { jaccardAsync } from "./mi/jaccard";
 
 interface TestNode extends NodeData {
 	readonly label: string;
@@ -184,5 +186,115 @@ describe("parse", () => {
 		const result = parse(graph, paths);
 
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
+	});
+});
+
+describe("parseAsync", () => {
+	it("matches parse on sync graph with jaccardAsync", async () => {
+		const graph = createTestGraph();
+		const paths = [
+			createPath(["A", "B"]),
+			createPath(["A", "B", "C"]),
+			createPath(["A", "B", "C", "D"]),
+		];
+
+		const syncResult = parse(graph, paths);
+		const asyncResult = await parseAsync(wrapAsync(graph), paths, {
+			mi: jaccardAsync,
+		});
+
+		expect(asyncResult.paths.length).toBe(syncResult.paths.length);
+		for (let i = 0; i < syncResult.paths.length; i++) {
+			expect(asyncResult.paths[i]?.salience).toBeCloseTo(
+				syncResult.paths[i]?.salience ?? 0,
+				10,
+			);
+		}
+	});
+
+	it("returns ranked paths sorted by salience descending", async () => {
+		const graph = createTestGraph();
+		const paths = [
+			createPath(["A", "B", "C", "D", "E"]),
+			createPath(["A", "B"]),
+			createPath(["A", "B", "C"]),
+		];
+
+		const result = await parseAsync(wrapAsync(graph), paths, {
+			mi: jaccardAsync,
+		});
+
+		for (let i = 1; i < result.paths.length; i++) {
+			const prev = result.paths[i - 1]?.salience;
+			const curr = result.paths[i]?.salience;
+			if (prev !== undefined && curr !== undefined) {
+				expect(prev).toBeGreaterThanOrEqual(curr);
+			}
+		}
+	});
+
+	it("handles empty path list", async () => {
+		const graph = createTestGraph();
+		const result = await parseAsync(wrapAsync(graph), []);
+
+		expect(result.paths).toHaveLength(0);
+		expect(result.stats.pathsRanked).toBe(0);
+		expect(result.stats.meanSalience).toBe(0);
+	});
+
+	it("handles single-node path", async () => {
+		const graph = createTestGraph();
+		const paths = [createPath(["A"])];
+
+		const result = await parseAsync(wrapAsync(graph), paths);
+
+		expect(result.paths).toHaveLength(1);
+		expect(result.paths[0]?.salience).toBeGreaterThan(0);
+	});
+
+	it("computes statistics matching sync result", async () => {
+		const graph = createTestGraph();
+		const paths = [
+			createPath(["A", "B"]),
+			createPath(["B", "C"]),
+			createPath(["C", "D"]),
+		];
+
+		const syncResult = parse(graph, paths);
+		const asyncResult = await parseAsync(wrapAsync(graph), paths, {
+			mi: jaccardAsync,
+		});
+
+		expect(asyncResult.stats.pathsRanked).toBe(syncResult.stats.pathsRanked);
+		expect(asyncResult.stats.meanSalience).toBeCloseTo(
+			syncResult.stats.meanSalience,
+			10,
+		);
+		expect(asyncResult.stats.maxSalience).toBeCloseTo(
+			syncResult.stats.maxSalience,
+			10,
+		);
+		expect(asyncResult.stats.minSalience).toBeCloseTo(
+			syncResult.stats.minSalience,
+			10,
+		);
+	});
+
+	it("measures duration", async () => {
+		const graph = createTestGraph();
+		const paths = [createPath(["A", "B"])];
+
+		const result = await parseAsync(wrapAsync(graph), paths);
+
+		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
+	});
+
+	it("accepts custom epsilon", async () => {
+		const graph = createTestGraph();
+		const paths = [createPath(["A"])];
+
+		const result = await parseAsync(wrapAsync(graph), paths, { epsilon: 0.01 });
+
+		expect(result.paths[0]?.salience).toBe(0.01);
 	});
 });
