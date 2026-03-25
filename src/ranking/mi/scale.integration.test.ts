@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { scale } from "./scale";
 import { jaccard } from "./jaccard";
+import { parse } from "../parse";
+import { createPath } from "../../__test__/fixtures";
 
 describe("SCALE MI variant (density normalisation)", () => {
 	it("produces higher SCALE scores in sparse graphs compared to dense graphs for the same local edge structure", async () => {
@@ -245,6 +247,52 @@ describe("SCALE MI variant (density normalisation)", () => {
 		// The edge A-C has more shared neighbours in the dense graph, so its Jaccard is higher,
 		// which outweighs the density penalty. But SCALE correctly accounts for density:
 		// if we had the same Jaccard, sparse would have higher SCALE due to lower density.
+	});
+
+	it("produces different PARSE rankings than Jaccard", async () => {
+		// PARSE with SCALE normalises each edge MI by graph density.
+		// In a sparse graph (low density), SCALE inflates MI scores relative to Jaccard.
+		// This causes PARSE+SCALE salience values to diverge from PARSE+Jaccard.
+		//
+		// Strategy: build a 4-node graph with triangle A-B-C plus isolated hub D.
+		// Paths through the triangle traverse edges with non-trivial neighbourhood overlap,
+		// so density normalisation has a clear effect on salience.
+
+		const { AdjacencyMapGraph } = await import("../../graph");
+
+		const graph = AdjacencyMapGraph.undirected();
+
+		for (const id of ["A", "B", "C", "D"]) {
+			graph.addNode({ id, label: `Node ${id}`, type: "test" });
+		}
+
+		// Triangle: A-B, B-C, A-C (shared neighbours create non-zero Jaccard)
+		graph.addEdge({ source: "A", target: "B", weight: 1 });
+		graph.addEdge({ source: "B", target: "C", weight: 1 });
+		graph.addEdge({ source: "A", target: "C", weight: 1 });
+		// Extra spoke: A-D (increases density without affecting the triangle neighbourhood)
+		graph.addEdge({ source: "A", target: "D", weight: 1 });
+
+		// Paths that traverse the triangle and the spoke
+		const paths = [
+			createPath(["B", "A", "C"]), // triangle path: both edges have shared neighbour
+			createPath(["C", "B", "A"]), // same triangle, other direction
+			createPath(["D", "A", "B"]), // spoke then triangle edge
+		];
+
+		const parseJaccard = parse(graph, paths, { mi: jaccard });
+		const parseScale = parse(graph, paths, { mi: scale });
+
+		const jaccardScores = parseJaccard.paths.map((p) => p.salience);
+		const scaleScores = parseScale.paths.map((p) => p.salience);
+
+		// At least one path salience must differ between Jaccard and SCALE.
+		// SCALE divides Jaccard by graph density (ρ < 1), so SCALE scores are
+		// generally inflated relative to Jaccard for sparse graphs.
+		const differ = jaccardScores.some(
+			(s, i) => Math.abs(s - (scaleScores[i] ?? 0)) > 1e-9,
+		);
+		expect(differ).toBe(true);
 	});
 
 	it("shows that Jaccard and SCALE differ by density normalisation", async () => {

@@ -3,6 +3,8 @@ import { AdjacencyMapGraph } from "../../graph";
 import { createSocialHubFixture } from "../../__test__/fixtures";
 import { skew } from "./skew";
 import { jaccard } from "./jaccard";
+import { parse } from "../parse";
+import { createPath } from "../../__test__/fixtures";
 
 describe("SKEW MI variant (hub penalisation)", () => {
 	it("isolates IDF weighting by comparing edges with identical Jaccard values", () => {
@@ -141,6 +143,43 @@ describe("SKEW MI variant (hub penalisation)", () => {
 		// Verify that both scores are positive
 		expect(skewAliceBob).toBeGreaterThan(0);
 		expect(skewBobCarol).toBeGreaterThan(0);
+	});
+
+	it("produces different PARSE rankings than Jaccard", () => {
+		// SKEW applies IDF-style rarity weighting: log(N/(deg+1)) for each endpoint.
+		// Hub nodes (high degree) incur heavy penalties; peripheral nodes are boosted.
+		//
+		// The social-hub fixture has Alice (degree 10+) as a central hub.
+		// Paths through Alice involve a high-degree endpoint (penalised by SKEW).
+		// Paths through peripheral nodes (bob, carol, david cluster) are boosted.
+		//
+		// PARSE+SKEW will therefore assign different salience values compared to
+		// PARSE+Jaccard, which is insensitive to node degree.
+
+		const fixture = createSocialHubFixture();
+		const { graph } = fixture;
+
+		const paths = [
+			// Path through the hub Alice (SKEW penalises high-degree endpoints)
+			createPath(["bob", "alice", "kate"]),
+			// Path within the photography cluster (low-degree nodes throughout)
+			createPath(["bob", "carol", "david"]),
+			// Path across clusters via Carol-Emma bridge
+			createPath(["bob", "carol", "emma"]),
+		];
+
+		const parseJaccard = parse(graph, paths, { mi: jaccard });
+		const parseSkew = parse(graph, paths, { mi: skew });
+
+		const jaccardScores = parseJaccard.paths.map((p) => p.salience);
+		const skewScores = parseSkew.paths.map((p) => p.salience);
+
+		// At least one salience must differ: SKEW's IDF penalty on Alice
+		// changes the relative ranking compared to plain Jaccard.
+		const differ = jaccardScores.some(
+			(s, i) => Math.abs(s - (skewScores[i] ?? 0)) > 1e-9,
+		);
+		expect(differ).toBe(true);
 	});
 
 	it("applies greater weighting to edges between rare (low-degree) nodes", () => {

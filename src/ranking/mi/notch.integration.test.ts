@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { notch } from "./notch";
+import { jaccard } from "./jaccard";
+import { parse } from "../parse";
+import { createPath } from "../../__test__/fixtures";
 
 describe("NOTCH MI variant (node-type rarity)", () => {
 	it("scores edges involving rare node types higher than edges between common node types", async () => {
@@ -126,6 +129,97 @@ describe("NOTCH MI variant (node-type rarity)", () => {
 
 		expect(notchPersonOrg).toBeCloseTo(expectedNotchPersonOrg, 5);
 		expect(notchPersonPerson).toBeCloseTo(expectedNotchPersonPerson, 5);
+	});
+
+	it("produces different PARSE rankings than Jaccard", async () => {
+		// NOTCH weights Jaccard by node-type rarity for both endpoints:
+		// log(|V|/c(type_u)) * log(|V|/c(type_v)).
+		// Organisation nodes are rare (3 of 15); person nodes are common (12 of 15).
+		// Paths through org nodes therefore score higher under NOTCH than under Jaccard.
+		// PARSE+NOTCH produces different salience values from PARSE+Jaccard on
+		// a graph where some paths pass through rare-type (org) nodes.
+		//
+		// Graph reused from existing tests: 12 people + 3 orgs, "knows" + "works_at" edges.
+
+		const { AdjacencyMapGraph } = await import("../../graph");
+
+		const graph = AdjacencyMapGraph.undirected();
+
+		const people = [
+			"p1",
+			"p2",
+			"p3",
+			"p4",
+			"p5",
+			"p6",
+			"p7",
+			"p8",
+			"p9",
+			"p10",
+			"p11",
+			"p12",
+		];
+		const orgs = ["org1", "org2", "org3"];
+
+		for (const id of people) {
+			graph.addNode({ id, label: id, type: "person" });
+		}
+		for (const id of orgs) {
+			graph.addNode({ id, label: id, type: "organisation" });
+		}
+
+		// Social edges among people (create shared neighbours)
+		const knowsEdges: readonly (readonly [string, string])[] = [
+			["p1", "p2"],
+			["p2", "p3"],
+			["p3", "p4"],
+			["p4", "p5"],
+			["p5", "p6"],
+			["p1", "p3"],
+			["p2", "p4"],
+			["p3", "p5"],
+		];
+		for (const [source, target] of knowsEdges) {
+			graph.addEdge({ source, target, type: "knows", weight: 1 });
+		}
+
+		// Employment edges (person → rare org node)
+		const worksAtEdges: readonly (readonly [string, string])[] = [
+			["p1", "org1"],
+			["p2", "org1"],
+			["p3", "org2"],
+			["p4", "org2"],
+		];
+		for (const [person, org] of worksAtEdges) {
+			graph.addEdge({
+				source: person,
+				target: org,
+				type: "works_at",
+				weight: 1,
+			});
+		}
+
+		const paths = [
+			// Path through a rare org node (NOTCH boosts this strongly)
+			createPath(["p1", "org1", "p2"]),
+			// Path entirely through common person nodes
+			createPath(["p1", "p2", "p3"]),
+			// Another person-only path
+			createPath(["p2", "p3", "p4"]),
+		];
+
+		const parseJaccard = parse(graph, paths, { mi: jaccard });
+		const parseNotch = parse(graph, paths, { mi: notch });
+
+		const jaccardScores = parseJaccard.paths.map((p) => p.salience);
+		const notchScores = parseNotch.paths.map((p) => p.salience);
+
+		// NOTCH boosts edges involving rare org nodes; Jaccard is type-blind.
+		// At least one salience value must therefore differ between the two rankings.
+		const differ = jaccardScores.some(
+			(s, i) => Math.abs(s - (notchScores[i] ?? 0)) > 1e-9,
+		);
+		expect(differ).toBe(true);
 	});
 
 	it("isolates node-type rarity effect by using controlled Jaccard values", async () => {

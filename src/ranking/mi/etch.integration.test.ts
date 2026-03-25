@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { etch } from "./etch";
 import { jaccard } from "./jaccard";
+import { parse } from "../parse";
+import { createPath } from "../../__test__/fixtures";
 
 describe("ETCH MI variant (edge-type rarity)", () => {
 	it("scores rare edge types higher than common edge types with same Jaccard overlap", async () => {
@@ -129,6 +131,85 @@ describe("ETCH MI variant (edge-type rarity)", () => {
 
 		// ETCH ratio should be at least equal to rarity ratio (since Jaccard is identical)
 		expect(etchRatio).toBeGreaterThanOrEqual(rarityRatio - 0.01); // small tolerance for floating point
+	});
+
+	it("produces different PARSE rankings than Jaccard", async () => {
+		// ETCH weights Jaccard by edge-type rarity: log(|E| / count(type)).
+		// Paths that traverse rare edge types score higher under ETCH than under Jaccard.
+		// PARSE+ETCH therefore produces different salience values from PARSE+Jaccard
+		// on a graph with mixed edge-type rarity.
+		//
+		// Strategy: reuse the controlled graph structure with two edge-type frequencies.
+		// - "mentors" edges: rare (2 total)
+		// - "knows" edges: common (10 total)
+		// Build paths that cross both edge types; ETCH inflates the rare-type edges.
+
+		const { AdjacencyMapGraph } = await import("../../graph");
+
+		const graph = AdjacencyMapGraph.undirected();
+
+		for (const id of [
+			"u1",
+			"v1",
+			"u2",
+			"v2",
+			"s1",
+			"s2",
+			"x1",
+			"x2",
+			"x3",
+			"x4",
+		]) {
+			graph.addNode({ id, label: `Node ${id}`, type: "test" });
+		}
+
+		// Pair 1: u1-v1 connected via rare "mentors" edge
+		graph.addEdge({ source: "u1", target: "s1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "u1", target: "s2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "v1", target: "s1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "v1", target: "s2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "u1", target: "v1", type: "mentors", weight: 1 });
+
+		// Pair 2: u2-v2 connected via common "knows" edge
+		graph.addEdge({ source: "u2", target: "s1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "u2", target: "s2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "v2", target: "s1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "v2", target: "s2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "u2", target: "v2", type: "knows", weight: 1 });
+
+		// Additional "knows" edges to make it the common type
+		graph.addEdge({ source: "s1", target: "s2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x1", target: "x2", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x2", target: "x3", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x3", target: "x4", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x4", target: "x1", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x1", target: "x3", type: "knows", weight: 1 });
+		graph.addEdge({ source: "x2", target: "x4", type: "knows", weight: 1 });
+
+		// Second "mentors" edge — keeps the type rare
+		graph.addEdge({ source: "s1", target: "s2", type: "mentors", weight: 1 });
+
+		const paths = [
+			// Path across the rare "mentors" edge: u1 → v1, both connected to s1/s2
+			createPath(["s1", "u1", "v1"]),
+			// Path across the common "knows" edge: u2 → v2
+			createPath(["s1", "u2", "v2"]),
+			// Short path within the "knows" chain
+			createPath(["x1", "x2", "x3"]),
+		];
+
+		const parseJaccard = parse(graph, paths, { mi: jaccard });
+		const parseEtch = parse(graph, paths, { mi: etch });
+
+		const jaccardScores = parseJaccard.paths.map((p) => p.salience);
+		const etchScores = parseEtch.paths.map((p) => p.salience);
+
+		// ETCH boosts the path through the rare "mentors" edge more than Jaccard does,
+		// so at least one salience value must differ between the two rankings.
+		const differ = jaccardScores.some(
+			(s, i) => Math.abs(s - (etchScores[i] ?? 0)) > 1e-9,
+		);
+		expect(differ).toBe(true);
 	});
 
 	it("applies rarity multiplier log(|E| / edgeTypeCount) correctly", async () => {

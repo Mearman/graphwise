@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { createTwoDepartmentFixture } from "../../__test__/fixtures";
+import {
+	createTwoDepartmentFixture,
+	createPath,
+} from "../../__test__/fixtures";
 import { span } from "./span";
+import { jaccard } from "./jaccard";
+import { parse } from "../parse";
 import { neighbourSet, neighbourOverlap } from "../../utils";
 import { localClusteringCoefficient } from "../../utils";
 
@@ -110,6 +115,45 @@ describe("SPAN MI variant (bridge reward)", () => {
 		// Verify Jaccard scores: Jaccard within the cluster should be similar or favour the bridge
 		// (The bridge now has reasonable overlap due to multiple cross-department connections)
 		expect(jaccardWithin).toBeGreaterThanOrEqual(jaccardBridge);
+	});
+
+	it("produces different PARSE rankings than Jaccard", () => {
+		// SPAN penalises edges within tight clusters (high clustering coefficient)
+		// and rewards bridge edges (low clustering coefficient).
+		// PARSE+SPAN should therefore produce different salience values from PARSE+Jaccard
+		// on paths that mix bridge and within-cluster edges.
+		//
+		// The two-department fixture has:
+		// - Dense within-department edges (alice-bob, bob-carol, etc.)
+		// - Sparse cross-department bridge edges (carol-frank, emma-frank)
+		//
+		// Paths through the bridge traverse low-CC nodes; paths within a department
+		// traverse high-CC nodes. SPAN amplifies this contrast; Jaccard does not.
+
+		const fixture = createTwoDepartmentFixture();
+		const { graph } = fixture;
+
+		const paths = [
+			// Path entirely within Marketing (high clustering throughout)
+			createPath(["alice", "bob", "carol"]),
+			// Path crossing the bridge (low clustering on carol-frank edge)
+			createPath(["alice", "carol", "frank"]),
+			// Path within Engineering
+			createPath(["frank", "grace", "henry"]),
+		];
+
+		const parseJaccard = parse(graph, paths, { mi: jaccard });
+		const parseSpan = parse(graph, paths, { mi: span });
+
+		const jaccardScores = parseJaccard.paths.map((p) => p.salience);
+		const spanScores = parseSpan.paths.map((p) => p.salience);
+
+		// At least one path salience must differ between the two MI variants.
+		// SPAN's clustering penalty causes bridge-crossing paths to score differently.
+		const differ = jaccardScores.some(
+			(s, i) => Math.abs(s - (spanScores[i] ?? 0)) > 1e-9,
+		);
+		expect(differ).toBe(true);
 	});
 
 	it("upweights bridge edges with low clustering coefficients", () => {
