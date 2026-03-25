@@ -3,10 +3,21 @@ import {
 	deserialiseFromHash,
 	updateHash,
 	type SerialisedState,
+	type SerialisedStateV2Type,
 } from "../../state/url-state";
 import { useGraphStore } from "../../state/graph-store";
 import { useAnimationStore } from "../../state/animation-store";
 import { useColumnStore } from "../../state/column-store";
+import { useAppStore } from "../../state/app-store";
+import { useGenerationStore } from "../../state/generation-store";
+import { useInteractionStore } from "../../state/interaction-store";
+import {
+	expansionAlgorithmNames,
+	rankingAlgorithmNames,
+	type ExpansionAlgorithmName,
+	type RankingAlgorithmName,
+} from "../../engine/algorithm-registry";
+import type { MIVariantName } from "graphwise/ranking/mi";
 import { AdjacencyMapGraph } from "graphwise/graph";
 import type { Seed, SeedRole } from "graphwise/expansion";
 
@@ -44,21 +55,46 @@ export function useUrlSync(): void {
 	const seeds = useGraphStore((state) => state.seeds);
 	const setGraph = useGraphStore((state) => state.setGraph);
 	const setSeeds = useGraphStore((state) => state.setSeeds);
+	const setGraphLoadedFromUrl = useGraphStore(
+		(state) => state.setGraphLoadedFromUrl,
+	);
 
 	const columns = useColumnStore((state) => state.columns);
-	const updateColumn = useColumnStore((state) => state.updateColumn);
+	const setColumns = useColumnStore((state) => state.setColumns);
 
 	const currentFrameIndex = useAnimationStore(
 		(state) => state.currentFrameIndex,
 	);
+	const speed = useAnimationStore((state) => state.speed);
+	const setSpeed = useAnimationStore((state) => state.setSpeed);
+
+	const selectedFixture = useAppStore((state) => state.selectedFixture);
+	const setSelectedFixture = useAppStore((state) => state.setSelectedFixture);
+
+	const nodeCount = useGenerationStore((state) => state.nodeCount);
+	const seed = useGenerationStore((state) => state.seed);
+	const setNodeCount = useGenerationStore((state) => state.setNodeCount);
+	const setSeed = useGenerationStore((state) => state.setSeed);
+
+	const zoomEnabled = useInteractionStore((state) => state.zoomEnabled);
+	const panEnabled = useInteractionStore((state) => state.panEnabled);
+	const setZoomEnabled = useInteractionStore((state) => state.setZoomEnabled);
+	const setPanEnabled = useInteractionStore((state) => state.setPanEnabled);
 
 	const isInitialLoad = useRef(true);
 	const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Load from URL on mount
 	useEffect(() => {
-		const state = deserialiseFromHash();
-		if (state === null) return;
+		const state: SerialisedStateV2Type | null = deserialiseFromHash();
+		if (state === null) {
+			// No URL data, allow save effect to run
+			isInitialLoad.current = false;
+			return;
+		}
+
+		// Mark that we're loading from URL
+		setGraphLoadedFromUrl(true);
 
 		// Reconstruct graph
 		const newGraph = state.g.d
@@ -114,12 +150,95 @@ export function useUrlSync(): void {
 		});
 		setSeeds(restoredSeeds);
 
-		// Note: Column configurations (algorithms) are not restored from URL.
-		// Columns are created fresh each session via the UI. The URL stores
-		// the graph and seeds, which are deterministic inputs for algorithms.
+		// Restore columns with all settings
+		if (state.c.length > 0) {
+			const validExpansionNames = expansionAlgorithmNames();
+			const validRankingNames = rankingAlgorithmNames();
+			const validMiVariants: readonly MIVariantName[] = [
+				"jaccard",
+				"adamic-adar",
+				"cosine",
+				"sorensen",
+				"resource-allocation",
+				"overlap-coefficient",
+				"hub-promoted",
+				"scale",
+				"skew",
+				"span",
+				"etch",
+				"notch",
+				"adaptive",
+			];
+
+			function isExpansionName(value: string): value is ExpansionAlgorithmName {
+				for (const name of validExpansionNames) {
+					if (name === value) return true;
+				}
+				return false;
+			}
+
+			function isMiVariant(value: string): value is MIVariantName {
+				for (const name of validMiVariants) {
+					if (name === value) return true;
+				}
+				return false;
+			}
+
+			function isRankingName(value: string): value is RankingAlgorithmName {
+				for (const name of validRankingNames) {
+					if (name === value) return true;
+				}
+				return false;
+			}
+
+			const restoredColumns = state.c.map((col) => ({
+				id: col.id,
+				expansionAlgorithm:
+					col.a !== undefined && isExpansionName(col.a) ? col.a : null,
+				miVariant:
+					col.mi !== undefined && isMiVariant(col.mi) ? col.mi : "jaccard",
+				rankingAlgorithm:
+					col.ra !== undefined && isRankingName(col.ra) ? col.ra : "parse",
+				expansionResult: null,
+				rankingResult: null,
+				isRunning: false,
+			}));
+			setColumns(restoredColumns);
+		}
+
+		// Restore application state
+		if (state.fx !== undefined) {
+			setSelectedFixture(state.fx);
+		}
+		if (state.nc !== undefined) {
+			setNodeCount(state.nc);
+		}
+		if (state.gs !== undefined) {
+			setSeed(state.gs);
+		}
+		if (state.ze !== undefined) {
+			setZoomEnabled(state.ze);
+		}
+		if (state.pe !== undefined) {
+			setPanEnabled(state.pe);
+		}
+		if (state.sp !== undefined) {
+			setSpeed(state.sp);
+		}
 
 		isInitialLoad.current = false;
-	}, [setGraph, setSeeds, columns, updateColumn]);
+	}, [
+		setGraph,
+		setSeeds,
+		setGraphLoadedFromUrl,
+		setColumns,
+		setSelectedFixture,
+		setNodeCount,
+		setSeed,
+		setZoomEnabled,
+		setPanEnabled,
+		setSpeed,
+	]);
 
 	// Update URL when state changes (debounced)
 	useEffect(() => {
@@ -166,12 +285,19 @@ export function useUrlSync(): void {
 					i: s.id,
 					r: s.role,
 				})),
-				c: columns.flatMap((col) =>
-					col.expansionAlgorithm !== null
-						? [{ id: col.id, a: col.expansionAlgorithm }]
-						: [],
-				),
+				c: columns.map((col) => ({
+					id: col.id,
+					a: col.expansionAlgorithm ?? undefined,
+					mi: col.miVariant,
+					ra: col.rankingAlgorithm,
+				})),
 				f: currentFrameIndex > 0 ? currentFrameIndex : undefined,
+				fx: selectedFixture,
+				nc: nodeCount,
+				gs: seed,
+				ze: zoomEnabled,
+				pe: panEnabled,
+				sp: speed,
 			};
 
 			updateHash(serialisedState);
@@ -183,5 +309,17 @@ export function useUrlSync(): void {
 				clearTimeout(updateTimeoutRef.current);
 			}
 		};
-	}, [graph, directed, seeds, columns, currentFrameIndex]);
+	}, [
+		graph,
+		directed,
+		seeds,
+		columns,
+		currentFrameIndex,
+		selectedFixture,
+		nodeCount,
+		seed,
+		zoomEnabled,
+		panEnabled,
+		speed,
+	]);
 }
