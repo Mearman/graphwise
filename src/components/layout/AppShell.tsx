@@ -19,7 +19,9 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 					</Group>
 				</Group>
 			</MantineAppShell.Header>
-			<MantineAppShell.Main>{children}</MantineAppShell.Main>
+			<MantineAppShell.Main style={{ height: "100vh", overflow: "hidden" }}>
+				{children}
+			</MantineAppShell.Main>
 		</MantineAppShell>
 	);
 }

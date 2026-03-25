@@ -72,7 +72,7 @@ function MainContent(): ReactNode {
 
 	return (
 		<>
-			<Grid gutter="md" style={{ height: "calc(100vh - 120px)" }}>
+			<Grid gutter="md" style={{ height: "100%" }}>
 				<Grid.Col span={2}>
 					<Stack gap="md">
 						<Paper p="sm" withBorder>
@@ -92,7 +92,7 @@ function MainContent(): ReactNode {
 				</Grid.Col>
 
 				<Grid.Col span={7}>
-					<Stack gap="md" style={{ height: "100%", overflow: "hidden" }}>
+					<Stack gap="md" style={{ height: "100%" }}>
 						<Paper
 							shadow="sm"
 							withBorder
