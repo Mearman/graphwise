@@ -6,6 +6,7 @@
 
 export * from "./types";
 export * from "./csr";
+export * from "./csr-graph";
 export * from "./detect";
 export * from "./root";
 export * from "./dispatch";
