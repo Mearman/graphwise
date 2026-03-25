@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { Paper, Stack, Box } from "@mantine/core";
+import type { Core } from "cytoscape";
 import type { AdjacencyMapGraph } from "graphwise/graph";
 import type { Seed } from "graphwise/expansion";
 import { ColumnHeader } from "./ColumnHeader";
@@ -17,19 +18,26 @@ interface PipelineColumnProps {
 	readonly columnId: string;
 }
 
+interface ColumnGraphProps {
+	readonly columnId: string;
+	readonly graph: AdjacencyMapGraph | null;
+	readonly seeds: readonly Seed[];
+	readonly cy: Core | null;
+	readonly containerRef: React.RefObject<HTMLDivElement | null>;
+	readonly isReady: boolean;
+}
+
 function ColumnGraph({
 	columnId,
 	graph,
 	seeds,
-}: {
-	readonly columnId: string;
-	readonly graph: AdjacencyMapGraph | null;
-	readonly seeds: readonly Seed[];
-}): ReactNode {
+	cy,
+	containerRef,
+	isReady,
+}: ColumnGraphProps): ReactNode {
 	const column = useColumnStore((state) =>
 		state.columns.find((c) => c.id === columnId),
 	);
-	const { cy, containerRef, isReady } = useCytoscape();
 
 	// Sync graph to this column's Cytoscape instance
 	useGraphSync({ cy, graph, seeds });
@@ -56,7 +64,7 @@ export function PipelineColumn({ columnId }: PipelineColumnProps): ReactNode {
 	const column = useColumnStore((state) =>
 		state.columns.find((c) => c.id === columnId),
 	);
-	const { cy } = useCytoscape();
+	const { cy, containerRef, isReady } = useCytoscape();
 
 	if (!column) {
 		return null;
@@ -79,7 +87,14 @@ export function PipelineColumn({ columnId }: PipelineColumnProps): ReactNode {
 				<GraphToolbar cy={cy} />
 
 				<Paper style={{ aspectRatio: 1, position: "relative" }} withBorder>
-					<ColumnGraph columnId={columnId} graph={graph} seeds={seeds} />
+					<ColumnGraph
+						columnId={columnId}
+						graph={graph}
+						seeds={seeds}
+						cy={cy}
+						containerRef={containerRef}
+						isReady={isReady}
+					/>
 				</Paper>
 
 				<ColumnMetrics column={column} />
