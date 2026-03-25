@@ -1,9 +1,7 @@
 import { style } from "@vanilla-extract/css";
 
 export const toolbar = style({
-	position: "absolute",
-	top: 8,
-	right: 8,
+	position: "relative",
 	backgroundColor: "white",
 	borderRadius: 8,
 	padding: 4,
