@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState, useCallback } from "react";
 import {
 	MantineProvider,
 	Stack,
@@ -11,6 +11,8 @@ import {
 	SegmentedControl,
 	Popover,
 	Select,
+	Slider,
+	NumberInput,
 } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { theme } from "./theme";
@@ -23,10 +25,14 @@ import { useUrlSync } from "./components/app/use-url-sync";
 import { useGraphStore } from "./state/graph-store";
 import { useAnimationStore } from "./state/animation-store";
 import { useColumnStore } from "./state/column-store";
+import { useGenerationStore } from "./state/generation-store";
 import { runAllColumns } from "./engine/column-runner";
 import { loadFixture, fixtureNames } from "./engine/fixture-loader";
+import { generateRandomGraph } from "./engine/random-graph-generator";
 
 import "@mantine/core/styles.css";
+
+const RANDOM_FIXTURE = "random" as const;
 
 function MainContent(): ReactNode {
 	const seeds = useGraphStore((state) => state.seeds);
@@ -49,6 +55,12 @@ function MainContent(): ReactNode {
 	const maxFrameCount = useAnimationStore((state) => state.maxFrameCount());
 	const animationReset = useAnimationStore((state) => state.reset);
 
+	// Generation settings
+	const nodeCount = useGenerationStore((state) => state.nodeCount);
+	const seed = useGenerationStore((state) => state.seed);
+	const setNodeCount = useGenerationStore((state) => state.setNodeCount);
+	const setSeed = useGenerationStore((state) => state.setSeed);
+
 	const [selectedFixture, setSelectedFixture] = useState("three-community");
 
 	// Load initial fixture on mount
@@ -58,12 +70,33 @@ function MainContent(): ReactNode {
 		setSeeds(fixture.seeds);
 	}, [setGraph, setSeeds]);
 
+	// Regenerate random graph when settings change
+	const regenerateRandomGraph = useCallback(() => {
+		const generated = generateRandomGraph(nodeCount, seed);
+		setGraph(generated.graph, false);
+		setSeeds(generated.seeds);
+		animationReset();
+		clearResults();
+	}, [nodeCount, seed, setGraph, setSeeds, animationReset, clearResults]);
+
+	// Regenerate when on random fixture and settings change
+	useEffect(() => {
+		if (selectedFixture === RANDOM_FIXTURE) {
+			regenerateRandomGraph();
+		}
+	}, [selectedFixture, nodeCount, seed, regenerateRandomGraph]);
+
 	const handleRunAll = (): void => {
 		runAllColumns();
 	};
 
 	const handleFixtureChange = (name: string | null): void => {
 		if (name === null) return;
+		if (name === RANDOM_FIXTURE) {
+			setSelectedFixture(RANDOM_FIXTURE);
+			regenerateRandomGraph();
+			return;
+		}
 		const fixtureNames_ = fixtureNames();
 		for (const fixtureName of fixtureNames_) {
 			if (fixtureName === name) {
@@ -93,12 +126,50 @@ function MainContent(): ReactNode {
 							placeholder="Dataset"
 							value={selectedFixture}
 							onChange={handleFixtureChange}
-							data={fixtureNames().map((name) => ({
-								value: name,
-								label: loadFixture(name).description,
-							}))}
+							data={[
+								{ value: RANDOM_FIXTURE, label: "Random Graph" },
+								...fixtureNames().map((name) => ({
+									value: name,
+									label: loadFixture(name).description,
+								})),
+							]}
 							w={220}
 						/>
+
+						{/* Generation Controls - only show for Random */}
+						{selectedFixture === RANDOM_FIXTURE && (
+							<Group gap="xs">
+								<Box w={120}>
+									<Slider
+										size="xs"
+										label={(val) => `${String(val)} nodes`}
+										value={nodeCount}
+										onChange={(value) => {
+											setNodeCount(typeof value === "number" ? value : 20);
+										}}
+										min={5}
+										max={100}
+										step={5}
+										marks={[
+											{ value: 5, label: "5" },
+											{ value: 50, label: "50" },
+											{ value: 100, label: "100" },
+										]}
+									/>
+								</Box>
+								<NumberInput
+									size="xs"
+									placeholder="Seed"
+									value={seed}
+									onChange={(value) => {
+										setSeed(typeof value === "number" ? value : 42);
+									}}
+									min={0}
+									max={999999}
+									w={80}
+								/>
+							</Group>
+						)}
 
 						{/* Seed Picker Popover */}
 						<Popover position="bottom-start">
