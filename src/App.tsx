@@ -5,7 +5,6 @@ import {
 	Stack,
 	Paper,
 	Text,
-	Group,
 	Select,
 } from "@mantine/core";
 import { theme } from "./theme";

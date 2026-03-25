@@ -19,17 +19,22 @@ const EdgeSchema = z.object({
 
 const SeedSchema = z.object({
 	i: z.string().describe("Seed node ID"),
-	r: z.string().optional().describe("Seed role (source, target, bidirectional)"),
+	r: z
+		.string()
+		.optional()
+		.describe("Seed role (source, target, bidirectional)"),
 });
 
 export const SerialisedState = defineSchema(
 	z.object({
 		v: z.literal(1).describe("Schema version"),
-		g: z.object({
-			d: z.boolean().describe("Whether the graph is directed"),
-			n: z.array(NodeSchema).describe("Graph nodes"),
-			e: z.array(EdgeSchema).describe("Graph edges"),
-		}).describe("Graph structure"),
+		g: z
+			.object({
+				d: z.boolean().describe("Whether the graph is directed"),
+				n: z.array(NodeSchema).describe("Graph nodes"),
+				e: z.array(EdgeSchema).describe("Graph edges"),
+			})
+			.describe("Graph structure"),
 		s: z.array(SeedSchema).describe("Seed nodes for expansion"),
 		a: z.string().optional().describe("Selected algorithm name"),
 		f: z.number().optional().describe("Current animation frame index"),
