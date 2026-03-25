@@ -334,11 +334,11 @@ export default defineConfig(
 		files: ["src/**/*.unit.test.ts", "src/**/*.integration.test.ts"],
 		rules: {},
 	},
-	// GPU test files need type assertions to mock WebGPU in Node.js
+	// GPU source and test files need special handling
 	{
-		files: ["src/gpu/*.unit.test.ts"],
+		files: ["src/gpu/**/*.ts", "!src/gpu/kernels/**/*.ts"],
 		rules: {
-			// Allow eslint-disable for type assertions in GPU mocks
+			// Allow eslint-disable for interface compliance (unused parameters required by ReadableGraph)
 			"@eslint-community/eslint-comments/no-use": [
 				"error",
 				{ allow: ["eslint-disable-next-line"] },
