@@ -640,3 +640,119 @@ function applyMIVariant(
 			return jaccardFromIntersection(result);
 	}
 }
+
+/**
+ * Result of K-means assignment step.
+ */
+export interface KMeansAssignResult {
+	/** Assignment index for each point (0 to k-1) */
+	readonly assignments: Uint32Array;
+	/** Squared distance to assigned centroid for each point */
+	readonly distances: Float32Array;
+}
+
+/**
+ * Assign points to nearest centroids using GPU.
+ *
+ * For each point, computes distance to all centroids and assigns to nearest.
+ * This is the main parallelizable operation in K-means clustering.
+ *
+ * @param points - Array of 3D points to assign
+ * @param centroids - Array of 3D centroid coordinates
+ * @param options - Compute options
+ * @returns Assignment indices and distances
+ */
+export async function gpuKMeansAssign(
+	points: readonly (readonly [number, number, number])[],
+	centroids: readonly (readonly [number, number, number])[],
+	options?: GPUComputeOptions & { signal?: AbortSignal },
+): Promise<ComputeResult<KMeansAssignResult>> {
+	const pointCount = points.length;
+	const k = centroids.length;
+
+	const cpuFn = (): KMeansAssignResult => {
+		const assignments = new Uint32Array(pointCount);
+		const distances = new Float32Array(pointCount);
+
+		for (let i = 0; i < pointCount; i++) {
+			const point = points[i];
+			if (point === undefined) {
+				assignments[i] = 0;
+				distances[i] = 0;
+				continue;
+			}
+
+			const [px, py, pz] = point;
+			let minDist = Infinity;
+			let minIdx = 0;
+
+			for (let j = 0; j < k; j++) {
+				const centroid = centroids[j];
+				if (centroid === undefined) continue;
+
+				const [cx, cy, cz] = centroid;
+				const dx = px - cx;
+				const dy = py - cy;
+				const dz = pz - cz;
+				const distSq = dx * dx + dy * dy + dz * dz;
+
+				if (distSq < minDist) {
+					minDist = distSq;
+					minIdx = j;
+				}
+			}
+
+			assignments[i] = minIdx;
+			distances[i] = minDist;
+		}
+
+		return { assignments, distances };
+	};
+
+	// GPU implementation for larger datasets
+	const gpuFn = async (root: GraphwiseGPURoot): Promise<KMeansAssignResult> => {
+		// For now, fall back to CPU for small datasets
+		// GPU has overhead that makes it slower for small batches
+		if (pointCount < 100) {
+			return cpuFn();
+		}
+
+		const pointsBuffer = root
+			.createBuffer(d.arrayOf(d.vec3f, pointCount), points)
+			.$usage("storage");
+
+		const centroidsBuffer = root
+			.createBuffer(d.arrayOf(d.vec3f, k), centroids)
+			.$usage("storage");
+
+		const assignmentsBuffer = root
+			.createBuffer(d.arrayOf(d.u32, pointCount))
+			.$usage("storage");
+
+		const distancesBuffer = root
+			.createBuffer(d.arrayOf(d.f32, pointCount))
+			.$usage("storage");
+
+		// Dispatch assignment kernel
+		const { dispatchKMeansAssign: dispatch } = await import(
+			"./kernels/kmeans/kernel.js"
+		);
+		dispatch(root, pointsBuffer, centroidsBuffer, assignmentsBuffer, distancesBuffer, pointCount, k);
+
+		const assignments = await assignmentsBuffer.read();
+		const distances = await distancesBuffer.read();
+
+		return {
+			assignments: new Uint32Array(assignments),
+			distances: new Float32Array(distances),
+		};
+	};
+
+	const dispatchOpts: DispatchOptions = {
+		backend: options?.backend,
+		root: options?.root,
+		signal: options?.signal,
+	};
+
+	return withBackend(dispatchOpts, cpuFn, gpuFn);
+}
