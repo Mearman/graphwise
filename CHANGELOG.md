@@ -1,3 +1,11 @@
+## [1.5.1](https://github.com/Mearman/graphwise/compare/v1.5.0...v1.5.1) (2026-03-25)
+
+### Code Refactoring
+
+* **expansion:** extract priority helpers and delegate EDGE to HAE ([53e86e5](https://github.com/Mearman/graphwise/commit/53e86e5dd8a48f18dbc344276f2301426a86757c))
+* **expansion:** extract shared test fixtures and assertion helpers ([13e5aff](https://github.com/Mearman/graphwise/commit/13e5aff811d44bcb8e08c9fc4ae1606ae8fd9d41))
+* **ranking:** extract computeJaccard and normaliseAndRank helpers ([6a825db](https://github.com/Mearman/graphwise/commit/6a825db41aa80503bf9ec7a488d94377245222f0))
+
 ## [1.5.0](https://github.com/Mearman/graphwise/compare/v1.4.3...v1.5.0) (2026-03-25)
 
 ### Features
