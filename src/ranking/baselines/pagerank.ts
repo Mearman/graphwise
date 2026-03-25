@@ -5,11 +5,15 @@
  * Uses power iteration: r(v) = (1-d)/N + d * sum(r(u)/deg_out(u) for u->v)
  * Parameters: d=0.85 (damping factor), tolerance=1e-6, max 100 iterations.
  * Score = sum(pagerank(v) for v in path), normalised to [0, 1].
+ *
+ * GPU Support: When `config.gpu?.backend === 'gpu'` and a root is provided,
+ * uses WebGPU-accelerated computation for improved performance on large graphs.
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
 import type { ExpansionPath } from "../../expansion/types";
 import type { BaselineConfig, BaselineResult } from "./types";
+import { gpuPageRank } from "../../gpu/operations";
 import { normaliseAndRank } from "./utils";
 
 /**
@@ -87,6 +91,68 @@ function computePageRank<N extends NodeData, E extends EdgeData>(
 /**
  * Rank paths by sum of PageRank scores.
  *
+ * GPU Support: When `config.gpu?.backend === 'gpu'` and a GPU root is provided,
+ * uses WebGPU-accelerated computation for improved performance on large graphs.
+ *
+ * @param graph - Source graph
+ * @param paths - Paths to rank
+ * @param config - Configuration options
+ * @returns Ranked paths (highest PageRank sum first)
+ */
+export async function pagerankAsync<N extends NodeData, E extends EdgeData>(
+	graph: ReadableGraph<N, E>,
+	paths: readonly ExpansionPath[],
+	config?: BaselineConfig,
+): Promise<BaselineResult> {
+	const { includeScores = true, gpu } = config ?? {};
+
+	if (paths.length === 0) {
+		return {
+			paths: [],
+			method: "pagerank",
+		};
+	}
+
+	// Compute PageRank with GPU if available
+	let ranks: Map<string, number>;
+
+	if (gpu?.backend === "gpu" && gpu.root) {
+		const result = await gpuPageRank(graph, {
+			backend: "gpu",
+			root: gpu.root,
+		});
+		// Convert Float32Array to Map
+		const nodeIds = Array.from(graph.nodeIds());
+		ranks = new Map();
+		for (let i = 0; i < nodeIds.length; i++) {
+			const nodeId = nodeIds[i];
+			const score = result.value[i];
+			if (nodeId !== undefined && score !== undefined) {
+				ranks.set(nodeId, score);
+			}
+		}
+	} else {
+		ranks = computePageRank(graph);
+	}
+
+	// Score paths by sum of node ranks
+	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
+		let prSum = 0;
+		for (const nodeId of path.nodes) {
+			prSum += ranks.get(nodeId) ?? 0;
+		}
+		return { path, score: prSum };
+	});
+
+	return normaliseAndRank(paths, scored, "pagerank", includeScores);
+}
+
+/**
+ * Rank paths by sum of PageRank scores (synchronous version).
+ *
+ * This synchronous version uses CPU computation only.
+ * For GPU support, use the async `pagerankAsync` function.
+ *
  * @param graph - Source graph
  * @param paths - Paths to rank
  * @param config - Configuration options
@@ -106,7 +172,7 @@ export function pagerank<N extends NodeData, E extends EdgeData>(
 		};
 	}
 
-	// Compute PageRank
+	// Compute PageRank (CPU only for sync version)
 	const ranks = computePageRank(graph);
 
 	// Score paths by sum of node ranks
