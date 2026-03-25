@@ -74,9 +74,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: tarball
+          path: __tests__/fixtures/smoke-test
       - run: |
           cd __tests__/fixtures/smoke-test
-          pnpm install ../../graphwise-*.tgz
+          pnpm install graphwise-*.tgz
           pnpm exec tsc smoke-test.ts --noEmit
 
   release:
