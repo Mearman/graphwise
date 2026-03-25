@@ -1,5 +1,5 @@
 import cytoscape, { type Core } from "cytoscape";
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 interface UseCytoscapeReturn {
 	readonly cy: Core | null;
@@ -8,9 +8,9 @@ interface UseCytoscapeReturn {
 }
 
 export function useCytoscape(): UseCytoscapeReturn {
-	const cyRef = useRef<Core | null>(null);
 	const containerRef = useRef<HTMLDivElement | null>(null);
-	const isReady = useRef(false);
+	const [cy, setCy] = useState<Core | null>(null);
+	const [isReady, setIsReady] = useState(false);
 
 	useEffect(() => {
 		if (!containerRef.current) return;
@@ -23,7 +23,7 @@ export function useCytoscape(): UseCytoscapeReturn {
 			wheelSensitivity: 0.3,
 		};
 
-		cyRef.current = cytoscape({
+		const instance = cytoscape({
 			container: containerRef.current,
 			elements: [],
 			style: [
@@ -59,20 +59,19 @@ export function useCytoscape(): UseCytoscapeReturn {
 			...defaultOptions,
 		});
 
-		isReady.current = true;
+		setCy(instance);
+		setIsReady(true);
 
 		return () => {
-			if (cyRef.current) {
-				cyRef.current.destroy();
-				cyRef.current = null;
-				isReady.current = false;
-			}
+			instance.destroy();
+			setCy(null);
+			setIsReady(false);
 		};
 	}, []);
 
 	return {
-		cy: cyRef.current,
+		cy,
 		containerRef,
-		isReady: isReady.current,
+		isReady,
 	};
 }
