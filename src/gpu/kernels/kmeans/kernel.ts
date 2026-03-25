@@ -109,13 +109,13 @@ const kmeansAssignPipeline = (pointIdx: number): void => {
 export function dispatchKMeansAssign(
 	root: GraphwiseGPURoot,
 	// TypeGPU buffer types are complex and not easily expressible in TypeScript
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	pointsBuffer: any,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	centroidsBuffer: any,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	assignmentsBuffer: any,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	distancesBuffer: any,
 	pointCount: number,
 	k: number,
