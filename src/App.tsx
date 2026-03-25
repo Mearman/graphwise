@@ -1,12 +1,5 @@
 import { type ReactNode, useCallback } from "react";
-import {
-	MantineProvider,
-	Grid,
-	Stack,
-	Paper,
-	Text,
-	Select,
-} from "@mantine/core";
+import { MantineProvider, Stack, Paper, Text, Select } from "@mantine/core";
 import { theme } from "./theme";
 import { AppShell } from "./components/layout/AppShell";
 import { GraphCanvas } from "./components/graph/GraphCanvas";
@@ -71,64 +64,74 @@ function MainContent(): ReactNode {
 	}));
 
 	return (
-		<>
-			<Grid gutter="md" style={{ height: "100%" }}>
-				<Grid.Col span={2}>
-					<Stack gap="md">
-						<Paper p="sm" withBorder>
-							<Text size="sm" fw={500} mb="xs">
-								Load Fixture
-							</Text>
-							<Select
-								size="xs"
-								placeholder="Select a graph..."
-								data={fixtureOptions}
-								onChange={handleLoadFixture}
-							/>
-						</Paper>
-						<GraphToolbar cy={null} />
-						<SeedPicker />
-					</Stack>
-				</Grid.Col>
+		<div
+			style={{
+				display: "flex",
+				gap: "var(--mantine-spacing-md)",
+				height: "100%",
+			}}
+		>
+			<div style={{ width: "16.67%", flexShrink: 0 }}>
+				<Stack gap="md">
+					<Paper p="sm" withBorder>
+						<Text size="sm" fw={500} mb="xs">
+							Load Fixture
+						</Text>
+						<Select
+							size="xs"
+							placeholder="Select a graph..."
+							data={fixtureOptions}
+							onChange={handleLoadFixture}
+						/>
+					</Paper>
+					<GraphToolbar cy={null} />
+					<SeedPicker />
+				</Stack>
+			</div>
 
-				<Grid.Col span={7}>
-					<Stack gap="md" style={{ height: "100%" }}>
-						<Paper
-							shadow="sm"
-							withBorder
-							style={{ flex: 1, minHeight: 0, position: "relative" }}
-						>
-							<GraphCanvas />
-						</Paper>
+			<div
+				style={{
+					flex: 1,
+					minWidth: 0,
+					display: "flex",
+					flexDirection: "column",
+					gap: "var(--mantine-spacing-md)",
+				}}
+			>
+				<Paper
+					shadow="sm"
+					withBorder
+					style={{ flex: 1, minHeight: 0, position: "relative" }}
+				>
+					<GraphCanvas />
+				</Paper>
 
-						<Paper shadow="sm" withBorder p="sm">
-							<AnimationTimeline
-								totalFrames={frames.length}
-								currentFrameIndex={currentFrameIndex}
-								isPlaying={isPlaying}
-								onPlay={togglePlay}
-								onPause={togglePlay}
-								onSeek={setFrame}
-								speed={speed}
-								onSpeedChange={setSpeed}
-							/>
-						</Paper>
-					</Stack>
-				</Grid.Col>
+				<Paper shadow="sm" withBorder p="sm" style={{ flexShrink: 0 }}>
+					<AnimationTimeline
+						totalFrames={frames.length}
+						currentFrameIndex={currentFrameIndex}
+						isPlaying={isPlaying}
+						onPlay={togglePlay}
+						onPause={togglePlay}
+						onSeek={setFrame}
+						speed={speed}
+						onSpeedChange={setSpeed}
+					/>
+				</Paper>
+			</div>
 
-				<Grid.Col span={3}>
-					<Stack gap="md" style={{ height: "100%", overflow: "auto" }}>
-						<ComparisonPanel />
+			<div style={{ width: "25%", flexShrink: 0, overflow: "auto" }}>
+				<Stack gap="md" style={{ height: "100%" }}>
+					<ComparisonPanel />
 
-						<Paper p="sm" withBorder>
-							<Text size="xs" c="dimmed">
-								{Array.from(graph.nodeIds()).length} nodes, {seeds.length} seeds
-							</Text>
-						</Paper>
-					</Stack>
-				</Grid.Col>
-			</Grid>
-		</>
+					<Paper p="sm" withBorder>
+						<Text size="xs" c="dimmed">
+							{Array.from(graph.nodeIds()).length} nodes, {seeds.length} seeds
+						</Text>
+					</Paper>
+				</Stack>
+			</div>
+		</div>
 	);
 }
 
