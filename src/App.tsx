@@ -21,9 +21,19 @@ import { useUrlSync } from "./components/app/use-url-sync";
 import { useTourStore } from "./state/tour-store";
 import { useGraphStore } from "./state/graph-store";
 import { useAnimationStore } from "./state/animation-store";
-import { loadFixture, fixtureNames, type FixtureName } from "./engine/fixture-loader";
+import {
+	loadFixture,
+	fixtureNames,
+	type FixtureName,
+} from "./engine/fixture-loader";
 
 import "@mantine/core/styles.css";
+
+const FIXTURE_NAME_SET = new Set(fixtureNames());
+
+function isFixtureName(value: string): value is FixtureName {
+	return FIXTURE_NAME_SET.has(value);
+
 
 function MainContent(): ReactNode {
 	const mode = useTourStore((state) => state.mode);
@@ -45,12 +55,13 @@ function MainContent(): ReactNode {
 	const handleLoadFixture = useCallback(
 		(value: string | null) => {
 			if (value === null) return;
-			const fixture = loadFixture(value as FixtureName);
+			if (!isFixtureName(value)) return;
+			const fixture = loadFixture(value);
 			setGraph(fixture.graph, fixture.graph.directed);
 			setSeeds(fixture.seeds);
 		},
 		[setGraph, setSeeds],
-	);
+	)
 
 	const handleCompleteTour = useCallback(() => {
 		setMode("explore");
