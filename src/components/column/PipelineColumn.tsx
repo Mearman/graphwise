@@ -69,11 +69,10 @@ export function PipelineColumn({ columnId }: PipelineColumnProps): ReactNode {
 			withBorder
 			p="sm"
 			style={{
-				width: 320,
-				flexShrink: 0,
 				display: "flex",
 				flexDirection: "column",
 				maxHeight: "100%",
+				flex: 1,
 			}}
 		>
 			<Stack gap="sm" style={{ flex: 1, minHeight: 0 }}>

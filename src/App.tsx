@@ -140,8 +140,8 @@ function MainContent(): ReactNode {
 							<Box
 								key={column.id}
 								style={{
-									minWidth: 500,
-									flex: "0 0 500px",
+									minWidth: 400,
+									flex: "1 0 400px",
 									display: "flex",
 									flexDirection: "column",
 								}}
