@@ -14,6 +14,7 @@ Low-dependency TypeScript graph algorithms for citation network analysis: novel 
 - **Seed selection**: GRASP, Stratified
 - **Subgraph extraction**: ego-network, k-core, k-truss, motif, induced, filter
 - **Optional WebGPU acceleration**
+- **Async support**: Generator coroutine protocol, sync/async runners, all algorithms available as `*Async` variants
 
 ## Installation
 
@@ -37,7 +38,7 @@ const ranked = parse(graph, result.paths, { mi: jaccard });
 
 ### Expansion: BASE Framework
 
-**Boundary-free Adaptive Seeded Expansion** (BASE) is a parameter-free graph expansion algorithm. Given a graph $G = (V, E)$ and seed nodes $S \subseteq V$, BASE produces the subgraph induced by all vertices visited during priority-ordered expansion until frontier exhaustion:
+**Boundary-free Adaptive Seeded Expansion** (BASE) discovers the neighbourhood around seed nodes without any configuration. You provide seeds and a priority function; BASE expands outward, visiting the most interesting nodes first and recording paths when search frontiers from different seeds collide. It stops naturally when there is nothing left to explore — no depth limits, no size thresholds, no parameters to tune.
 
 $$G_S = (V_S, E_S) \quad \text{where} \quad V_S = \bigcup_{v \in S} \text{Expand}(v, \pi)$$
 
@@ -51,7 +52,7 @@ Three key properties:
 
 #### DOME: Degree-Ordered Multi-seed Expansion
 
-The default priority function uses degree-based hub deferral:
+Explores low-connectivity nodes before hubs. In a social network, DOME visits niche specialists before reaching the well-connected influencers, discovering the quiet corners of the graph before the busy crossroads.
 
 $$\pi(v) = \frac{\deg^{+}(v) + \deg^{-}(v)}{w_V(v) + \varepsilon}$$
 
@@ -81,99 +82,117 @@ where $\deg^{+}(v)$ is weighted out-degree, $\deg^{-}(v)$ is weighted in-degree,
 
 #### EDGE: Entropy-Driven Graph Expansion
 
+Finds nodes that sit at the boundary between different kinds of things. If a person's friends include scientists, artists, and engineers (high type diversity), EDGE visits them early — they are likely bridges between communities.
+
 $$\pi_{\text{EDGE}}(v) = \frac{1}{H_{\text{local}}(v) + \varepsilon} \times \log(\deg(v) + 1)$$
 
-where $H_{\text{local}}(v) = -\sum_{\tau} p(\tau) \log p(\tau)$ is the Shannon entropy of the neighbour type distribution. Nodes bridging heterogeneous structural regimes (high entropy) are explored first.
+where $H_{\text{local}}(v) = -\sum_{\tau} p(\tau) \log p(\tau)$ is the Shannon entropy of the neighbour type distribution.
 
 ---
 
 #### PIPE: Path-potential Informed Priority Expansion
 
+Rushes towards nodes that are about to connect two search frontiers. When expanding from multiple seeds, PIPE detects that a node's neighbours have already been reached by another seed's frontier — meaning a connecting path is one step away.
+
 $$\pi_{\text{PIPE}}(v) = \frac{\deg(v)}{1 + \mathrm{pathPotential}(v)}$$
 
-where $\mathrm{pathPotential}(v) = \lvert N(v) \cap \bigcup_{j \neq i} V_j \rvert$ counts neighbours already visited by other seed frontiers. High path potential indicates imminent path completion.
+where $\mathrm{pathPotential}(v) = \lvert N(v) \cap \bigcup_{j \neq i} V_j \rvert$ counts neighbours already visited by other seed frontiers.
 
 ---
 
 #### SAGE: Salience-Accumulation Guided Expansion
 
+Learns from its own discoveries. Phase 1 explores by degree (like DOME). Once the first path is found, SAGE switches to Phase 2: nodes that appear in many discovered paths get top priority, guiding expansion towards structurally rich regions.
+
 $$
 \pi_{\text{SAGE}}(v) = \begin{cases} \log(\deg(v) + 1) & \text{Phase 1 (before first path)} \\ -(\text{salience}(v) \times 1000 - \deg(v)) & \text{Phase 2 (after first path)} \end{cases}
 $$
 
-where $\text{salience}(v)$ counts discovered paths containing $v$. Salience dominates in Phase 2; degree serves as tiebreaker.
+where $\text{salience}(v)$ counts discovered paths containing $v$.
 
 ---
 
 #### REACH: Retrospective Expansion with Adaptive Convergence
 
+Uses the quality of already-discovered paths to steer future exploration. Phase 1 explores by degree. Once paths are found, REACH asks "which unexplored nodes look structurally similar to the endpoints of my best paths?" and prioritises those — seeking more of what already worked.
+
 $$
 \pi_{\text{REACH}}(v) = \begin{cases} \log(\deg(v) + 1) & \text{Phase 1} \\ \log(\deg(v) + 1) \times (1 - \widehat{\text{MI}}(v)) & \text{Phase 2} \end{cases}
 $$
 
-where $\widehat{\text{MI}}(v)$ estimates MI via Jaccard similarity to discovered path endpoints:
-
-$$
-\widehat{\text{MI}}(v) = \frac{1}{\lvert \mathcal{P}\_{\text{top}} \rvert} \sum\_{p} J(N(v), N(p\_{\text{endpoint}}))
-$$
+where $\widehat{\text{MI}}(v) = \frac{1}{\lvert \mathcal{P}\_{\text{top}} \rvert} \sum\_{p} J(N(v), N(p\_{\text{endpoint}}))$ estimates MI via Jaccard similarity to discovered path endpoints.
 
 ---
 
 #### MAZE: Multi-frontier Adaptive Zone Expansion
 
+Combines the best of PIPE and SAGE across three phases. First, it races to find initial paths using path potential (like PIPE). Then it refines exploration using salience feedback (like SAGE). Finally, it decides when to stop based on whether it's still discovering diverse, high-quality paths.
+
 $$
 \pi^{(1)}(v) = \frac{\deg(v)}{1 + \mathrm{pathPotential}(v)} \qquad \pi^{(2)}(v) = \pi^{(1)}(v) \times \frac{1}{1 + \lambda \cdot \text{salience}(v)}
 $$
 
-Phase 1 uses PIPE's path potential until $M$ paths found. Phase 2 incorporates SAGE's salience feedback. Phase 3 evaluates diversity, path count, and salience plateau for termination.
+Phase 1 uses path potential until $M$ paths found. Phase 2 adds salience feedback. Phase 3 evaluates diversity, path count, and salience plateau for termination.
 
 ---
 
 #### TIDE: Total Interconnected Degree Expansion
 
+Avoids dense clusters by looking at total neighbourhood connectivity. A node surrounded by other well-connected nodes gets deferred; a node in a quiet corner of the graph gets explored first.
+
 $$\pi_{\text{TIDE}}(v) = \deg(v) + \sum_{w \in N(v)} \deg(w)$$
 
-Nodes in sparse regions (low aggregate neighbourhood degree) are explored first. Related to EDGE but uses raw degree sums rather than entropy.
+Related to EDGE but uses raw degree sums rather than entropy.
 
 ---
 
 #### LACE: Local Affinity-Computed Expansion
 
+Explores towards nodes that are most similar to what the frontier has already seen. If a candidate node shares many neighbours with the explored region, it gets priority — building outward from a coherent core.
+
 $$\pi_{\text{LACE}}(v) = 1 - \overline{\text{MI}}(v, \text{frontier})$$
 
-Prioritises nodes by average MI to already-visited frontier nodes. Related to HAE but uses MI to visited nodes rather than type entropy.
+Related to HAE but uses MI to visited nodes rather than type entropy.
 
 ---
 
 #### WARP: Weighted Adjacent Reachability Priority
 
+Aggressively prioritises nodes that look like they will connect two search frontiers, regardless of their degree. If a node's neighbours have been visited by another seed's search, it gets top priority.
+
 $$\pi_{\text{WARP}}(v) = \frac{1}{1 + \text{bridge}(v)}$$
 
-Pure cross-frontier bridge score without degree normalisation. Related to PIPE but omits the degree numerator.
+Related to PIPE but omits the degree numerator, making it more aggressive at prioritising bridge nodes.
 
 ---
 
 #### FUSE: Fused Utility-Salience Expansion
 
+Balances two signals simultaneously: how connected a node is (degree) and how strongly it relates to the explored region (MI). The weight $w$ controls the trade-off — at $w=0$ it behaves like DOME, at $w=1$ it behaves like LACE.
+
 $$\pi_{\text{FUSE}}(v) = (1 - w) \cdot \deg(v) + w \cdot (1 - \overline{\text{MI}})$$
 
-Single-phase weighted blend of degree and MI. Related to SAGE but uses continuous blending rather than two-phase transition.
+Related to SAGE but uses continuous blending rather than two-phase transition.
 
 ---
 
 #### SIFT: Salience-Informed Frontier Threshold
 
+Acts as a gate: nodes with MI above a threshold get MI-based priority (explore the promising ones); nodes below the threshold get deferred with a large degree-based penalty (ignore the unpromising ones). A binary version of REACH's continuous approach.
+
 $$
 \pi_{\text{SIFT}}(v) = \begin{cases} 1 - \overline{\text{MI}} & \text{if } \overline{\text{MI}} \geq \tau \\ \deg(v) + 100 & \text{otherwise} \end{cases}
 $$
 
-MI-threshold-based priority with degree fallback. Related to REACH but uses a hard threshold instead of continuous MI-weighted priority.
+Related to REACH but uses a hard threshold instead of continuous MI-weighted priority.
 
 ---
 
 #### FLUX: Flexible Local Utility Crossover
 
-Density-adaptive strategy switching. Selects between DOME, EDGE, and PIPE modes per-node based on local graph density and cross-frontier bridge score. Related to MAZE but adapts spatially (per-node) rather than temporally (per-phase).
+Adapts its strategy to the local topology of each node. In dense regions it uses low-degree-first exploration (like EDGE); near frontier boundaries it uses bridge detection (like PIPE); in sparse regions it falls back to degree ordering (like DOME). Different parts of the graph are explored with different strategies simultaneously.
+
+Related to MAZE but adapts spatially (per-node) rather than temporally (per-phase).
 
 ---
 
@@ -192,73 +211,83 @@ Density-adaptive strategy switching. Selects between DOME, EDGE, and PIPE modes 
 
 ### Path Ranking: PARSE
 
-**Path Aggregation Ranked by Salience Estimation** (PARSE) scores paths by the geometric mean of per-edge mutual information, eliminating length bias:
+**Path Aggregation Ranked by Salience Estimation** (PARSE) ranks discovered paths by asking "how consistently strong is every edge along this path?" It uses the geometric mean of per-edge MI scores, which means one weak link drags down the entire path — unlike arithmetic mean where a strong edge can compensate for a weak one. A 10-hop path with consistently good edges scores the same as a 2-hop path with equally good edges.
 
 $$M(P) = \exp\left( \frac{1}{k} \sum_{i=1}^{k} \log I(u_i, v_i) \right)$$
 
-where $k$ is path length (number of edges) and $I(u_i, v_i)$ is the per-edge MI score from any variant below. The geometric mean ensures a 10-hop path with consistently high-MI edges scores equally to a 2-hop path with the same average MI.
+where $k$ is path length (number of edges) and $I(u_i, v_i)$ is the per-edge MI score from any variant below.
 
 ---
 
 ### MI Variants
 
-Seven MI variants serve as per-edge estimators within PARSE. All build on Jaccard neighbourhood overlap, then weight by domain-specific structural properties.
+MI variants answer the question "how strongly are two connected nodes related?" Each measures the overlap between their neighbourhoods, then optionally weights by structural properties like density, degree rarity, clustering, or entity type. PARSE uses these as per-edge scores in its geometric mean.
 
 ---
 
 #### Jaccard (baseline)
 
-$$I_{\text{Jac}}(u, v) = \frac{|N(u) \cap N(v)|}{|N(u) \cup N(v)|}$$
+What fraction of combined neighbours do two nodes share? If Alice and Bob know 3 of the same people out of 10 total acquaintances between them, their Jaccard score is 0.3.
 
-Standard neighbourhood overlap. Default MI estimator.
+$$I_{\text{Jac}}(u, v) = \frac{|N(u) \cap N(v)|}{|N(u) \cup N(v)|}$$
 
 ---
 
 #### Adamic-Adar
 
-$$I_{\text{AA}}(u, v) = \sum_{w \in N(u) \cap N(v)} \frac{1}{\log(\deg(w) + 1)}$$
+Counts shared neighbours, but recognises that sharing a rare connection is more meaningful than sharing a popular one. If two researchers both cite a niche paper, that says more about their relationship than both citing a famous textbook.
 
-Downweights common neighbours with high degree. Shared hub neighbours are less informative than shared rare neighbours.
+$$I_{\text{AA}}(u, v) = \sum_{w \in N(u) \cap N(v)} \frac{1}{\log(\deg(w) + 1)}$$
 
 ---
 
 #### SCALE: Structural Correction via Adjusted Local Estimation
 
+Adjusts for graph density. In a dense network where everyone knows everyone, sharing neighbours is expected and less meaningful. In a sparse network, the same overlap is rare and significant. SCALE divides Jaccard by density to make scores comparable across differently-dense regions.
+
 $$I_{\text{SCALE}}(u, v) = \frac{J(N(u), N(v))}{\rho(G)}$$
 
-where $\rho(G) = \frac{2|E|}{|V|(|V|-1)}$ is graph density. Normalises Jaccard by density so that overlap in dense subgraphs is not artificially inflated.
+where $\rho(G) = \frac{2|E|}{|V|(|V|-1)}$ is graph density.
 
 ---
 
 #### SKEW: Sparse-weighted Knowledge Emphasis Weighting
 
+Rewards edges between rare (low-degree) nodes and penalises edges involving hubs. Like TF-IDF in search engines: a connection between two niche nodes is more informative than a connection between two mega-hubs that connect to everything.
+
 $$I_{\text{SKEW}}(u, v) = J(N(u), N(v)) \cdot \log\!\left(\frac{N}{\deg(u) + 1}\right) \cdot \log\!\left(\frac{N}{\deg(v) + 1}\right)$$
 
-where $N = |V|$. IDF-style rarity weighting on both endpoints. Paths through low-degree (rare) nodes score higher; paths through hubs score lower.
+where $N = |V|$.
 
 ---
 
 #### SPAN: Spanning-community Penalty for Adjacent Nodes
 
+Rewards edges that bridge separate communities and penalises edges within tight-knit groups. If both endpoints sit in dense clusters where everyone knows everyone (high clustering coefficient), the edge is probably redundant. If at least one endpoint is a bridge between groups, the edge is structurally interesting.
+
 $$I_{\text{SPAN}}(u, v) = J(N(u), N(v)) \cdot \bigl(1 - \max(C(u), C(v))\bigr)$$
 
-where $C(v)$ is the local clustering coefficient. Penalises edges within tight clusters; rewards edges bridging communities (structural holes).
+where $C(v)$ is the local clustering coefficient.
 
 ---
 
 #### ETCH: Edge Type Contrast Heuristic
 
+Boosts edges of rare types. If a graph has 1000 "knows" edges but only 5 "mentors" edges, a mentoring relationship is worth more than an acquaintanceship. ETCH multiplies Jaccard by the log-rarity of the edge type.
+
 $$I_{\text{ETCH}}(u, v) = J(N(u), N(v)) \cdot \log\!\left(\frac{|E|}{\text{count}(\text{edges with type}(u,v))}\right)$$
 
-Weights Jaccard by edge-type rarity. Paths traversing rare edge types receive higher scores. Requires edge-type annotations; falls back to Jaccard when unavailable.
+Requires edge-type annotations; falls back to Jaccard when unavailable.
 
 ---
 
 #### NOTCH: Node Type Contrast Heuristic
 
+Boosts edges connecting rare node types. In a graph with 500 people but only 10 organisations, an edge involving an organisation is more distinctive. NOTCH multiplies Jaccard by the log-rarity of both endpoint types.
+
 $$I_{\text{NOTCH}}(u, v) = J(N(u), N(v)) \cdot \log\!\left(\frac{|V|}{c(\tau_u)}\right) \cdot \log\!\left(\frac{|V|}{c(\tau_v)}\right)$$
 
-where $c(\tau_u)$ is the count of nodes with the same type as $u$. Weights Jaccard by node-type rarity for both endpoints.
+where $c(\tau_u)$ is the count of nodes with the same type as $u$.
 
 ---
 
@@ -296,7 +325,7 @@ where $c(\tau_u)$ is the count of nodes with the same type as $u$. Weights Jacca
 
 ### Seed Selection: GRASP
 
-**Graph-agnostic Representative seed pAir Sampling**: selects structurally representative seed pairs from an unknown graph using reservoir sampling and structural feature clustering. Operates blind: no full graph loading, no ground-truth labels, no human-defined strata.
+**Graph-agnostic Representative seed pAir Sampling** picks starting points for expansion algorithms. Given a graph you have never seen before, GRASP streams through its edges, samples a representative set of nodes, clusters them by structural role (hubs, bridges, peripherals), and returns seed pairs that cover the full range of structural diversity — without loading the entire graph into memory.
 
 Three phases:
 
@@ -323,6 +352,28 @@ import { ... } from 'graphwise/extraction'; // Subgraph extraction
 import { ... } from 'graphwise/utils';      // Utilities
 import { ... } from 'graphwise/gpu';        // WebGPU acceleration
 import { ... } from 'graphwise/schemas';    // Zod schemas
+import { ... } from 'graphwise/async';      // Async runners & protocol
+```
+
+### Async Usage
+
+All algorithms are available as `*Async` variants for use with remote or lazy graph data sources:
+
+```typescript
+import { domeAsync, parseAsync, jaccardAsync } from "graphwise";
+import type { AsyncReadableGraph } from "graphwise/graph";
+
+// Your async graph implementation
+const remoteGraph: AsyncReadableGraph = createRemoteGraph();
+
+const result = await domeAsync(remoteGraph, seeds, {
+    signal: controller.signal,
+    onProgress: (stats) => console.log(stats),
+});
+
+const ranked = await parseAsync(remoteGraph, result.paths, {
+    mi: jaccardAsync,
+});
 ```
 
 ## Commands
