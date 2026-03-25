@@ -19,6 +19,7 @@ import type {
 } from "./types";
 import { base } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
+import { avgFrontierMI } from "./priority-helpers";
 
 /**
  * Configuration for FUSE expansion.
@@ -46,11 +47,11 @@ export type SAGEConfig<
 > = FUSEConfig<N, E>;
 
 /**
- * SAGE priority function.
+ * FUSE priority function.
  *
- * Combines degree with salience:
- * Priority = (1 - w) * degree + w * (1 - avg_salience)
- * Lower values = higher priority
+ * Combines degree with average frontier MI as a salience proxy:
+ * Priority = (1 - w) * degree + w * (1 - avgMI)
+ * Lower values = higher priority; high salience lowers priority
  */
 function fusePriority<N extends NodeData, E extends EdgeData>(
 	nodeId: string,
@@ -58,27 +59,10 @@ function fusePriority<N extends NodeData, E extends EdgeData>(
 	mi: (graph: ReadableGraph<N, E>, source: string, target: string) => number,
 	salienceWeight: number,
 ): number {
-	const graph = context.graph;
-	const degree = context.degree;
-	const frontierIndex = context.frontierIndex;
+	const avgSalience = avgFrontierMI(context.graph, nodeId, context, mi);
 
-	// Compute average salience to visited nodes in this frontier
-	let totalSalience = 0;
-	let count = 0;
-
-	for (const [visitedId, idx] of context.visitedByFrontier) {
-		if (idx === frontierIndex && visitedId !== nodeId) {
-			totalSalience += mi(graph, visitedId, nodeId);
-			count++;
-		}
-	}
-
-	const avgSalience = count > 0 ? totalSalience / count : 0;
-
-	// Combine degree with salience
-	// Lower priority value = expanded first
-	// High salience should lower priority value
-	const degreeComponent = (1 - salienceWeight) * degree;
+	// Combine degree with salience — lower priority value = expanded first
+	const degreeComponent = (1 - salienceWeight) * context.degree;
 	const salienceComponent = salienceWeight * (1 - avgSalience);
 
 	return degreeComponent + salienceComponent;

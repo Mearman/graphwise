@@ -19,6 +19,7 @@ import type {
 } from "./types";
 import { base } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
+import { avgFrontierMI } from "./priority-helpers";
 
 /**
  * Configuration for REACH expansion.
@@ -40,9 +41,10 @@ export interface REACHConfig<
 }
 
 /**
- * REACH priority function (phase 2).
+ * REACH (SIFT) priority function.
  *
- * Uses learned MI threshold to prioritise high-MI edges.
+ * Prioritises nodes with average frontier MI above the threshold;
+ * falls back to degree-based ordering for those below it.
  */
 function siftPriority<N extends NodeData, E extends EdgeData>(
 	nodeId: string,
@@ -50,21 +52,7 @@ function siftPriority<N extends NodeData, E extends EdgeData>(
 	mi: (graph: ReadableGraph<N, E>, source: string, target: string) => number,
 	miThreshold: number,
 ): number {
-	const graph = context.graph;
-	const frontierIndex = context.frontierIndex;
-
-	// Compute average MI to visited nodes
-	let totalMi = 0;
-	let count = 0;
-
-	for (const [visitedId, idx] of context.visitedByFrontier) {
-		if (idx === frontierIndex && visitedId !== nodeId) {
-			totalMi += mi(graph, visitedId, nodeId);
-			count++;
-		}
-	}
-
-	const avgMi = count > 0 ? totalMi / count : 0;
+	const avgMi = avgFrontierMI(context.graph, nodeId, context, mi);
 
 	// If MI is above threshold, give high priority (low value)
 	// Otherwise, fall back to degree

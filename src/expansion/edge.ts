@@ -8,45 +8,17 @@
  *
  * High entropy (diverse types) → lower priority → expanded sooner.
  * Low entropy (homogeneous types) → higher priority → deferred.
+ *
+ * Delegates to HAE with the default `node.type` mapper.
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
-import type {
-	Seed,
-	ExpansionResult,
-	ExpansionConfig,
-	PriorityContext,
-} from "./types";
-import { base } from "./base";
-import { localTypeEntropy } from "../utils/entropy";
+import type { Seed, ExpansionResult, ExpansionConfig } from "./types";
+import { hae } from "./hae";
 
-const EPSILON = 1e-10;
-
-/**
- * Priority function using local type entropy.
- * Lower values = higher priority (expanded first).
- */
-function edgePriority<N extends NodeData, E extends EdgeData>(
-	nodeId: string,
-	context: PriorityContext<N, E>,
-): number {
-	const graph = context.graph;
-	const neighbours = graph.neighbours(nodeId);
-
-	// Collect neighbour types
-	const neighbourTypes: string[] = [];
-	for (const neighbour of neighbours) {
-		const node = graph.getNode(neighbour);
-		neighbourTypes.push(node?.type ?? "default");
-	}
-
-	// Compute local type entropy (normalised Shannon entropy)
-	const entropy = localTypeEntropy(neighbourTypes);
-
-	// Priority = 1 / (entropy + ε) * log(degree + 1)
-	// High entropy (diverse types) → lower priority (expanded sooner)
-	return (1 / (entropy + EPSILON)) * Math.log(context.degree + 1);
-}
+/** Default type mapper: reads `node.type`, falling back to "default". */
+const defaultTypeMapper = (n: NodeData): string =>
+	typeof n.type === "string" ? n.type : "default";
 
 /**
  * Run EDGE expansion (Entropy-Driven Graph Expansion).
@@ -64,8 +36,8 @@ export function edge<N extends NodeData, E extends EdgeData>(
 	seeds: readonly Seed[],
 	config?: ExpansionConfig<N, E>,
 ): ExpansionResult {
-	return base(graph, seeds, {
+	return hae(graph, seeds, {
 		...config,
-		priority: edgePriority,
+		typeMapper: defaultTypeMapper,
 	});
 }

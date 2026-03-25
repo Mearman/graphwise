@@ -18,6 +18,7 @@ import type {
 } from "./types";
 import { base } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
+import { avgFrontierMI } from "./priority-helpers";
 
 /**
  * Configuration for LACE expansion.
@@ -37,39 +38,15 @@ export interface LACEConfig<
 /**
  * LACE priority function.
  *
- * Priority = 1 - MI(source, neighbour)
- * Higher MI = lower priority value = explored first
+ * Priority = 1 - avgMI(node, same-frontier visited nodes)
+ * Higher average MI = lower priority value = explored first
  */
 function lacePriority<N extends NodeData, E extends EdgeData>(
 	nodeId: string,
 	context: PriorityContext<N, E>,
 	mi: (graph: ReadableGraph<N, E>, source: string, target: string) => number,
 ): number {
-	const graph = context.graph;
-	const frontierIndex = context.frontierIndex;
-
-	// Get the seed node for this frontier
-	// We need to find the predecessor to compute MI
-	let maxMi = 0;
-
-	// Compute average MI to all visited nodes in this frontier
-	let totalMi = 0;
-	let count = 0;
-
-	for (const [visitedId, idx] of context.visitedByFrontier) {
-		if (idx === frontierIndex && visitedId !== nodeId) {
-			const edgeMi = mi(graph, visitedId, nodeId);
-			totalMi += edgeMi;
-			count++;
-			if (edgeMi > maxMi) {
-				maxMi = edgeMi;
-			}
-		}
-	}
-
-	// Use average MI (higher = more important = lower priority value)
-	const avgMi = count > 0 ? totalMi / count : 0;
-
+	const avgMi = avgFrontierMI(context.graph, nodeId, context, mi);
 	// Invert so higher MI = lower priority value = expanded first
 	return 1 - avgMi;
 }

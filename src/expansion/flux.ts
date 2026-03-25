@@ -20,6 +20,7 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import { countCrossFrontierNeighbours } from "./priority-helpers";
 
 /**
  * Configuration for MAZE expansion.
@@ -69,26 +70,6 @@ function localDensity<N extends NodeData, E extends EdgeData>(
 }
 
 /**
- * Compute bridge score (how many other frontiers visit neighbours).
- */
-function bridgeScore<N extends NodeData, E extends EdgeData>(
-	nodeId: string,
-	context: PriorityContext<N, E>,
-): number {
-	const currentFrontier = context.frontierIndex;
-	const nodeNeighbours = new Set(context.graph.neighbours(nodeId));
-
-	let score = 0;
-	for (const [visitedId, idx] of context.visitedByFrontier) {
-		if (idx !== currentFrontier && nodeNeighbours.has(visitedId)) {
-			score++;
-		}
-	}
-
-	return score;
-}
-
-/**
  * MAZE adaptive priority function.
  *
  * Switches strategies based on local conditions:
@@ -107,7 +88,7 @@ function fluxPriority<N extends NodeData, E extends EdgeData>(
 
 	// Compute local metrics
 	const density = localDensity(graph, nodeId);
-	const bridge = bridgeScore(nodeId, context);
+	const bridge = countCrossFrontierNeighbours(graph, nodeId, context);
 
 	// Normalise bridge score by number of frontiers
 	const numFrontiers = new Set(context.visitedByFrontier.values()).size;

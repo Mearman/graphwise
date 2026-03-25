@@ -17,35 +17,31 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import { countCrossFrontierNeighbours } from "./priority-helpers";
 
 /**
- * PIPE priority function.
+ * WARP priority function.
  *
  * Priority = 1 / (1 + bridge_score)
- * Bridge score = neighbourhood overlap with other frontiers
- * Higher bridge score = more likely to be on paths = explored first
+ * Bridge score = cross-frontier neighbour count plus bonus for nodes
+ * already on discovered paths.
+ * Higher bridge score = more likely to complete paths = explored first.
  */
 function warpPriority<N extends NodeData, E extends EdgeData>(
 	nodeId: string,
 	context: PriorityContext<N, E>,
 ): number {
-	const graph = context.graph;
-	const currentFrontier = context.frontierIndex;
-	const nodeNeighbours = new Set(graph.neighbours(nodeId));
+	// Count neighbours visited by other frontiers
+	let bridgeScore = countCrossFrontierNeighbours(
+		context.graph,
+		nodeId,
+		context,
+	);
 
-	// Count how many neighbours are visited by other frontiers
-	let bridgeScore = 0;
-
-	for (const [visitedId, frontierIdx] of context.visitedByFrontier) {
-		if (frontierIdx !== currentFrontier && nodeNeighbours.has(visitedId)) {
-			bridgeScore++;
-		}
-	}
-
-	// Also consider discovered paths - nodes on existing paths are valuable
+	// Additional bonus for nodes already present on discovered paths
 	for (const path of context.discoveredPaths) {
 		if (path.nodes.includes(nodeId)) {
-			bridgeScore += 2; // Bonus for being on discovered paths
+			bridgeScore += 2;
 		}
 	}
 

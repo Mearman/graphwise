@@ -23,6 +23,7 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import { updateSalienceCounts } from "./priority-helpers";
 
 /**
  * Run SAGE expansion algorithm.
@@ -63,15 +64,11 @@ export function sage<N extends NodeData, E extends EdgeData>(
 
 		// Update salience counts for newly discovered paths
 		if (pathCount > lastPathCount) {
-			for (let i = lastPathCount; i < pathCount; i++) {
-				const path = context.discoveredPaths[i];
-				if (path !== undefined) {
-					for (const node of path.nodes) {
-						salienceCounts.set(node, (salienceCounts.get(node) ?? 0) + 1);
-					}
-				}
-			}
-			lastPathCount = pathCount;
+			lastPathCount = updateSalienceCounts(
+				salienceCounts,
+				context.discoveredPaths,
+				lastPathCount,
+			);
 		}
 
 		// Phase 1: Degree-based priority before first path

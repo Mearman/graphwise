@@ -30,6 +30,7 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import { updateSalienceCounts } from "./priority-helpers";
 
 /** Default threshold for switching to phase 2 (after M paths) */
 const DEFAULT_PHASE2_THRESHOLD = 1;
@@ -70,25 +71,17 @@ export function maze<N extends NodeData, E extends EdgeData>(
 		// Detect phase transition: threshold of paths reached
 		if (pathCount >= DEFAULT_PHASE2_THRESHOLD && !inPhase2) {
 			inPhase2 = true;
-			// Initialise salience counts from existing paths
-			for (const path of context.discoveredPaths) {
-				for (const node of path.nodes) {
-					salienceCounts.set(node, (salienceCounts.get(node) ?? 0) + 1);
-				}
-			}
+			// Initialise salience counts from all existing paths
+			updateSalienceCounts(salienceCounts, context.discoveredPaths, 0);
 		}
 
-		// Update salience counts for newly discovered paths in phase 2
+		// Incrementally update salience counts for newly discovered paths in phase 2
 		if (inPhase2 && pathCount > lastPathCount) {
-			for (let i = lastPathCount; i < pathCount; i++) {
-				const path = context.discoveredPaths[i];
-				if (path !== undefined) {
-					for (const node of path.nodes) {
-						salienceCounts.set(node, (salienceCounts.get(node) ?? 0) + 1);
-					}
-				}
-			}
-			lastPathCount = pathCount;
+			lastPathCount = updateSalienceCounts(
+				salienceCounts,
+				context.discoveredPaths,
+				lastPathCount,
+			);
 		}
 
 		// Compute path potential: neighbours visited by other frontiers
