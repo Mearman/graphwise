@@ -1,10 +1,12 @@
 import { create } from "zustand";
-import type { ExpansionStats } from "graphwise/expansion";
+import type { ExpansionResult, ExpansionStats } from "graphwise/expansion";
 import type { ExpansionAlgorithmName } from "../engine/algorithm-registry";
 
 export interface ComparisonEntry {
 	readonly algorithmName: ExpansionAlgorithmName;
 	readonly stats: ExpansionStats;
+	/** Full expansion result including discovered paths (for ranking integration) */
+	readonly result: ExpansionResult;
 }
 
 interface ComparisonState {
