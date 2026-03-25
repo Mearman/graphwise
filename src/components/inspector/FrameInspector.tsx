@@ -46,6 +46,8 @@ export function FrameInspector(_props: FrameInspectorProps): ReactNode {
 	const graph = useGraphStore((state) => state.graph);
 
 	const entries = useComparisonStore((state) => state.entries);
+	const miEntries = useComparisonStore((state) => state.miEntries);
+	const comparisonStage = useComparisonStore((state) => state.comparisonStage);
 	const totalDurationMs = useComparisonStore((state) => state.totalDurationMs);
 
 	const currentFrame = frames[currentFrameIndex] ?? null;
@@ -266,6 +268,15 @@ export function FrameInspector(_props: FrameInspectorProps): ReactNode {
 						{entries.length > 0 ? (
 							<ComparisonTable
 								entries={entries}
+								miEntries={miEntries}
+								comparisonStage={comparisonStage}
+								totalDurationMs={totalDurationMs}
+							/>
+						) : comparisonStage === "mi" && miEntries.length > 0 ? (
+							<ComparisonTable
+								entries={entries}
+								miEntries={miEntries}
+								comparisonStage={comparisonStage}
 								totalDurationMs={totalDurationMs}
 							/>
 						) : (

@@ -12,6 +12,7 @@ import { theme } from "./theme";
 import { AppShell } from "./components/layout/AppShell";
 import { GraphCanvas } from "./components/graph/GraphCanvas";
 import { ComparisonGraphCanvas } from "./components/comparison/ComparisonGraphCanvas";
+import { MIStageComparisonView } from "./components/comparison/MIStageComparisonView";
 import { GraphToolbar } from "./components/graph/GraphToolbar";
 import { AnimationTimeline } from "./components/animation/AnimationTimeline";
 import { StatsOverlay } from "./components/animation/StatsOverlay";
@@ -41,6 +42,8 @@ function MainContent(): ReactNode {
 	const setSpeed = useAnimationStore((state) => state.setSpeed);
 
 	const entries = useComparisonStore((state) => state.entries);
+	const miEntries = useComparisonStore((state) => state.miEntries);
+	const comparisonStage = useComparisonStore((state) => state.comparisonStage);
 	const totalDurationMs = useComparisonStore((state) => state.totalDurationMs);
 	const selectedAlgorithms = useComparisonStore(
 		(state) => state.selectedAlgorithms,
@@ -78,6 +81,11 @@ function MainContent(): ReactNode {
 				>
 					{layoutMode === "single" ? (
 						<GraphCanvas />
+					) : comparisonStage === "mi" ? (
+						<MIStageComparisonView
+							entries={miEntries}
+							totalDurationMs={totalDurationMs}
+						/>
 					) : (
 						<ComparisonGraphCanvas algorithms={selectedAlgorithms} />
 					)}
@@ -136,10 +144,13 @@ function MainContent(): ReactNode {
 				<Stack gap="md" style={{ height: "100%" }}>
 					<FrameInspector />
 
-					{entries.length > 0 ? (
+					{entries.length > 0 ||
+					(comparisonStage === "mi" && miEntries.length > 0) ? (
 						<Paper p="sm" withBorder>
 							<ComparisonTable
 								entries={entries}
+								miEntries={miEntries}
+								comparisonStage={comparisonStage}
 								totalDurationMs={totalDurationMs}
 							/>
 						</Paper>
