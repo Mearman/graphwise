@@ -78,7 +78,7 @@ jobs:
       - run: |
           cd __tests__/fixtures/smoke-test
           pnpm install ./graphwise-*.tgz
-          pnpm exec tsc smoke-test.ts --noEmit
+          pnpm exec tsc smoke-test.ts --noEmit --ignoreConfig
 
   release:
     name: Release
