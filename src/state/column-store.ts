@@ -25,6 +25,7 @@ interface ColumnState {
 
 	readonly addColumn: () => void;
 	readonly removeColumn: (id: string) => void;
+	readonly setColumns: (columns: readonly PipelineColumn[]) => void;
 	readonly updateColumn: (
 		id: string,
 		updates: Partial<
@@ -79,6 +80,10 @@ export const useColumnStore = create<ColumnState>()((set, get) => ({
 		set({
 			columns: columns.filter((col) => col.id !== id),
 		});
+	},
+
+	setColumns: (columns) => {
+		set({ columns });
 	},
 
 	updateColumn: (id, updates) => {
