@@ -16,6 +16,7 @@ import { theme } from "./theme";
 import { AppShell } from "./components/layout/AppShell";
 import { AnimationTimeline } from "./components/animation/AnimationTimeline";
 import { PipelineColumn } from "./components/column/PipelineColumn";
+import { OverlayCanvas, OverlayLegend } from "./components/overlay";
 import { SeedPicker } from "./components/graph/SeedPicker";
 import { useUrlSync } from "./components/app/use-url-sync";
 import { useGraphStore } from "./state/graph-store";
@@ -123,31 +124,53 @@ function MainContent(): ReactNode {
 					</Paper>
 				)}
 
-				{/* Columns Container */}
-				<Box
-					style={{
-						display: "flex",
-						gap: "var(--mantine-spacing-md)",
-						overflowX: "auto",
-						flex: 1,
-						minHeight: 0,
-						scrollBehavior: "smooth",
-					}}
-				>
-					{columns.map((column) => (
-						<Box
-							key={column.id}
+				{/* Content: Columns or Overlay */}
+				{viewMode === "columns" ? (
+					<Box
+						style={{
+							display: "flex",
+							gap: "var(--mantine-spacing-md)",
+							overflowX: "auto",
+							flex: 1,
+							minHeight: 0,
+							scrollBehavior: "smooth",
+						}}
+					>
+						{columns.map((column) => (
+							<Box
+								key={column.id}
+								style={{
+									minWidth: 500,
+									flex: "0 0 500px",
+									display: "flex",
+									flexDirection: "column",
+								}}
+							>
+								<PipelineColumn columnId={column.id} />
+							</Box>
+						))}
+					</Box>
+				) : (
+					<Stack gap="md" style={{ flex: 1, minHeight: 0 }}>
+						<Paper
+							shadow="sm"
+							withBorder
+							p="sm"
 							style={{
-								minWidth: 500,
-								flex: "0 0 500px",
+								flex: 1,
+								minHeight: 0,
+								position: "relative",
 								display: "flex",
 								flexDirection: "column",
 							}}
 						>
-							<PipelineColumn columnId={column.id} />
-						</Box>
-					))}
-				</Box>
+							<OverlayCanvas />
+						</Paper>
+						<Paper shadow="sm" withBorder p="sm">
+							<OverlayLegend />
+						</Paper>
+					</Stack>
+				)}
 			</Stack>
 		</Stack>
 	);
