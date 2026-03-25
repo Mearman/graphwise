@@ -30,8 +30,8 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0
       graphwise:
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^1.8.1
+        version: 1.8.1
       katex:
         specifier: ^0.16.42
         version: 0.16.42
@@ -2127,8 +2127,8 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
-  graphwise@1.8.0:
-    resolution: {integrity: sha512-WQk69xgkDUrya0jDx+d5yVzQFC+W+QVL5phtSyJuag74XmPPM7k0tdaRhrECM/8n+UwMWUiV4uhX1XcZbumfCw==}
+  graphwise@1.8.1:
+    resolution: {integrity: sha512-p9Hc3FxEbahxTL8cpHKisvdAhJjFCesxz8GmvoDDL+KJluAkImLlKsNjoa6zKjRiu1SgPHZrfbiQrlRHcOuP4w==}
     engines: {node: '>=20.19'}
 
   handlebars@4.7.8:
@@ -6092,7 +6092,7 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  graphwise@1.8.0:
+  graphwise@1.8.1:
     dependencies:
       zod: 4.3.6
 

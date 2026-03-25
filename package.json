@@ -26,7 +26,7 @@
     "d3-scale": "^4.0.2",
     "d3-selection": "^3.0.0",
     "d3-shape": "^3.2.0",
-    "graphwise": "^1.8.0",
+    "graphwise": "^1.8.1",
     "katex": "^0.16.42",
     "pako": "^2.1.0",
     "react": "^19.2.4",
