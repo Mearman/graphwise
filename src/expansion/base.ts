@@ -1,47 +1,45 @@
 /**
- * BASE (Bidirectional Adaptive Seed Expansion) engine.
+ * BASE (Bidirectional Adaptive Seed Expansion) entry points.
  *
- * Core algorithm implementing priority-ordered bidirectional expansion
- * with frontier collision detection for path discovery.
+ * Provides synchronous `base()` and asynchronous `baseAsync()` entry points.
+ * Both delegate to the shared `baseCore` generator, which yields GraphOp
+ * objects instead of calling the graph directly.
+ *
+ * - `base()` drives the generator via `runSync` (zero overhead vs the old impl)
+ * - `baseAsync()` drives the generator via `runAsync` (supports cancellation
+ *   and progress callbacks)
  *
  * Key properties:
- * 1. Priority-ordered exploration - global min-priority across all frontiers
- * 2. Frontier collision detection - path recorded when frontiers meet
- * 3. Implicit termination - halts when all queues empty
+ * 1. Priority-ordered exploration — global min-priority across all frontiers
+ * 2. Frontier collision detection — path recorded when frontiers meet
+ * 3. Implicit termination — halts when all queues empty
  */
 
-import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../graph";
-import { PriorityQueue } from "../structures/priority-queue";
-import type {
-	Seed,
-	ExpansionResult,
-	ExpansionPath,
-	ExpansionStats,
-	ExpansionConfig,
-	PriorityContext,
-} from "./types";
+import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
+import { runSync, runAsync } from "../async/runners";
+import type { AsyncRunnerOptions, YieldStrategy } from "../async/types";
+import type { ProgressStats } from "../async/protocol";
+import { baseCore } from "./base-core";
+import type { Seed, ExpansionResult, ExpansionConfig } from "./types";
 
 /**
- * Internal queue entry for frontier expansion.
+ * Configuration for the async BASE expansion algorithm.
+ *
+ * Extends ExpansionConfig with async runner options (cancellation, progress,
+ * yield strategy).
  */
-interface QueueEntry {
-	nodeId: NodeId;
-	frontierIndex: number;
-	predecessor: NodeId | null;
-}
+export interface AsyncExpansionConfig<
+	N extends NodeData = NodeData,
+	E extends EdgeData = EdgeData,
+>
+	extends ExpansionConfig<N, E>, AsyncRunnerOptions {}
 
 /**
- * Default priority function - degree-ordered (DOME).
- */
-function degreePriority<N extends NodeData, E extends EdgeData>(
-	_nodeId: NodeId,
-	context: PriorityContext<N, E>,
-): number {
-	return context.degree;
-}
-
-/**
- * Run BASE expansion algorithm.
+ * Run BASE expansion synchronously.
+ *
+ * Delegates to baseCore + runSync. Behaviour is identical to the previous
+ * direct implementation — all existing callers are unaffected.
  *
  * @param graph - Source graph
  * @param seeds - Seed nodes for expansion
@@ -53,329 +51,68 @@ export function base<N extends NodeData, E extends EdgeData>(
 	seeds: readonly Seed[],
 	config?: ExpansionConfig<N, E>,
 ): ExpansionResult {
-	const startTime = performance.now();
-
-	const {
-		maxNodes = 0,
-		maxIterations = 0,
-		maxPaths = 0,
-		priority = degreePriority,
-		debug = false,
-	} = config ?? {};
-
-	if (seeds.length === 0) {
-		return emptyResult("base", startTime);
-	}
-
-	// Initialise frontiers - one per seed
-	const numFrontiers = seeds.length;
-	const allVisited = new Set<NodeId>();
-	const combinedVisited = new Map<NodeId, number>();
-	const visitedByFrontier: Map<NodeId, number>[] = [];
-	const predecessors: Map<NodeId, NodeId | null>[] = [];
-	const queues: PriorityQueue<QueueEntry>[] = [];
-
-	for (let i = 0; i < numFrontiers; i++) {
-		visitedByFrontier.push(new Map());
-		predecessors.push(new Map());
-		queues.push(new PriorityQueue<QueueEntry>());
-
-		const seed = seeds[i];
-		if (seed === undefined) continue;
-
-		const seedNode = seed.id;
-		// Note: seed is NOT marked as visited here - it will be marked when processed
-		// like any other node. This allows the seed to be properly expanded.
-		predecessors[i]?.set(seedNode, null);
-		combinedVisited.set(seedNode, i);
-		allVisited.add(seedNode);
-
-		const context = createPriorityContext(
-			graph,
-			seedNode,
-			i,
-			combinedVisited,
-			allVisited,
-			[],
-			0,
-		);
-
-		const seedPriority = priority(seedNode, context);
-		queues[i]?.push(
-			{
-				nodeId: seedNode,
-				frontierIndex: i,
-				predecessor: null,
-			},
-			seedPriority,
-		);
-	}
-
-	const sampledEdgeMap = new Map<NodeId, Set<NodeId>>();
-	const discoveredPaths: ExpansionPath[] = [];
-	let iterations = 0;
-	let edgesTraversed = 0;
-	let termination: ExpansionStats["termination"] = "exhausted";
-
-	// Main expansion loop
-	const continueExpansion = (): boolean => {
-		if (maxIterations > 0 && iterations >= maxIterations) {
-			termination = "limit";
-			return false;
-		}
-		if (maxNodes > 0 && allVisited.size >= maxNodes) {
-			termination = "limit";
-			return false;
-		}
-		if (maxPaths > 0 && discoveredPaths.length >= maxPaths) {
-			termination = "limit";
-			return false;
-		}
-		return true;
-	};
-
-	while (continueExpansion()) {
-		// Find frontier with lowest priority entry
-		let lowestPriority = Number.POSITIVE_INFINITY;
-		let activeFrontier = -1;
-
-		for (let i = 0; i < numFrontiers; i++) {
-			const queue = queues[i];
-			if (queue !== undefined && !queue.isEmpty()) {
-				const peek = queue.peek();
-				if (peek !== undefined && peek.priority < lowestPriority) {
-					lowestPriority = peek.priority;
-					activeFrontier = i;
-				}
-			}
-		}
-
-		// All queues empty - exhausted
-		if (activeFrontier < 0) {
-			termination = "exhausted";
-			break;
-		}
-
-		const queue = queues[activeFrontier];
-		if (queue === undefined) break;
-
-		const entry = queue.pop();
-		if (entry === undefined) break;
-
-		const { nodeId, predecessor } = entry.item;
-
-		// Skip if already visited by this frontier
-		const frontierVisited = visitedByFrontier[activeFrontier];
-		if (frontierVisited === undefined || frontierVisited.has(nodeId)) {
-			continue;
-		}
-
-		// Mark visited
-		frontierVisited.set(nodeId, activeFrontier);
-		combinedVisited.set(nodeId, activeFrontier);
-		if (predecessor !== null) {
-			const predMap = predecessors[activeFrontier];
-			if (predMap !== undefined) {
-				predMap.set(nodeId, predecessor);
-			}
-		}
-		allVisited.add(nodeId);
-
-		if (debug) {
-			console.log(
-				`[BASE] Iteration ${String(iterations)}: Frontier ${String(activeFrontier)} visiting ${nodeId}`,
-			);
-		}
-
-		// Check for collision with other frontiers
-		for (let otherFrontier = 0; otherFrontier < numFrontiers; otherFrontier++) {
-			if (otherFrontier === activeFrontier) continue;
-
-			const otherVisited = visitedByFrontier[otherFrontier];
-			if (otherVisited === undefined) continue;
-
-			if (otherVisited.has(nodeId)) {
-				// Collision! Reconstruct path
-				const path = reconstructPath(
-					nodeId,
-					activeFrontier,
-					otherFrontier,
-					predecessors,
-					seeds,
-				);
-				if (path !== null) {
-					discoveredPaths.push(path);
-					if (debug) {
-						console.log(`[BASE] Path found: ${path.nodes.join(" -> ")}`);
-					}
-				}
-			}
-		}
-
-		// Expand neighbours
-		const neighbours = graph.neighbours(nodeId);
-		for (const neighbour of neighbours) {
-			edgesTraversed++;
-
-			// Track sampled edge
-			const [s, t] =
-				nodeId < neighbour ? [nodeId, neighbour] : [neighbour, nodeId];
-			let targets = sampledEdgeMap.get(s);
-			if (targets === undefined) {
-				targets = new Set();
-				sampledEdgeMap.set(s, targets);
-			}
-			targets.add(t);
-
-			// Skip if already visited by this frontier
-			const frontierVisited = visitedByFrontier[activeFrontier];
-			if (frontierVisited === undefined || frontierVisited.has(neighbour)) {
-				continue;
-			}
-
-			const context = createPriorityContext(
-				graph,
-				neighbour,
-				activeFrontier,
-				combinedVisited,
-				allVisited,
-				discoveredPaths,
-				iterations + 1,
-			);
-
-			const neighbourPriority = priority(neighbour, context);
-
-			queue.push(
-				{
-					nodeId: neighbour,
-					frontierIndex: activeFrontier,
-					predecessor: nodeId,
-				},
-				neighbourPriority,
-			);
-		}
-
-		iterations++;
-	}
-
-	const endTime = performance.now();
-	const visitedPerFrontier = visitedByFrontier.map((m) => new Set(m.keys()));
-
-	// Convert sampled edges to tuples
-	const edgeTuples = new Set<readonly [NodeId, NodeId]>();
-	for (const [source, targets] of sampledEdgeMap) {
-		for (const target of targets) {
-			edgeTuples.add([source, target] as const);
-		}
-	}
-
-	return {
-		paths: discoveredPaths,
-		sampledNodes: allVisited,
-		sampledEdges: edgeTuples,
-		visitedPerFrontier,
-		stats: {
-			iterations,
-			nodesVisited: allVisited.size,
-			edgesTraversed,
-			pathsFound: discoveredPaths.length,
-			durationMs: endTime - startTime,
-			algorithm: "base",
-			termination,
+	const gen = baseCore<N, E>(
+		{
+			directed: graph.directed,
+			nodeCount: graph.nodeCount,
+			edgeCount: graph.edgeCount,
 		},
-	};
-}
-
-/**
- * Create priority context for a node.
- */
-function createPriorityContext<N extends NodeData, E extends EdgeData>(
-	graph: ReadableGraph<N, E>,
-	nodeId: NodeId,
-	frontierIndex: number,
-	combinedVisited: ReadonlyMap<NodeId, number>,
-	allVisited: ReadonlySet<NodeId>,
-	discoveredPaths: readonly ExpansionPath[],
-	iteration: number,
-): PriorityContext<N, E> {
-	return {
+		seeds,
+		config,
 		graph,
-		degree: graph.degree(nodeId),
-		frontierIndex,
-		visitedByFrontier: combinedVisited,
-		allVisited,
-		discoveredPaths,
-		iteration,
-	};
+	);
+	return runSync(gen, graph);
 }
 
 /**
- * Reconstruct path from collision point.
+ * Run BASE expansion asynchronously.
+ *
+ * Delegates to baseCore + runAsync. Supports:
+ * - Cancellation via AbortSignal (config.signal)
+ * - Progress callbacks (config.onProgress)
+ * - Custom cooperative yield strategies (config.yieldStrategy)
+ *
+ * Note: priority functions that access `context.graph` are not supported in
+ * async mode without a graph proxy (Phase 4b). The default degree-based
+ * priority (DOME) does not access context.graph and works correctly.
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - Expansion and async runner configuration
+ * @returns Promise resolving to the expansion result
  */
-function reconstructPath(
-	collisionNode: NodeId,
-	frontierA: number,
-	frontierB: number,
-	predecessors: readonly Map<NodeId, NodeId | null>[],
+export async function baseAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
 	seeds: readonly Seed[],
-): ExpansionPath | null {
-	const pathA: NodeId[] = [collisionNode];
-	const predA = predecessors[frontierA];
-	if (predA !== undefined) {
-		let node: NodeId | null | undefined = collisionNode;
-		let next: NodeId | null | undefined = predA.get(node);
-		while (next !== null && next !== undefined) {
-			node = next;
-			pathA.unshift(node);
-			next = predA.get(node);
-		}
+	config?: AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	const [nodeCount, edgeCount] = await Promise.all([
+		graph.nodeCount,
+		graph.edgeCount,
+	]);
+	const gen = baseCore<N, E>(
+		{ directed: graph.directed, nodeCount, edgeCount },
+		seeds,
+		config,
+		// No graphRef in async mode — priority functions that access
+		// context.graph will receive the sentinel and throw. Phase 4b will
+		// inject a real async proxy graph here.
+	);
+	// Build runner options conditionally to satisfy exactOptionalPropertyTypes:
+	// optional properties must be omitted entirely rather than set to undefined.
+	const runnerOptions: {
+		signal?: AbortSignal;
+		onProgress?: (stats: ProgressStats) => void | Promise<void>;
+		yieldStrategy?: YieldStrategy;
+	} = {};
+	if (config?.signal !== undefined) {
+		runnerOptions.signal = config.signal;
 	}
-
-	const pathB: NodeId[] = [];
-	const predB = predecessors[frontierB];
-	if (predB !== undefined) {
-		let node: NodeId | null | undefined = collisionNode;
-		let next: NodeId | null | undefined = predB.get(node);
-		while (next !== null && next !== undefined) {
-			node = next;
-			pathB.push(node);
-			next = predB.get(node);
-		}
+	if (config?.onProgress !== undefined) {
+		runnerOptions.onProgress = config.onProgress;
 	}
-
-	const fullPath = [...pathA, ...pathB];
-
-	const seedA = seeds[frontierA];
-	const seedB = seeds[frontierB];
-
-	if (seedA === undefined || seedB === undefined) {
-		return null;
+	if (config?.yieldStrategy !== undefined) {
+		runnerOptions.yieldStrategy = config.yieldStrategy;
 	}
-
-	return {
-		fromSeed: seedA,
-		toSeed: seedB,
-		nodes: fullPath,
-	};
-}
-
-/**
- * Create an empty result for early termination.
- */
-function emptyResult(algorithm: string, startTime: number): ExpansionResult {
-	return {
-		paths: [],
-		sampledNodes: new Set(),
-		sampledEdges: new Set(),
-		visitedPerFrontier: [],
-		stats: {
-			iterations: 0,
-			nodesVisited: 0,
-			edgesTraversed: 0,
-			pathsFound: 0,
-			durationMs: performance.now() - startTime,
-			algorithm,
-			termination: "exhausted",
-		},
-	};
+	return runAsync(gen, graph, runnerOptions);
 }
