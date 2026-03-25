@@ -7,3 +7,4 @@
 export * from "./types";
 export * from "./interfaces";
 export * from "./adjacency-map";
+export * from "./async-interfaces";
