@@ -110,12 +110,3 @@ jobs:
       - run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish to npm via OIDC
-        run: |
-          CURRENT=$(npm pkg get version | tr -d '"')
-          if [ "$CURRENT" != "${{ steps.pre.outputs.version }}" ]; then
-            echo "Publishing $CURRENT to npm..."
-            npm publish --provenance --access public
-          else
-            echo "No new version — skipping npm publish"
-          fi
