@@ -5,7 +5,7 @@ import {
 	useEffect,
 	useRef,
 } from "react";
-import { Stack, Text, ScrollArea, Box, Group, Badge } from "@mantine/core";
+import { Stack, Text, Box, Group, Badge } from "@mantine/core";
 import type { Core } from "cytoscape";
 import type { ExpansionPath } from "graphwise/expansion";
 
@@ -119,23 +119,21 @@ export function ColumnPathList({ paths, cy }: ColumnPathListProps): ReactNode {
 	}
 
 	return (
-		<ScrollArea.Autosize mah={300}>
-			<Stack gap="xs">
-				<Text size="xs" fw={500}>
-					Top {Math.min(paths.length, 10)} of {paths.length} paths
-				</Text>
-				{paths.slice(0, 10).map((path, idx) => (
-					<PathItem
-						key={idx}
-						path={path}
-						rank={idx + 1}
-						onClick={() => {
-							handlePathClick(idx);
-						}}
-						isHighlighted={highlightedPath === idx}
-					/>
-				))}
-			</Stack>
-		</ScrollArea.Autosize>
+		<Stack gap="xs">
+			<Text size="xs" fw={500}>
+				Top {Math.min(paths.length, 10)} of {paths.length} paths
+			</Text>
+			{paths.slice(0, 10).map((path, idx) => (
+				<PathItem
+					key={idx}
+					path={path}
+					rank={idx + 1}
+					onClick={() => {
+						handlePathClick(idx);
+					}}
+					isHighlighted={highlightedPath === idx}
+				/>
+			))}
+		</Stack>
 	);
 }

@@ -71,25 +71,18 @@ export function PipelineColumn({ columnId }: PipelineColumnProps): ReactNode {
 			style={{
 				display: "flex",
 				flexDirection: "column",
-				maxHeight: "100%",
-				flex: 1,
 			}}
 		>
-			<Stack gap="sm" style={{ flex: 1, minHeight: 0 }}>
+			<Stack gap="sm">
 				<ColumnHeader column={column} />
 
-				<Paper
-					style={{ flex: 1, minHeight: 200, position: "relative" }}
-					withBorder
-				>
+				<Paper style={{ aspectRatio: 1, position: "relative" }} withBorder>
 					<ColumnGraph columnId={columnId} graph={graph} seeds={seeds} />
 				</Paper>
 
 				<ColumnMetrics column={column} />
 
-				<Box style={{ flexShrink: 0 }}>
-					<ColumnPathList paths={paths} cy={cy} />
-				</Box>
+				<ColumnPathList paths={paths} cy={cy} />
 			</Stack>
 		</Paper>
 	);
