@@ -1,6 +1,7 @@
 import { Box } from "@mantine/core";
 import { useCytoscape } from "./use-cytoscape";
 import { useGraphSync } from "./use-graph-sync";
+import { useFrameSync } from "./use-frame-sync";
 import { useGraphStore } from "../../state/graph-store";
 import * as styles from "./GraphCanvas.css";
 
@@ -12,6 +13,7 @@ export function GraphCanvas(_props: GraphCanvasProps): React.ReactElement {
 	const { cy, containerRef, isReady } = useCytoscape();
 
 	useGraphSync({ cy, graph, seeds });
+	useFrameSync({ cy });
 
 	return (
 		<Box
