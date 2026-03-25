@@ -7,6 +7,7 @@ import { createStyles, type RelaxedStylesheet } from "./cytoscape-styles";
 import { useGraphStore } from "../../state/graph-store";
 import { useLayoutStore } from "../../state/layout-store";
 import type { NodePosition } from "../../state/layout-store";
+import { useInteractionStore } from "../../state/interaction-store";
 
 function isNode(target: unknown): target is NodeSingular {
 	return (
@@ -38,6 +39,8 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 	);
 	const sharedViewport = useLayoutStore((state) => state.viewport);
 	const setViewport = useLayoutStore((state) => state.setViewport);
+	const zoomEnabled = useInteractionStore((state) => state.zoomEnabled);
+	const panEnabled = useInteractionStore((state) => state.panEnabled);
 
 	// Track which node is being dragged locally to prevent feedback loop
 	const draggedNodeIdRef = useRef<string | null>(null);
@@ -230,4 +233,13 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			});
 		}
 	}, [cy, graph, sharedViewport]);
+
+	// Effect 7: Apply interaction settings from store
+	useEffect(() => {
+		if (!cy) {
+			return;
+		}
+		cy.userZoomingEnabled(zoomEnabled);
+		cy.userPanningEnabled(panEnabled);
+	}, [cy, zoomEnabled, panEnabled]);
 }
