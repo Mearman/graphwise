@@ -6,6 +6,7 @@ import {
 } from "../../state/url-state";
 import { useGraphStore } from "../../state/graph-store";
 import { useAnimationStore } from "../../state/animation-store";
+import { useColumnStore } from "../../state/column-store";
 import { AdjacencyMapGraph } from "graphwise/graph";
 import type { Seed, SeedRole } from "graphwise/expansion";
 
@@ -44,7 +45,9 @@ export function useUrlSync(): void {
 	const setGraph = useGraphStore((state) => state.setGraph);
 	const setSeeds = useGraphStore((state) => state.setSeeds);
 
-	const algorithmName = useAnimationStore((state) => state.algorithmName);
+	const columns = useColumnStore((state) => state.columns);
+	const updateColumn = useColumnStore((state) => state.updateColumn);
+
 	const currentFrameIndex = useAnimationStore(
 		(state) => state.currentFrameIndex,
 	);
@@ -111,8 +114,12 @@ export function useUrlSync(): void {
 		});
 		setSeeds(restoredSeeds);
 
+		// Note: Column configurations (algorithms) are not restored from URL.
+		// Columns are created fresh each session via the UI. The URL stores
+		// the graph and seeds, which are deterministic inputs for algorithms.
+
 		isInitialLoad.current = false;
-	}, [setGraph, setSeeds]);
+	}, [setGraph, setSeeds, columns, updateColumn]);
 
 	// Update URL when state changes (debounced)
 	useEffect(() => {
@@ -147,8 +154,9 @@ export function useUrlSync(): void {
 				});
 			}
 
+			// Serialise to v2 format with columns
 			const serialisedState: SerialisedState = {
-				v: 1,
+				v: 2,
 				g: {
 					d: directed,
 					n: nodes,
@@ -158,7 +166,11 @@ export function useUrlSync(): void {
 					i: s.id,
 					r: s.role,
 				})),
-				a: algorithmName.length > 0 ? algorithmName : undefined,
+				c: columns.flatMap((col) =>
+					col.expansionAlgorithm !== null
+						? [{ id: col.id, a: col.expansionAlgorithm }]
+						: [],
+				),
 				f: currentFrameIndex > 0 ? currentFrameIndex : undefined,
 			};
 
@@ -171,5 +183,5 @@ export function useUrlSync(): void {
 				clearTimeout(updateTimeoutRef.current);
 			}
 		};
-	}, [graph, directed, seeds, algorithmName, currentFrameIndex]);
+	}, [graph, directed, seeds, columns, currentFrameIndex]);
 }

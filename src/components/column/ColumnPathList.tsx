@@ -5,14 +5,32 @@ import {
 	useEffect,
 	useRef,
 } from "react";
-import { Stack, Text, ScrollArea, Box } from "@mantine/core";
+import { Stack, Text, ScrollArea, Box, Group, Badge } from "@mantine/core";
 import type { Core } from "cytoscape";
 import type { ExpansionPath } from "graphwise/expansion";
-import { PathCard } from "../ranking/PathCard";
 
 interface ColumnPathListProps {
 	readonly paths: readonly ExpansionPath[];
 	readonly cy: Core | null;
+}
+
+function PathCard({
+	path,
+	rank,
+}: {
+	readonly path: ExpansionPath;
+	readonly rank: number;
+}): ReactNode {
+	return (
+		<Group justify="space-between">
+			<Badge size="lg" variant="light">
+				#{rank}
+			</Badge>
+			<Text size="xs" truncate>
+				{path.nodes.join(" → ")}
+			</Text>
+		</Group>
+	);
 }
 
 function PathItem({

@@ -25,20 +25,43 @@ const SeedSchema = z.object({
 		.describe("Seed role (source, target, bidirectional)"),
 });
 
-export const SerialisedState = defineSchema(
+const ColumnConfigSchema = z.object({
+	id: z.string().describe("Column ID"),
+	a: z.string().describe("Expansion algorithm"),
+	sk: z.string().optional().describe("Sort key (ranking)"),
+});
+
+const GraphSchema = z.object({
+	d: z.boolean().describe("Whether the graph is directed"),
+	n: z.array(NodeSchema).describe("Graph nodes"),
+	e: z.array(EdgeSchema).describe("Graph edges"),
+});
+
+/** Version 1: Single-algorithm state (legacy) */
+const SerialisedStateV1 = defineSchema(
 	z.object({
 		v: z.literal(1).describe("Schema version"),
-		g: z
-			.object({
-				d: z.boolean().describe("Whether the graph is directed"),
-				n: z.array(NodeSchema).describe("Graph nodes"),
-				e: z.array(EdgeSchema).describe("Graph edges"),
-			})
-			.describe("Graph structure"),
+		g: GraphSchema.describe("Graph structure"),
 		s: z.array(SeedSchema).describe("Seed nodes for expansion"),
 		a: z.string().optional().describe("Selected algorithm name"),
 		f: z.number().optional().describe("Current animation frame index"),
 	}),
+);
+
+/** Version 2: Multi-column state */
+const SerialisedStateV2 = defineSchema(
+	z.object({
+		v: z.literal(2).describe("Schema version"),
+		g: GraphSchema.describe("Graph structure"),
+		s: z.array(SeedSchema).describe("Seed nodes for expansion"),
+		c: z.array(ColumnConfigSchema).describe("Column configurations"),
+		f: z.number().optional().describe("Current animation frame index"),
+		vm: z.string().optional().describe("View mode (columns or overlay)"),
+	}),
+);
+
+export const SerialisedState = defineSchema(
+	z.union([SerialisedStateV1, SerialisedStateV2]),
 );
 
 export type SerialisedState = z.infer<typeof SerialisedState>;
@@ -67,6 +90,22 @@ export function serialiseToHash(state: SerialisedState): string {
 	return "#data=" + bytesToBase64url(compressed);
 }
 
+/** Migrate v1 state to v2 */
+function migrateV1ToV2(
+	v1: z.infer<typeof SerialisedStateV1>,
+): z.infer<typeof SerialisedStateV2> {
+	return {
+		v: 2,
+		g: v1.g,
+		s: v1.s,
+		c:
+			typeof v1.a === "string" && v1.a.length > 0
+				? [{ id: "col-0", a: v1.a }]
+				: [],
+		f: v1.f,
+	};
+}
+
 /** Deserialise state from URL hash */
 export function deserialiseFromHash(): SerialisedState | null {
 	const hash = window.location.hash;
@@ -77,7 +116,17 @@ export function deserialiseFromHash(): SerialisedState | null {
 	try {
 		const bytes = base64urlToBytes(encoded);
 		const json: unknown = JSON.parse(pako.inflate(bytes, { to: "string" }));
-		if (SerialisedState.is(json)) return json;
+
+		// Check if it's v1 format first
+		if (SerialisedStateV1.is(json)) {
+			return migrateV1ToV2(json);
+		}
+
+		// Check if it's v2 format
+		if (SerialisedStateV2.is(json)) {
+			return json;
+		}
+
 		return null;
 	} catch {
 		return null;
