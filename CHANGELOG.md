@@ -1,3 +1,11 @@
+## [1.5.2](https://github.com/Mearman/graphwise/compare/v1.5.1...v1.5.2) (2026-03-25)
+
+### Tests
+
+* **expansion:** add baseline comparisons to integration tests ([8496e60](https://github.com/Mearman/graphwise/commit/8496e60e90d03c707c04d817864cf3d4955da464))
+* **expansion:** add cross-algorithm comparison integration tests ([3c49f83](https://github.com/Mearman/graphwise/commit/3c49f8300a282e0fba6c18c0537e2adc3dce0704))
+* **ranking:** add PARSE-level baseline comparisons to MI variant tests ([ff9e51f](https://github.com/Mearman/graphwise/commit/ff9e51f88391bb3b9ad94c313415b11cd3358ec6))
+
 ## [1.5.1](https://github.com/Mearman/graphwise/compare/v1.5.0...v1.5.1) (2026-03-25)
 
 ### Code Refactoring
