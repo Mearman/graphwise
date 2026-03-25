@@ -4,7 +4,7 @@ export const canvas = style({
 	position: "relative",
 	width: "100%",
 	height: "100%",
-	minHeight: 400,
+	minHeight: 200,
 	backgroundColor: "#f8fafc",
 	borderRadius: 8,
 	selectors: {

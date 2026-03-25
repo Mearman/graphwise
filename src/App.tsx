@@ -92,7 +92,7 @@ function MainContent(): ReactNode {
 				</Grid.Col>
 
 				<Grid.Col span={7}>
-					<Stack gap="md" style={{ height: "100%" }}>
+					<Stack gap="md" style={{ height: "100%", overflow: "hidden" }}>
 						<Paper
 							shadow="sm"
 							withBorder
@@ -117,7 +117,7 @@ function MainContent(): ReactNode {
 				</Grid.Col>
 
 				<Grid.Col span={3}>
-					<Stack gap="md">
+					<Stack gap="md" style={{ height: "100%", overflow: "auto" }}>
 						<ComparisonPanel />
 
 						<Paper p="sm" withBorder>
