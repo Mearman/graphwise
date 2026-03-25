@@ -11,7 +11,7 @@ import type { NodeData, EdgeData, NodeId, ReadableGraph } from "../graph";
 import type { MIVariantName } from "../ranking/mi/types";
 import type { ComputeResult, GPUComputeOptions } from "./types";
 import { withBackend, type DispatchOptions } from "./dispatch";
-import { graphToCSR, csrToTypedBuffers } from "./csr";
+import { graphToCSR, csrToTypedBuffers, type CSRMatrix } from "./csr";
 import { dispatchSpmv } from "./kernels/spmv/kernel";
 import { dispatchPagerank } from "./kernels/pagerank/kernel";
 import { dispatchJaccard } from "./kernels/jaccard/kernel";
@@ -28,7 +28,6 @@ import {
 import type { GraphwiseGPURoot } from "./root";
 import { d } from "typegpu";
 // clustering helper not imported; local implementations used below
-
 
 /**
  * Degree statistics from histogram computation.
@@ -578,7 +577,7 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 				sizeU: sizeUs[i] ?? 0,
 				sizeV: sizeVs[i] ?? 0,
 			};
-			let base = applyMIVariant(result, "jaccard");
+			const base = applyMIVariant(result, "jaccard");
 			// Apply correction variants
 			switch (variant) {
 				case "scale": {
@@ -596,8 +595,11 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 				}
 				case "span": {
 					const clustering = computeClusteringCoefficients(csr);
-					const cu = clustering[indexMap.nodeToIndex.get((pairs[i] as any)[0]) ?? 0] ?? 0;
-					const cv = clustering[indexMap.nodeToIndex.get((pairs[i] as any)[1]) ?? 0] ?? 0;
+					const pair = pairs[i];
+					const u0 = pair ? indexMap.nodeToIndex.get(pair[0]) : undefined;
+					const v0 = pair ? indexMap.nodeToIndex.get(pair[1]) : undefined;
+					const cu = (u0 !== undefined ? clustering[u0] : undefined) ?? 0;
+					const cv = (v0 !== undefined ? clustering[v0] : undefined) ?? 0;
 					scores[i] = base * (1 - Math.max(cu, cv));
 					break;
 				}
@@ -617,9 +619,12 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 		// Convert node IDs to numeric indices for GPU buffers
 		const uArr = new Uint32Array(pairCount);
 		const vArr = new Uint32Array(pairCount);
-		const validPair: boolean[] = new Array(pairCount);
+		const validPair: boolean[] = Array.from(
+			{ length: pairCount },
+			(): boolean => false,
+		);
 		for (let i = 0; i < pairCount; i++) {
-			const p = pairs[i] ?? (null as any);
+			const p = pairs[i];
 			const uIdxRaw = p ? indexMap.nodeToIndex.get(p[0]) : undefined;
 			const vIdxRaw = p ? indexMap.nodeToIndex.get(p[1]) : undefined;
 			const uIdx = uIdxRaw ?? 0;
@@ -637,10 +642,19 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 
 		// Create GPU buffers
 		const pairsUBuffer = root
-			.createBuffer(d.arrayOf(d.u32, pairCount), Array.from(uArr))
+			.createBuffer(
+				d.arrayOf(d.u32, pairCount),
+				// TypeGPU type constraints are complex; TypedArrays are compatible with buffer initialization
+				// eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+				Array.from(uArr) as any,
+			)
 			.$usage("storage");
 		const pairsVBuffer = root
-			.createBuffer(d.arrayOf(d.u32, pairCount), Array.from(vArr))
+			.createBuffer(
+				d.arrayOf(d.u32, pairCount),
+				// eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+				Array.from(vArr) as any,
+			)
 			.$usage("storage");
 
 		const intersectionsBuffer = root
@@ -653,16 +667,14 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 			.createBuffer(d.arrayOf(d.u32, pairCount))
 			.$usage("storage");
 
-
 		if (variant === "adamic-adar") {
 			// Dispatch dedicated Adamic-Adar kernel which also writes raw counts
 			const resultsBuffer = root
 				.createBuffer(d.arrayOf(d.f32, pairCount))
 				.$usage("storage");
 
-			const { dispatchAdamicAdar } = await import(
-				"./kernels/adamic-adar/kernel.js"
-			);
+			const { dispatchAdamicAdar } =
+				await import("./kernels/adamic-adar/kernel.js");
 			dispatchAdamicAdar(
 				root,
 				csrBuffers,
@@ -698,7 +710,8 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 			return { scores, intersections, sizeUs, sizeVs };
 		} else {
 			// Dispatch intersection kernel
-			const { dispatchIntersection } = await import("./kernels/intersection/kernel.js");
+			const { dispatchIntersection } =
+				await import("./kernels/intersection/kernel.js");
 			dispatchIntersection(
 				root,
 				csrBuffers,
@@ -723,7 +736,8 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 			const scores = new Float32Array(pairCount);
 			if (variant === "scale" || variant === "skew" || variant === "span") {
 				// Precompute helpers
-				const clustering = variant === "span" ? computeClusteringCoefficients(csr) : undefined;
+				const clustering =
+					variant === "span" ? computeClusteringCoefficients(csr) : undefined;
 				const N = csr.rowOffsets.length - 1;
 				const rho = variant === "scale" ? computeGraphDensity(csr) : undefined;
 
@@ -740,7 +754,8 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 					const base = applyMIVariant(result, "jaccard");
 					switch (variant) {
 						case "scale":
-							if (rho && rho > 0) scores[i] = base / rho; else scores[i] = base;
+							if (rho !== undefined && rho > 0) scores[i] = base / rho;
+							else scores[i] = base;
 							break;
 						case "skew": {
 							const degU = result.sizeU;
@@ -750,12 +765,15 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 							break;
 						}
 						case "span": {
-							const uId = pairs[i] ? (pairs[i] as any)[0] : undefined;
-							const vId = pairs[i] ? (pairs[i] as any)[1] : undefined;
-							const uIdx = uId !== undefined ? indexMap.nodeToIndex.get(uId) : undefined;
-							const vIdx = vId !== undefined ? indexMap.nodeToIndex.get(vId) : undefined;
-							const cu = (uIdx !== undefined) ? (clustering?.[uIdx] ?? 0) : 0;
-							const cv = (vIdx !== undefined) ? (clustering?.[vIdx] ?? 0) : 0;
+							const pair = pairs[i];
+							const uId = pair ? pair[0] : undefined;
+							const vId = pair ? pair[1] : undefined;
+							const uIdx =
+								uId !== undefined ? indexMap.nodeToIndex.get(uId) : undefined;
+							const vIdx =
+								vId !== undefined ? indexMap.nodeToIndex.get(vId) : undefined;
+							const cu = uIdx !== undefined ? (clustering?.[uIdx] ?? 0) : 0;
+							const cv = vIdx !== undefined ? (clustering?.[vIdx] ?? 0) : 0;
 							scores[i] = base * (1 - Math.max(cu, cv));
 							break;
 						}
@@ -780,7 +798,6 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 		}
 	};
 
-
 	const dispatchOpts: DispatchOptions = {
 		backend: options?.backend,
 		root: options?.root,
@@ -793,13 +810,13 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 /**
  * Apply MI variant formula to intersection result.
  */
-function computeGraphDensity(csr: any): number {
+function computeGraphDensity(csr: CSRMatrix): number {
 	const n = csr.rowOffsets.length - 1;
 	const m = csr.colIndices.length;
 	return n > 1 ? (2 * m) / (n * (n - 1)) : 0;
 }
 
-function computeClusteringCoefficients(csr: any): number[] {
+function computeClusteringCoefficients(csr: CSRMatrix): number[] {
 	// Naive local clustering coefficient per node: 2 * number of closed triplets / (deg * (deg-1))
 	const n = csr.rowOffsets.length - 1;
 	const coeffs = new Array<number>(n).fill(0);
@@ -814,11 +831,11 @@ function computeClusteringCoefficients(csr: any): number[] {
 		const neighbours = new Set(csr.colIndices.slice(start, end));
 		let links = 0;
 		for (const u of neighbours) {
-			const uIndex = Number(u) || 0;
-    const uStart = csr.rowOffsets[uIndex] ?? 0;
-			const uEnd = csr.rowOffsets[uIndex + 1] ?? 0;
+			const uStart = csr.rowOffsets[u] ?? 0;
+			const uEnd = csr.rowOffsets[u + 1] ?? 0;
 			for (let k = uStart; k < uEnd; k++) {
-				if (neighbours.has(csr.colIndices[k])) links++;
+				const colIdx = csr.colIndices[k] ?? 0;
+				if (neighbours.has(colIdx)) links++;
 			}
 		}
 		// each edge counted twice
@@ -941,11 +958,20 @@ export async function gpuKMeansAssign(
 		}
 
 		const pointsBuffer = root
-			.createBuffer(d.arrayOf(d.vec3f, pointCount), Array.from(points) as any)
+			.createBuffer(
+				d.arrayOf(d.vec3f, pointCount),
+				// TypeGPU type constraints are complex; TypedArrays are compatible with buffer initialization
+				// eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+				Array.from(points) as any,
+			)
 			.$usage("storage");
 
 		const centroidsBuffer = root
-			.createBuffer(d.arrayOf(d.vec3f, k), Array.from(centroids) as any)
+			.createBuffer(
+				d.arrayOf(d.vec3f, k),
+				// eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+				Array.from(centroids) as any,
+			)
 			.$usage("storage");
 
 		const assignmentsBuffer = root
@@ -957,10 +983,17 @@ export async function gpuKMeansAssign(
 			.$usage("storage");
 
 		// Dispatch assignment kernel
-		const { dispatchKMeansAssign: dispatch } = await import(
-			"./kernels/kmeans/kernel.js"
+		const { dispatchKMeansAssign: dispatch } =
+			await import("./kernels/kmeans/kernel.js");
+		dispatch(
+			root,
+			pointsBuffer,
+			centroidsBuffer,
+			assignmentsBuffer,
+			distancesBuffer,
+			pointCount,
+			k,
 		);
-		dispatch(root, pointsBuffer, centroidsBuffer, assignmentsBuffer, distancesBuffer, pointCount, k);
 
 		const assignments = await assignmentsBuffer.read();
 		const distances = await distancesBuffer.read();
