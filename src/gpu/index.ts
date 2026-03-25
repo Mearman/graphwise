@@ -7,4 +7,4 @@
 export * from "./types";
 export * from "./csr";
 export * from "./detect";
-export * from "./context";
+export * from "./root";

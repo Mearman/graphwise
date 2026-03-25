@@ -5,6 +5,8 @@
  * for GPU-accelerated graph operations.
  */
 
+import type { GraphwiseGPURoot } from "./root";
+
 /**
  * Backend selection for compute operations.
  *
@@ -52,6 +54,6 @@ export interface ComputeResult<T> {
 export interface GPUComputeOptions {
 	/** Backend selection: 'auto', 'gpu', or 'cpu' */
 	readonly backend?: ComputeBackend;
-	/** Optional GPU device to reuse (avoids device acquisition overhead) */
-	readonly device?: GPUDevice;
+	/** Optional TypeGPU root to reuse (avoids device acquisition overhead) */
+	readonly root?: GraphwiseGPURoot;
 }
