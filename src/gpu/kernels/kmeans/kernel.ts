@@ -7,8 +7,29 @@
  * @module gpu/kernels/kmeans/kernel
  */
 
-import tgpu, { d, type TgpuBuffer } from "typegpu";
+import tgpu, { d } from "typegpu";
 import type { GraphwiseGPURoot } from "../../root";
+
+/**
+ * K-means assignment kernel buffers.
+ *
+ * Buffer types are complex TypeGPU types that are difficult to express in TypeScript.
+ * Using `any` here is intentional to avoid verbose generic constraints.
+ */
+export interface KMeansAssignBuffers {
+	/** Points buffer (3D vectors) */
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	readonly pointsBuffer: any;
+	/** Centroids buffer (3D vectors) */
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	readonly centroidsBuffer: any;
+	/** Assignments output buffer (cluster indices) */
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	readonly assignmentsBuffer: any;
+	/** Distances output buffer (distances to assigned centroid) */
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	readonly distancesBuffer: any;
+}
 
 /**
  * Bind group layout for K-means assignment kernel.
@@ -87,17 +108,28 @@ const kmeansAssignPipeline = (pointIdx: number): void => {
  */
 export function dispatchKMeansAssign(
 	root: GraphwiseGPURoot,
+	// TypeGPU buffer types are complex and not easily expressible in TypeScript
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
 	pointsBuffer: any,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
 	centroidsBuffer: any,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
 	assignmentsBuffer: any,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
 	distancesBuffer: any,
 	pointCount: number,
 	k: number,
 ): void {
-	// Use the project's guarded pipeline pattern
-	const pipeline = root.createGuardedComputePipeline(kmeansAssignPipeline as any);
+	// TypeGPU kernel function with "use gpu" directive
 
-	const pairCountBuffer = root.createBuffer(d.u32, pointCount).$usage("uniform");
+	const pipeline = root.createGuardedComputePipeline(
+		// eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+		kmeansAssignPipeline as any,
+	);
+
+	const pairCountBuffer = root
+		.createBuffer(d.u32, pointCount)
+		.$usage("uniform");
 	const kBuffer = root.createBuffer(d.u32, k).$usage("uniform");
 
 	const bindGroup = root.createBindGroup(KMeansAssignLayout, {
@@ -119,16 +151,27 @@ export function createKMeansAssignBuffers(
 	root: GraphwiseGPURoot,
 	points: readonly (readonly [number, number, number])[],
 	centroids: readonly (readonly [number, number, number])[],
-): any {
+): KMeansAssignBuffers {
 	const pointCount = points.length;
 	const k = centroids.length;
 
+	// Convert readonly arrays to mutable for TypeGPU buffer creation
+
 	const pointsBuffer = root
-		.createBuffer(d.arrayOf(d.vec3f, pointCount), Array.from(points) as any)
+		.createBuffer(
+			d.arrayOf(d.vec3f, pointCount),
+			// TypeGPU type constraints are complex; TypedArrays are compatible with buffer initialization
+			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+			Array.from(points) as any,
+		)
 		.$usage("storage");
 
 	const centroidsBuffer = root
-		.createBuffer(d.arrayOf(d.vec3f, k), Array.from(centroids) as any)
+		.createBuffer(
+			d.arrayOf(d.vec3f, k),
+			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+			Array.from(centroids) as any,
+		)
 		.$usage("storage");
 
 	const assignmentsBuffer = root
