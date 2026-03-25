@@ -1,0 +1,82 @@
+{
+  "name": "graphwise-demo",
+  "version": "0.0.0-development",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "_typecheck": "tsc --noEmit",
+    "_lint": "eslint --cache",
+    "_test": "vitest run",
+    "_build": "vite build",
+    "dev": "vite",
+    "build": "turbo run _build",
+    "preview": "vite preview",
+    "typecheck": "turbo run _typecheck",
+    "lint": "turbo run _lint",
+    "lint:fix": "eslint --cache --fix",
+    "test": "turbo run _test",
+    "validate": "turbo run _typecheck _lint _test _build",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@mantine/core": "^8.3.18",
+    "@mantine/hooks": "^8.3.18",
+    "@tabler/icons-react": "3.40.0",
+    "cytoscape": "^3.33.1",
+    "d3-scale": "^4.0.2",
+    "d3-selection": "^3.0.0",
+    "d3-shape": "^3.2.0",
+    "graphwise": "^1.8.0",
+    "katex": "^0.16.42",
+    "pako": "^2.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "zod": "^4.3.6",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.7.1",
+    "@eslint-react/eslint-plugin": "^3.0.0",
+    "@eslint/js": "^10.0.1",
+    "@types/cytoscape": "^3.31.0",
+    "@types/d3-scale": "^4.0.9",
+    "@types/d3-selection": "^3.0.11",
+    "@types/d3-shape": "^3.1.8",
+    "@types/katex": "^0.16.8",
+    "@types/pako": "^2.0.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vanilla-extract/css": "^1.20.0",
+    "@vanilla-extract/vite-plugin": "^5.2.1",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.1.0",
+    "eslint-plugin-import-x": "^4.16.2",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "husky": "^9.1.7",
+    "jsdom": "29.0.1",
+    "lint-staged": "^16.4.0",
+    "postcss": "^8.5.8",
+    "postcss-preset-mantine": "^1.18.0",
+    "prettier": "^3.8.1",
+    "semantic-release": "^25.0.3",
+    "turbo": "^2.8.20",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.57.2",
+    "vite": "^8.0.2",
+    "vitest": "^4.1.1"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --cache --fix"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "packageManager": "pnpm@10.27.0"
+}
