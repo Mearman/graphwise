@@ -1,11 +1,6 @@
 import { type ReactNode } from "react";
 import { Group, Paper, Text, Stack } from "@mantine/core";
-import {
-	IconBinaryTree2,
-	IconRoute,
-	IconClock,
-	IconTrendingUp,
-} from "@tabler/icons-react";
+import { IconRoute, IconTrendingUp } from "@tabler/icons-react";
 import type { PipelineColumn } from "../../state/column-store";
 
 interface ColumnMetricsProps {
@@ -40,37 +35,21 @@ export function ColumnMetrics({ column }: ColumnMetricsProps): ReactNode {
 	const stats = column.expansionResult?.stats;
 	const rankingStats = column.rankingResult?.stats;
 
-	const nodesVisited = stats?.nodesVisited ?? 0;
 	const pathsFound = stats?.pathsFound ?? 0;
-	const durationMs = stats?.durationMs ?? 0;
 	const meanSalience = rankingStats?.meanSalience;
 
 	return (
-		<Stack gap="xs">
-			<Group grow>
-				<MetricCard
-					icon={<IconBinaryTree2 size={16} />}
-					label="Nodes"
-					value={nodesVisited}
-				/>
-				<MetricCard
-					icon={<IconRoute size={16} />}
-					label="Paths"
-					value={pathsFound}
-				/>
-			</Group>
-			<Group grow>
-				<MetricCard
-					icon={<IconClock size={16} />}
-					label="Time"
-					value={`${durationMs.toFixed(0)}ms`}
-				/>
-				<MetricCard
-					icon={<IconTrendingUp size={16} />}
-					label="Mean Salience"
-					value={meanSalience !== undefined ? meanSalience.toFixed(3) : "-"}
-				/>
-			</Group>
-		</Stack>
+		<Group grow>
+			<MetricCard
+				icon={<IconRoute size={16} />}
+				label="Paths"
+				value={pathsFound}
+			/>
+			<MetricCard
+				icon={<IconTrendingUp size={16} />}
+				label="Mean Salience"
+				value={meanSalience !== undefined ? meanSalience.toFixed(3) : "-"}
+			/>
+		</Group>
 	);
 }
