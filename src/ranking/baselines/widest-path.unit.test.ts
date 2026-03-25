@@ -1,28 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../../graph";
-import type { NodeData, EdgeData } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { KGNode } from "../../__test__/fixtures/types";
+import { createPath } from "../../__test__/fixtures/helpers";
 import { widestPath } from "./widest-path";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
-
-function createPath(nodes: string[]): ExpansionPath {
-	return {
-		nodes,
-		fromSeed: { id: nodes[0] ?? "" },
-		toSeed: { id: nodes[nodes.length - 1] ?? "" },
-	};
-}
 
 describe("widestPath baseline", () => {
 	it("returns empty array for no paths", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const result = widestPath(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -30,7 +14,7 @@ describe("widestPath baseline", () => {
 	});
 
 	it("ranks single path", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		graph.addNode({ id: "A", label: "A" });
 		graph.addNode({ id: "B", label: "B" });
 		graph.addNode({ id: "C", label: "C" });
@@ -46,7 +30,7 @@ describe("widestPath baseline", () => {
 	});
 
 	it("handles single-node path", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		graph.addNode({ id: "A", label: "A" });
 
 		const paths = [createPath(["A"])];
@@ -57,7 +41,7 @@ describe("widestPath baseline", () => {
 	});
 
 	it("normalises scores to [0, 1]", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const nodes = ["A", "B", "C"];
 
 		for (const id of nodes) {
@@ -75,7 +59,7 @@ describe("widestPath baseline", () => {
 	});
 
 	it("uses minimum edge similarity as bottleneck", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const nodes = ["A", "B", "C", "D"];
 
 		for (const id of nodes) {
@@ -96,7 +80,7 @@ describe("widestPath baseline", () => {
 	});
 
 	it("sorts by score descending", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const nodes = ["A", "B", "C", "D"];
 
 		for (const id of nodes) {

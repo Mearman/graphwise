@@ -1,40 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import type { NodeData, EdgeData } from "../graph";
 import { reach } from "./reach";
 import type { Seed } from "./types";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
-
-function createTestGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-	const nodes = ["A", "B", "C", "D", "E"];
-
-	for (const id of nodes) {
-		graph.addNode({ id, label: `Node ${id}` });
-	}
-
-	// Linear path: A - B - C - D - E
-	for (let i = 0; i < nodes.length - 1; i++) {
-		const source = nodes[i];
-		const target = nodes[i + 1];
-		if (source !== undefined && target !== undefined) {
-			graph.addEdge({ source, target, weight: 1 });
-		}
-	}
-
-	return graph;
-}
+import { createLinearChainGraph } from "../__test__/fixtures/graphs/linear-chain";
+import type { KGNode } from "../__test__/fixtures/types";
 
 describe("REACH expansion", () => {
 	it("returns empty result for no seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = reach(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -42,7 +15,7 @@ describe("REACH expansion", () => {
 	});
 
 	it("returns a result object with correct structure", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = reach(graph, seeds);
@@ -54,7 +27,7 @@ describe("REACH expansion", () => {
 	});
 
 	it("discovers paths between seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = reach(graph, seeds);
@@ -63,7 +36,7 @@ describe("REACH expansion", () => {
 	});
 
 	it("respects maxPaths configuration", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = reach(graph, seeds, { maxPaths: 1 });
@@ -73,7 +46,7 @@ describe("REACH expansion", () => {
 	});
 
 	it("respects maxNodes configuration", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = reach(graph, seeds, { maxNodes: 3 });
@@ -83,7 +56,7 @@ describe("REACH expansion", () => {
 	});
 
 	it("includes all discovered paths", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = reach(graph, seeds);
@@ -96,7 +69,7 @@ describe("REACH expansion", () => {
 	});
 
 	it("transitions to phase 2 after discovering first path", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = reach(graph, seeds);
@@ -107,7 +80,7 @@ describe("REACH expansion", () => {
 
 	it("computes MI estimates to path endpoints in phase 2", () => {
 		// Create graph with distinct neighbourhoods for endpoints
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 
 		// Structure: separate clusters connected by path
 		const nodes = ["A", "X", "Y", "C", "D", "W", "Z", "E"];
@@ -138,7 +111,7 @@ describe("REACH expansion", () => {
 	});
 
 	it("deprioritises nodes similar to path endpoints in phase 2", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 
 		// Hub and periphery structure
 		const nodes = ["A", "B", "C", "D", "E"];

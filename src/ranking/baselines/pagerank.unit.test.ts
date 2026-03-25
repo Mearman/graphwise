@@ -1,28 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../../graph";
-import type { NodeData, EdgeData } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { KGNode } from "../../__test__/fixtures/types";
+import { createPath } from "../../__test__/fixtures/helpers";
 import { pagerank } from "./pagerank";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
-
-function createPath(nodes: string[]): ExpansionPath {
-	return {
-		nodes,
-		fromSeed: { id: nodes[0] ?? "" },
-		toSeed: { id: nodes[nodes.length - 1] ?? "" },
-	};
-}
 
 describe("pagerank baseline", () => {
 	it("returns empty array for no paths", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const result = pagerank(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -30,7 +14,7 @@ describe("pagerank baseline", () => {
 	});
 
 	it("ranks single path", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		graph.addNode({ id: "A", label: "A" });
 		graph.addNode({ id: "B", label: "B" });
 		graph.addNode({ id: "C", label: "C" });
@@ -47,7 +31,7 @@ describe("pagerank baseline", () => {
 	});
 
 	it("normalises scores to [0, 1]", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const nodes = ["A", "B", "C"];
 
 		for (const id of nodes) {
@@ -65,7 +49,7 @@ describe("pagerank baseline", () => {
 	});
 
 	it("handles empty graph gracefully", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 
 		const result = pagerank(graph, []);
 
@@ -73,7 +57,7 @@ describe("pagerank baseline", () => {
 	});
 
 	it("ranks multiple paths by PageRank sum", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const nodes = ["A", "B", "C", "D"];
 
 		for (const id of nodes) {
@@ -96,7 +80,7 @@ describe("pagerank baseline", () => {
 	});
 
 	it("sorts by score descending", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const nodes = ["A", "B", "C", "D"];
 
 		for (const id of nodes) {

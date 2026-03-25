@@ -3,38 +3,25 @@ import { AdjacencyMapGraph } from "../graph";
 import type { NodeData, EdgeData } from "../graph";
 import { hae } from "./hae";
 import type { Seed } from "./types";
+import {
+	createLinearChainGraph,
+	createDisconnectedGraph,
+} from "../__test__/fixtures/graphs/linear-chain";
 
-interface TestNode extends NodeData {
+/** Extended node type used only by the custom type-mapper test. */
+interface HAETestNode extends NodeData {
 	readonly label: string;
 	readonly category?: string;
 }
 
-interface TestEdge extends EdgeData {
+/** Extended edge type used only by the custom type-mapper test. */
+interface HAETestEdge extends EdgeData {
 	readonly weight: number;
-}
-
-function createTestGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-	const nodes = ["A", "B", "C", "D", "E"];
-
-	for (const id of nodes) {
-		graph.addNode({ id, label: `Node ${id}` });
-	}
-
-	for (let i = 0; i < nodes.length - 1; i++) {
-		const source = nodes[i];
-		const target = nodes[i + 1];
-		if (source !== undefined && target !== undefined) {
-			graph.addEdge({ source, target, weight: 1 });
-		}
-	}
-
-	return graph;
 }
 
 describe("hae expansion", () => {
 	it("returns empty result for no seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = hae(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -42,7 +29,7 @@ describe("hae expansion", () => {
 	});
 
 	it("returns a result object with correct structure", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = hae(graph, seeds);
@@ -54,24 +41,21 @@ describe("hae expansion", () => {
 	});
 
 	it("sets algorithm name in stats", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = hae(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.algorithm).toBeDefined();
 	});
 
 	it("handles disconnected seeds", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-		graph.addNode({ id: "A", label: "A" });
-		graph.addNode({ id: "B", label: "B" });
-
+		const graph = createDisconnectedGraph();
 		const result = hae(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.paths).toHaveLength(0);
 	});
 
 	it("uses default type mapper when none provided", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = hae(graph, [{ id: "A" }, { id: "E" }]);
 
 		// Should work without error
@@ -79,7 +63,7 @@ describe("hae expansion", () => {
 	});
 
 	it("uses custom type mapper when provided", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<HAETestNode, HAETestEdge>();
 		graph.addNode({ id: "A", label: "A", category: "TypeX" });
 		graph.addNode({ id: "B", label: "B", category: "TypeX" });
 		graph.addNode({ id: "C", label: "C", category: "TypeY" });
@@ -98,7 +82,7 @@ describe("hae expansion", () => {
 
 		const result = hae(graph, [{ id: "A" }, { id: "C" }] as const, {
 			typeMapper: (node) => {
-				// Custom mapper can access extended properties on TestNode
+				// Custom mapper can access extended properties on HAETestNode
 				if (isNodeWithCategory(node)) {
 					return node.category ?? "default";
 				}
@@ -111,7 +95,7 @@ describe("hae expansion", () => {
 	});
 
 	it("discovers paths between connected seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = hae(graph, [{ id: "A" }, { id: "E" }]);
 
 		expect(result.paths.length).toBeGreaterThan(0);

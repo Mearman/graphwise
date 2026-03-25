@@ -6,7 +6,11 @@
  */
 
 import type { NodeId, ReadableGraph, NodeData, EdgeData } from "../../graph";
-import type { ExpansionPath } from "../../expansion";
+import type {
+	ExpansionPath,
+	ExpansionResult,
+	ExpansionStats,
+} from "../../expansion";
 import type { MIFunction } from "../../ranking/mi";
 
 /**
@@ -120,6 +124,70 @@ export function pathMI<N extends NodeData, E extends EdgeData>(
 	const geometricMean = Math.exp(logSum / edgeCount);
 
 	return geometricMean;
+}
+
+/**
+ * Assert that an ExpansionResult has the four required top-level properties.
+ *
+ * Checks for `paths`, `sampledNodes`, `sampledEdges`, and `stats`. Intended
+ * as a concise structural guard in expansion unit tests.
+ *
+ * @param result - The expansion result to validate
+ */
+export function assertExpansionResultShape(result: ExpansionResult): void {
+	if (!("paths" in result)) {
+		throw new Error("ExpansionResult missing 'paths' property");
+	}
+	if (!("sampledNodes" in result)) {
+		throw new Error("ExpansionResult missing 'sampledNodes' property");
+	}
+	if (!("sampledEdges" in result)) {
+		throw new Error("ExpansionResult missing 'sampledEdges' property");
+	}
+	if (!("stats" in result)) {
+		throw new Error("ExpansionResult missing 'stats' property");
+	}
+}
+
+/**
+ * Assert that an ExpansionStats object has all expected numeric fields and
+ * a valid termination reason.
+ *
+ * Checks `iterations`, `nodesVisited`, `edgesTraversed`, `pathsFound`,
+ * `durationMs`, `algorithm`, and `termination`.
+ *
+ * @param stats - The stats object to validate
+ */
+export function assertValidStats(stats: ExpansionStats): void {
+	if (typeof stats.iterations !== "number") {
+		throw new Error("ExpansionStats.iterations must be a number");
+	}
+	if (typeof stats.nodesVisited !== "number") {
+		throw new Error("ExpansionStats.nodesVisited must be a number");
+	}
+	if (typeof stats.edgesTraversed !== "number") {
+		throw new Error("ExpansionStats.edgesTraversed must be a number");
+	}
+	if (typeof stats.pathsFound !== "number") {
+		throw new Error("ExpansionStats.pathsFound must be a number");
+	}
+	if (typeof stats.durationMs !== "number") {
+		throw new Error("ExpansionStats.durationMs must be a number");
+	}
+	if (typeof stats.algorithm !== "string") {
+		throw new Error("ExpansionStats.algorithm must be a string");
+	}
+	const validTerminations = [
+		"exhausted",
+		"limit",
+		"collision",
+		"error",
+	] as const;
+	if (!validTerminations.includes(stats.termination)) {
+		throw new Error(
+			`ExpansionStats.termination '${stats.termination}' is not a valid termination reason`,
+		);
+	}
 }
 
 /**

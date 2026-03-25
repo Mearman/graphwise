@@ -1,39 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { AdjacencyMapGraph } from "../graph";
-import type { NodeData, EdgeData } from "../graph";
 import { sift } from "./sift";
 import type { Seed } from "./types";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
-
-function createTestGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-	const nodes = ["A", "B", "C", "D", "E"];
-
-	for (const id of nodes) {
-		graph.addNode({ id, label: `Node ${id}` });
-	}
-
-	for (let i = 0; i < nodes.length - 1; i++) {
-		const source = nodes[i];
-		const target = nodes[i + 1];
-		if (source !== undefined && target !== undefined) {
-			graph.addEdge({ source, target, weight: 1 });
-		}
-	}
-
-	return graph;
-}
+import {
+	createLinearChainGraph,
+	createDisconnectedGraph,
+} from "../__test__/fixtures/graphs/linear-chain";
 
 describe("sift expansion", () => {
 	it("returns empty result for no seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = sift(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -41,7 +16,7 @@ describe("sift expansion", () => {
 	});
 
 	it("returns a result object with correct structure", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = sift(graph, seeds);
@@ -53,7 +28,7 @@ describe("sift expansion", () => {
 	});
 
 	it("reports algorithm name", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = sift(graph, [{ id: "A" }, { id: "B" }]);
 
 		// REACH wraps BASE, so algorithm name is inherited
@@ -61,9 +36,7 @@ describe("sift expansion", () => {
 	});
 
 	it("handles disconnected seeds", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-		graph.addNode({ id: "A", label: "A" });
-		graph.addNode({ id: "B", label: "B" });
+		const graph = createDisconnectedGraph();
 
 		const result = sift(graph, [{ id: "A" }, { id: "B" }]);
 
@@ -71,7 +44,7 @@ describe("sift expansion", () => {
 	});
 
 	it("uses custom MI threshold", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = sift(graph, seeds, { miThreshold: 0.5 });
@@ -81,7 +54,7 @@ describe("sift expansion", () => {
 	});
 
 	it("uses custom MI function", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		// Custom MI function that returns constant value
@@ -94,7 +67,7 @@ describe("sift expansion", () => {
 	});
 
 	it("respects maxNodes configuration", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = sift(graph, seeds, { maxNodes: 3 });
@@ -103,7 +76,7 @@ describe("sift expansion", () => {
 	});
 
 	it("respects maxIterations configuration", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = sift(graph, seeds, { maxIterations: 2 });
@@ -112,7 +85,7 @@ describe("sift expansion", () => {
 	});
 
 	it("respects maxPaths configuration", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = sift(graph, seeds, { maxPaths: 1 });
@@ -121,7 +94,7 @@ describe("sift expansion", () => {
 	});
 
 	it("handles single seed", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = sift(graph, [{ id: "A" }]);
 
 		// Single seed cannot discover paths between seeds
@@ -129,7 +102,7 @@ describe("sift expansion", () => {
 	});
 
 	it("handles seed not in graph", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = sift(graph, [{ id: "NONEXISTENT" }, { id: "A" }]);
 
 		// Should handle gracefully without throwing
@@ -137,7 +110,7 @@ describe("sift expansion", () => {
 	});
 
 	it("returns visitedPerFrontier array", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = sift(graph, seeds);

@@ -1,39 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { AdjacencyMapGraph } from "../graph";
-import type { NodeData, EdgeData } from "../graph";
 import { dome, domeHighDegree } from "./dome";
 import type { Seed } from "./types";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
-
-function createTestGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-	const nodes = ["A", "B", "C", "D", "E"];
-
-	for (const id of nodes) {
-		graph.addNode({ id, label: `Node ${id}` });
-	}
-
-	for (let i = 0; i < nodes.length - 1; i++) {
-		const source = nodes[i];
-		const target = nodes[i + 1];
-		if (source !== undefined && target !== undefined) {
-			graph.addEdge({ source, target, weight: 1 });
-		}
-	}
-
-	return graph;
-}
+import {
+	createLinearChainGraph,
+	createDisconnectedGraph,
+} from "../__test__/fixtures/graphs/linear-chain";
 
 describe("dome expansion", () => {
 	it("returns empty result for no seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = dome(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -41,7 +16,7 @@ describe("dome expansion", () => {
 	});
 
 	it("returns a result object with correct structure", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = dome(graph, seeds);
@@ -53,7 +28,7 @@ describe("dome expansion", () => {
 	});
 
 	it("reports algorithm name", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = dome(graph, [{ id: "A" }, { id: "B" }]);
 
 		// DOME wraps BASE, so algorithm name is inherited
@@ -61,10 +36,7 @@ describe("dome expansion", () => {
 	});
 
 	it("handles disconnected seeds", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-		graph.addNode({ id: "A", label: "A" });
-		graph.addNode({ id: "B", label: "B" });
-
+		const graph = createDisconnectedGraph();
 		const result = dome(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.paths).toHaveLength(0);
@@ -73,14 +45,14 @@ describe("dome expansion", () => {
 
 describe("domeHighDegree expansion", () => {
 	it("returns empty result for no seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = domeHighDegree(graph, []);
 
 		expect(result.paths).toHaveLength(0);
 	});
 
 	it("returns a result object with correct structure", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = domeHighDegree(graph, seeds);
@@ -92,7 +64,7 @@ describe("domeHighDegree expansion", () => {
 	});
 
 	it("reports algorithm name", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = domeHighDegree(graph, [{ id: "A" }, { id: "B" }]);
 
 		// DOME high-degree wraps BASE, so algorithm name is inherited

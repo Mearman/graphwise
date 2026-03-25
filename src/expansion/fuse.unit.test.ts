@@ -1,50 +1,23 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { ReadableGraph } from "../graph";
 import { fuse, type FUSEConfig } from "./fuse";
 import type { Seed } from "./types";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
+import {
+	createLinearChainGraph,
+	createDisconnectedGraph,
+} from "../__test__/fixtures/graphs/linear-chain";
+import type { KGNode } from "../__test__/fixtures/types";
 
 /**
- * Create a simple linear graph: A - B - C - D - E
+ * Create a graph with a hub node:
+ *   A - B - C - D - E
+ *        \ /
+ *         H
+ * H connects to B and C, creating shared neighbours.
  */
-function createLinearGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-	const nodes = ["A", "B", "C", "D", "E"];
-
-	for (const id of nodes) {
-		graph.addNode({ id, label: `Node ${id}` });
-	}
-
-	for (let i = 0; i < nodes.length - 1; i++) {
-		const source = nodes[i];
-		const target = nodes[i + 1];
-		if (source !== undefined && target !== undefined) {
-			graph.addEdge({ source, target, weight: 1 });
-		}
-	}
-
-	return graph;
-}
-
-/**
- * Create a graph with a hub node: A - B - C - D - E
- *                                   \   /
- *                                     H
- * Where H connects to B and C, creating shared neighbours.
- */
-function createGraphWithSharedNeighbours(): AdjacencyMapGraph<
-	TestNode,
-	TestEdge
-> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+function createGraphWithSharedNeighbours(): AdjacencyMapGraph<KGNode> {
+	const graph = AdjacencyMapGraph.undirected<KGNode>();
 	const nodes = ["A", "B", "C", "D", "E", "H"];
 
 	for (const id of nodes) {
@@ -68,7 +41,7 @@ function createGraphWithSharedNeighbours(): AdjacencyMapGraph<
  * Custom MI function for testing that returns a fixed value.
  */
 function fixedMI(
-	graph: ReadableGraph<TestNode, TestEdge>,
+	graph: ReadableGraph<KGNode>,
 	source: string,
 	target: string,
 ): number {
@@ -80,7 +53,7 @@ function fixedMI(
 
 describe("fuse expansion", () => {
 	it("returns empty result for no seeds", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = fuse(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -88,7 +61,7 @@ describe("fuse expansion", () => {
 	});
 
 	it("returns a result object with correct structure", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = fuse(graph, seeds);
@@ -104,9 +77,7 @@ describe("fuse expansion", () => {
 	});
 
 	it("handles disconnected seeds gracefully", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-		graph.addNode({ id: "A", label: "A" });
-		graph.addNode({ id: "B", label: "B" });
+		const graph = createDisconnectedGraph();
 
 		const seeds: Seed[] = [{ id: "A" }, { id: "B" }];
 		const result = fuse(graph, seeds);
@@ -115,35 +86,35 @@ describe("fuse expansion", () => {
 	});
 
 	it("reports algorithm name", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = fuse(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.algorithm).toBeDefined();
 	});
 
 	it("includes duration in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = fuse(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes iterations in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = fuse(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.iterations).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes edges traversed in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = fuse(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.edgesTraversed).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes paths found in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = fuse(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.pathsFound).toBeGreaterThanOrEqual(0);
@@ -154,7 +125,7 @@ describe("fuse with custom MI function", () => {
 	it("accepts custom MI function", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: FUSEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<KGNode> = {
 			mi: fixedMI,
 		};
 
@@ -167,7 +138,7 @@ describe("fuse with custom MI function", () => {
 	it("accepts custom salience weight", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: FUSEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<KGNode> = {
 			salienceWeight: 0.8,
 		};
 
@@ -179,7 +150,7 @@ describe("fuse with custom MI function", () => {
 	it("accepts salience weight of 0 (pure degree-based)", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: FUSEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<KGNode> = {
 			salienceWeight: 0,
 		};
 
@@ -191,7 +162,7 @@ describe("fuse with custom MI function", () => {
 	it("accepts salience weight of 1 (pure salience-based)", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: FUSEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<KGNode> = {
 			salienceWeight: 1,
 		};
 
@@ -203,7 +174,7 @@ describe("fuse with custom MI function", () => {
 	it("accepts both custom MI and salience weight", () => {
 		const graph = createGraphWithSharedNeighbours();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: FUSEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<KGNode> = {
 			mi: fixedMI,
 			salienceWeight: 0.3,
 		};
@@ -216,9 +187,9 @@ describe("fuse with custom MI function", () => {
 
 describe("fuse with expansion config options", () => {
 	it("respects maxNodes configuration", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: FUSEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<KGNode> = {
 			maxNodes: 2,
 		};
 
@@ -228,9 +199,9 @@ describe("fuse with expansion config options", () => {
 	});
 
 	it("respects maxIterations configuration", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: FUSEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<KGNode> = {
 			maxIterations: 1,
 		};
 
@@ -240,9 +211,9 @@ describe("fuse with expansion config options", () => {
 	});
 
 	it("respects maxPaths configuration", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
-		const config: FUSEConfig<TestNode, TestEdge> = {
+		const config: FUSEConfig<KGNode> = {
 			maxPaths: 1,
 		};
 
@@ -254,7 +225,7 @@ describe("fuse with expansion config options", () => {
 
 describe("fuse with single seed", () => {
 	it("returns empty paths for single seed", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }];
 
 		const result = fuse(graph, seeds);

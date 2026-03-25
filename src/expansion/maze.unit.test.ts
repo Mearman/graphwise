@@ -1,40 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import type { NodeData, EdgeData } from "../graph";
 import { maze } from "./maze";
 import type { Seed } from "./types";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
-
-function createTestGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-	const nodes = ["A", "B", "C", "D", "E"];
-
-	for (const id of nodes) {
-		graph.addNode({ id, label: `Node ${id}` });
-	}
-
-	// Linear path: A - B - C - D - E
-	for (let i = 0; i < nodes.length - 1; i++) {
-		const source = nodes[i];
-		const target = nodes[i + 1];
-		if (source !== undefined && target !== undefined) {
-			graph.addEdge({ source, target, weight: 1 });
-		}
-	}
-
-	return graph;
-}
+import { createLinearChainGraph } from "../__test__/fixtures/graphs/linear-chain";
+import type { KGNode } from "../__test__/fixtures/types";
 
 describe("MAZE expansion", () => {
 	it("returns empty result for no seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = maze(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -42,7 +15,7 @@ describe("MAZE expansion", () => {
 	});
 
 	it("returns a result object with correct structure", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = maze(graph, seeds);
@@ -54,7 +27,7 @@ describe("MAZE expansion", () => {
 	});
 
 	it("discovers paths between seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = maze(graph, seeds);
@@ -63,7 +36,7 @@ describe("MAZE expansion", () => {
 	});
 
 	it("respects maxPaths configuration", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = maze(graph, seeds, { maxPaths: 1 });
@@ -73,7 +46,7 @@ describe("MAZE expansion", () => {
 	});
 
 	it("respects maxNodes configuration", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = maze(graph, seeds, { maxNodes: 3 });
@@ -83,7 +56,7 @@ describe("MAZE expansion", () => {
 	});
 
 	it("includes all discovered paths", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = maze(graph, seeds);
@@ -97,7 +70,7 @@ describe("MAZE expansion", () => {
 
 	it("uses path potential in phase 1", () => {
 		// Create graph with bridge nodes to test path potential
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 
 		// Two clusters connected by bridge
 		const nodes = ["A", "X", "B", "C", "D", "E", "Y", "F"];
@@ -129,7 +102,7 @@ describe("MAZE expansion", () => {
 	});
 
 	it("transitions to phase 2 after threshold of paths", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		// Allow discovery of multiple paths to trigger phase 2
@@ -141,7 +114,7 @@ describe("MAZE expansion", () => {
 
 	it("combines path potential with salience weighting in phase 2", () => {
 		// Create graph where multiple paths can be discovered
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 
 		// Hub structure for multiple paths
 		const nodes = ["A", "B", "X", "C", "Y", "D"];
@@ -168,7 +141,7 @@ describe("MAZE expansion", () => {
 	});
 
 	it("handles edge case of single path discovery", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = maze(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.nodesVisited).toBeGreaterThan(0);

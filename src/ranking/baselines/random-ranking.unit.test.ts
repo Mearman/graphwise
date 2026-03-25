@@ -1,28 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../../graph";
-import type { NodeData, EdgeData } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { KGNode } from "../../__test__/fixtures/types";
+import { createPath } from "../../__test__/fixtures/helpers";
 import { randomRanking } from "./random-ranking";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
-
-function createPath(nodes: string[]): ExpansionPath {
-	return {
-		nodes,
-		fromSeed: { id: nodes[0] ?? "" },
-		toSeed: { id: nodes[nodes.length - 1] ?? "" },
-	};
-}
 
 describe("randomRanking baseline", () => {
 	it("returns empty array for no paths", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const result = randomRanking(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -30,7 +14,7 @@ describe("randomRanking baseline", () => {
 	});
 
 	it("ranks single path", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		graph.addNode({ id: "A", label: "A" });
 
 		const paths = [createPath(["A"])];
@@ -41,7 +25,7 @@ describe("randomRanking baseline", () => {
 	});
 
 	it("is reproducible with same seed", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const nodes = ["A", "B", "C"];
 
 		for (const id of nodes) {
@@ -61,7 +45,7 @@ describe("randomRanking baseline", () => {
 	});
 
 	it("produces different results with different seeds", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const nodes = ["A", "B", "C", "D"];
 
 		for (const id of nodes) {
@@ -84,7 +68,7 @@ describe("randomRanking baseline", () => {
 	});
 
 	it("normalises scores to [0, 1]", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const nodes = ["A", "B", "C"];
 
 		for (const id of nodes) {
@@ -106,7 +90,7 @@ describe("randomRanking baseline", () => {
 	});
 
 	it("ranks multiple paths", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const nodes = ["A", "B", "C", "D"];
 
 		for (const id of nodes) {
@@ -126,7 +110,7 @@ describe("randomRanking baseline", () => {
 	});
 
 	it("sorts by score descending", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		const nodes = ["A", "B", "C", "D"];
 
 		for (const id of nodes) {

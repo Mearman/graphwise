@@ -1,37 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import type { NodeData, EdgeData } from "../graph";
 import { lace } from "./lace";
 import type { LACEConfig } from "./lace";
 import type { Seed } from "./types";
 import { jaccard } from "../ranking/mi/jaccard";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
-
-function createTestGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-	const nodes = ["A", "B", "C", "D", "E"];
-
-	for (const id of nodes) {
-		graph.addNode({ id, label: `Node ${id}` });
-	}
-
-	for (let i = 0; i < nodes.length - 1; i++) {
-		const source = nodes[i];
-		const target = nodes[i + 1];
-		if (source !== undefined && target !== undefined) {
-			graph.addEdge({ source, target, weight: 1 });
-		}
-	}
-
-	return graph;
-}
+import {
+	createLinearChainGraph,
+	createDisconnectedGraph,
+} from "../__test__/fixtures/graphs/linear-chain";
+import type { KGNode } from "../__test__/fixtures/types";
 
 /**
  * Create a graph with varying neighbourhood overlap.
@@ -43,8 +20,8 @@ function createTestGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
  *
  * A-E and C-E have higher MI due to shared neighbours.
  */
-function createOverlapGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+function createOverlapGraph(): AdjacencyMapGraph<KGNode> {
+	const graph = AdjacencyMapGraph.undirected<KGNode>();
 	const nodes = ["A", "B", "C", "D", "E", "F"];
 
 	for (const id of nodes) {
@@ -67,7 +44,7 @@ function createOverlapGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
 
 describe("lace expansion", () => {
 	it("returns empty result for no seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = lace(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -75,7 +52,7 @@ describe("lace expansion", () => {
 	});
 
 	it("returns a result object with correct structure", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = lace(graph, seeds);
@@ -87,7 +64,7 @@ describe("lace expansion", () => {
 	});
 
 	it("reports algorithm name", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = lace(graph, [{ id: "A" }, { id: "B" }]);
 
 		// LACE wraps BASE, so algorithm name is inherited
@@ -95,9 +72,7 @@ describe("lace expansion", () => {
 	});
 
 	it("handles disconnected seeds", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-		graph.addNode({ id: "A", label: "A" });
-		graph.addNode({ id: "B", label: "B" });
+		const graph = createDisconnectedGraph();
 
 		const result = lace(graph, [{ id: "A" }, { id: "B" }]);
 
@@ -105,14 +80,14 @@ describe("lace expansion", () => {
 	});
 
 	it("includes duration in stats", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = lace(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
 	});
 
 	it("accepts custom MI function", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		// Custom MI function that returns fixed values
@@ -125,10 +100,10 @@ describe("lace expansion", () => {
 	});
 
 	it("accepts LACEConfig with MI function", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
-		const config: LACEConfig<TestNode, TestEdge> = {
+		const config: LACEConfig<KGNode> = {
 			mi: jaccard,
 			maxIterations: 10,
 		};
@@ -139,7 +114,7 @@ describe("lace expansion", () => {
 	});
 
 	it("respects maxIterations config", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = lace(graph, seeds, { maxIterations: 2 });
@@ -149,7 +124,7 @@ describe("lace expansion", () => {
 	});
 
 	it("respects maxNodes config", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = lace(graph, seeds, { maxNodes: 3 });
@@ -171,7 +146,7 @@ describe("lace expansion", () => {
 	});
 
 	it("handles graph with no edges", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		graph.addNode({ id: "A", label: "A" });
 		graph.addNode({ id: "B", label: "B" });
 
@@ -182,7 +157,7 @@ describe("lace expansion", () => {
 	});
 
 	it("handles single node graph", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
 		graph.addNode({ id: "A", label: "A" });
 
 		const result = lace(graph, [{ id: "A" }]);
@@ -206,7 +181,7 @@ describe("lace expansion", () => {
 	});
 
 	it("produces deterministic results with same seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result1 = lace(graph, seeds);

@@ -1,48 +1,22 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import type { NodeData, EdgeData } from "../graph";
 import { flux } from "./flux";
 import type { Seed } from "./types";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
-
-/**
- * Create a simple linear graph: A - B - C - D - E
- */
-function createLinearGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-	const nodes = ["A", "B", "C", "D", "E"];
-
-	for (const id of nodes) {
-		graph.addNode({ id, label: `Node ${id}` });
-	}
-
-	for (let i = 0; i < nodes.length - 1; i++) {
-		const source = nodes[i];
-		const target = nodes[i + 1];
-		if (source !== undefined && target !== undefined) {
-			graph.addEdge({ source, target, weight: 1 });
-		}
-	}
-
-	return graph;
-}
+import {
+	createLinearChainGraph,
+	createDisconnectedGraph,
+} from "../__test__/fixtures/graphs/linear-chain";
+import type { KGNode } from "../__test__/fixtures/types";
 
 /**
  * Create a dense graph (high local clustering):
  *
  *   A --- B
- *   |     |
+ *   |  \/ |
  *   C --- D
  */
-function createDenseGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+function createDenseGraph(): AdjacencyMapGraph<KGNode> {
+	const graph = AdjacencyMapGraph.undirected<KGNode>();
 	const nodes = ["A", "B", "C", "D"];
 
 	for (const id of nodes) {
@@ -69,8 +43,8 @@ function createDenseGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
  *
  * Node C is a bridge connecting the two clusters.
  */
-function createBridgeGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+function createBridgeGraph(): AdjacencyMapGraph<KGNode> {
+	const graph = AdjacencyMapGraph.undirected<KGNode>();
 	const nodes = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
 	for (const id of nodes) {
@@ -95,7 +69,7 @@ function createBridgeGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
 
 describe("flux expansion", () => {
 	it("returns empty result for no seeds", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = flux(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -103,7 +77,7 @@ describe("flux expansion", () => {
 	});
 
 	it("returns a result object with correct structure", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = flux(graph, seeds);
@@ -119,7 +93,7 @@ describe("flux expansion", () => {
 	});
 
 	it("reports algorithm name", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = flux(graph, [{ id: "A" }, { id: "B" }]);
 
 		// MAZE wraps BASE, so algorithm name is inherited
@@ -127,9 +101,7 @@ describe("flux expansion", () => {
 	});
 
 	it("handles disconnected seeds gracefully", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-		graph.addNode({ id: "A", label: "A" });
-		graph.addNode({ id: "B", label: "B" });
+		const graph = createDisconnectedGraph();
 
 		const seeds: Seed[] = [{ id: "A" }, { id: "B" }];
 		const result = flux(graph, seeds);
@@ -138,28 +110,28 @@ describe("flux expansion", () => {
 	});
 
 	it("includes duration in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = flux(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes iterations in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = flux(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.iterations).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes edges traversed in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = flux(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.edgesTraversed).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes paths found in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = flux(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.pathsFound).toBeGreaterThanOrEqual(0);
@@ -201,7 +173,7 @@ describe("flux expansion", () => {
 	});
 
 	it("expands linear graph and samples nodes", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = flux(graph, seeds);
@@ -234,7 +206,7 @@ describe("flux expansion", () => {
 	});
 
 	it("respects maxNodes configuration", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = flux(graph, seeds, { maxNodes: 2 });
@@ -243,7 +215,7 @@ describe("flux expansion", () => {
 	});
 
 	it("respects maxIterations configuration", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = flux(graph, seeds, { maxIterations: 1 });
@@ -261,7 +233,7 @@ describe("flux expansion", () => {
 	});
 
 	it("handles single seed gracefully", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }];
 
 		const result = flux(graph, seeds);
@@ -271,7 +243,7 @@ describe("flux expansion", () => {
 	});
 
 	it("handles seed not in graph", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "Z" }];
 
 		// Should not throw
@@ -282,7 +254,7 @@ describe("flux expansion", () => {
 	});
 
 	it("visits nodes from all seed frontiers", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = flux(graph, seeds);
@@ -292,7 +264,7 @@ describe("flux expansion", () => {
 	});
 
 	it("returns immutable path nodes", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = flux(graph, seeds);

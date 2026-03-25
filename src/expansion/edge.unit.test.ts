@@ -1,39 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { AdjacencyMapGraph } from "../graph";
-import type { NodeData, EdgeData } from "../graph";
 import { edge } from "./edge";
 import type { Seed } from "./types";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
-
-function createTestGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-	const nodes = ["A", "B", "C", "D", "E"];
-
-	for (const id of nodes) {
-		graph.addNode({ id, label: `Node ${id}` });
-	}
-
-	for (let i = 0; i < nodes.length - 1; i++) {
-		const source = nodes[i];
-		const target = nodes[i + 1];
-		if (source !== undefined && target !== undefined) {
-			graph.addEdge({ source, target, weight: 1 });
-		}
-	}
-
-	return graph;
-}
+import {
+	createLinearChainGraph,
+	createDisconnectedGraph,
+} from "../__test__/fixtures/graphs/linear-chain";
 
 describe("edge expansion", () => {
 	it("returns empty result for no seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = edge(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -41,7 +16,7 @@ describe("edge expansion", () => {
 	});
 
 	it("returns a result object with correct structure", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = edge(graph, seeds);
@@ -53,7 +28,7 @@ describe("edge expansion", () => {
 	});
 
 	it("sets algorithm name in stats", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = edge(graph, [{ id: "A" }, { id: "B" }]);
 
 		// EDGE wraps BASE, which sets algorithm name
@@ -61,9 +36,7 @@ describe("edge expansion", () => {
 	});
 
 	it("handles disconnected seeds", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-		graph.addNode({ id: "A", label: "A" });
-		graph.addNode({ id: "B", label: "B" });
+		const graph = createDisconnectedGraph();
 
 		const result = edge(graph, [{ id: "A" }, { id: "B" }]);
 
@@ -71,14 +44,14 @@ describe("edge expansion", () => {
 	});
 
 	it("discovers paths between connected seeds", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = edge(graph, [{ id: "A" }, { id: "E" }]);
 
 		expect(result.paths.length).toBeGreaterThan(0);
 	});
 
 	it("includes sampled nodes and edges in result", () => {
-		const graph = createTestGraph();
+		const graph = createLinearChainGraph();
 		const result = edge(graph, [{ id: "A" }, { id: "E" }]);
 
 		// At least the seed nodes should be visited

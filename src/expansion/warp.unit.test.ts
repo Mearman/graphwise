@@ -1,38 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import type { NodeData, EdgeData } from "../graph";
 import { warp } from "./warp";
 import type { Seed } from "./types";
-
-interface TestNode extends NodeData {
-	readonly label: string;
-}
-
-interface TestEdge extends EdgeData {
-	readonly weight: number;
-}
-
-/**
- * Create a simple linear graph: A - B - C - D - E
- */
-function createLinearGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-	const nodes = ["A", "B", "C", "D", "E"];
-
-	for (const id of nodes) {
-		graph.addNode({ id, label: `Node ${id}` });
-	}
-
-	for (let i = 0; i < nodes.length - 1; i++) {
-		const source = nodes[i];
-		const target = nodes[i + 1];
-		if (source !== undefined && target !== undefined) {
-			graph.addEdge({ source, target, weight: 1 });
-		}
-	}
-
-	return graph;
-}
+import {
+	createLinearChainGraph,
+	createDisconnectedGraph,
+} from "../__test__/fixtures/graphs/linear-chain";
+import type { KGNode } from "../__test__/fixtures/types";
 
 /**
  * Create a bridge graph:
@@ -41,10 +15,10 @@ function createLinearGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
  *       |
  *   D - E - F
  *
- * E is a bridge node connecting two clusters
+ * G is a bridge node connecting the two clusters via B and E.
  */
-function createBridgeGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
-	const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
+function createBridgeGraph(): AdjacencyMapGraph<KGNode> {
+	const graph = AdjacencyMapGraph.undirected<KGNode>();
 
 	// Left cluster
 	graph.addNode({ id: "A", label: "A" });
@@ -76,7 +50,7 @@ function createBridgeGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
 
 describe("warp expansion", () => {
 	it("returns empty result for no seeds", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = warp(graph, []);
 
 		expect(result.paths).toHaveLength(0);
@@ -84,7 +58,7 @@ describe("warp expansion", () => {
 	});
 
 	it("returns a result object with correct structure", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = warp(graph, seeds);
@@ -100,9 +74,7 @@ describe("warp expansion", () => {
 	});
 
 	it("handles disconnected seeds gracefully", () => {
-		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
-		graph.addNode({ id: "A", label: "A" });
-		graph.addNode({ id: "B", label: "B" });
+		const graph = createDisconnectedGraph();
 
 		const seeds: Seed[] = [{ id: "A" }, { id: "B" }];
 		const result = warp(graph, seeds);
@@ -111,7 +83,7 @@ describe("warp expansion", () => {
 	});
 
 	it("reports algorithm name", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = warp(graph, [{ id: "A" }, { id: "B" }]);
 
 		// PIPE wraps BASE, so algorithm name is inherited
@@ -119,35 +91,35 @@ describe("warp expansion", () => {
 	});
 
 	it("includes duration in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = warp(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes iterations in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = warp(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.iterations).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes edges traversed in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = warp(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.edgesTraversed).toBeGreaterThanOrEqual(0);
 	});
 
 	it("includes paths found in stats", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const result = warp(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.pathsFound).toBeGreaterThanOrEqual(0);
 	});
 
 	it("discovers paths between connected seeds", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = warp(graph, seeds);
@@ -171,7 +143,7 @@ describe("warp expansion", () => {
 	});
 
 	it("samples nodes during expansion", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = warp(graph, seeds);
@@ -182,7 +154,7 @@ describe("warp expansion", () => {
 	});
 
 	it("samples edges during expansion", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = warp(graph, seeds);
@@ -191,7 +163,7 @@ describe("warp expansion", () => {
 	});
 
 	it("respects maxNodes configuration", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = warp(graph, seeds, { maxNodes: 3 });
@@ -200,7 +172,7 @@ describe("warp expansion", () => {
 	});
 
 	it("respects maxIterations configuration", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
 
 		const result = warp(graph, seeds, { maxIterations: 2 });
@@ -218,7 +190,7 @@ describe("warp expansion", () => {
 	});
 
 	it("handles single seed", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [{ id: "A" }];
 
 		const result = warp(graph, seeds);
@@ -228,7 +200,7 @@ describe("warp expansion", () => {
 	});
 
 	it("handles seeds with roles", () => {
-		const graph = createLinearGraph();
+		const graph = createLinearChainGraph();
 		const seeds: Seed[] = [
 			{ id: "A", role: "source" },
 			{ id: "E", role: "target" },
