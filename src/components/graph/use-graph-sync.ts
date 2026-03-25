@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import type { Core } from "cytoscape";
+import { useEffect, useRef } from "react";
+import type { Core, NodeSingular } from "cytoscape";
 import type { AdjacencyMapGraph } from "graphwise/graph";
 import type { Seed } from "graphwise/expansion";
 import { graphToCytoscapeElements } from "../../engine/graph-bridge";
@@ -7,6 +7,15 @@ import { createStyles, type RelaxedStylesheet } from "./cytoscape-styles";
 import { useGraphStore } from "../../state/graph-store";
 import { useLayoutStore } from "../../state/layout-store";
 import type { NodePosition } from "../../state/layout-store";
+
+function isNode(target: unknown): target is NodeSingular {
+	return (
+		typeof target === "object" &&
+		target !== null &&
+		"id" in target &&
+		"position" in target
+	);
+}
 
 export interface UseGraphSyncOptions {
 	readonly cy: Core | null;
@@ -24,6 +33,12 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 	);
 	const positions = useLayoutStore((state) => state.positions);
 	const setPositions = useLayoutStore((state) => state.setPositions);
+	const updateNodePosition = useLayoutStore(
+		(state) => state.updateNodePosition,
+	);
+
+	// Track which node is being dragged locally to prevent feedback loop
+	const draggedNodeIdRef = useRef<string | null>(null);
 
 	// Effect 1: Element sync — add/remove nodes and edges when graph changes
 	useEffect(() => {
@@ -94,4 +109,70 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			layout.run();
 		}
 	}, [cy, graph, graphVersion, layoutGraphVersion, positions, setPositions]);
+
+	// Effect 3: Drag sync — propagate local drag to store
+	useEffect(() => {
+		if (!cy || !graph) {
+			return;
+		}
+
+		const onDrag = (evt: cytoscape.EventObject): void => {
+			if (!isNode(evt.target)) {
+				return;
+			}
+			const node = evt.target;
+			const nodeId = node.id();
+			const pos = node.position();
+			updateNodePosition(nodeId, { x: pos.x, y: pos.y });
+		};
+
+		const onDragStart = (evt: cytoscape.EventObject): void => {
+			if (!isNode(evt.target)) {
+				return;
+			}
+			const node = evt.target;
+			draggedNodeIdRef.current = node.id();
+		};
+
+		const onDragFree = (): void => {
+			draggedNodeIdRef.current = null;
+		};
+
+		cy.on("drag", "node", onDrag);
+		cy.on("dragstart", "node", onDragStart);
+		cy.on("dragfree", "node", onDragFree);
+
+		return () => {
+			cy.off("drag", "node", onDrag);
+			cy.off("dragstart", "node", onDragStart);
+			cy.off("dragfree", "node", onDragFree);
+		};
+	}, [cy, graph, updateNodePosition]);
+
+	// Effect 4: Apply position updates from store (skip locally dragged node)
+	useEffect(() => {
+		if (!cy || !graph || !positions) {
+			return;
+		}
+		if (layoutGraphVersion !== graphVersion) {
+			return;
+		}
+
+		cy.nodes().forEach((node) => {
+			const nodeId = node.id();
+			// Skip the node being dragged locally to avoid feedback loop
+			if (nodeId === draggedNodeIdRef.current) {
+				return;
+			}
+
+			const newPos = positions.get(nodeId);
+			if (newPos) {
+				const currentPos = node.position();
+				// Only update if position actually changed
+				if (currentPos.x !== newPos.x || currentPos.y !== newPos.y) {
+					node.position({ x: newPos.x, y: newPos.y });
+				}
+			}
+		});
+	}, [cy, graph, graphVersion, layoutGraphVersion, positions]);
 }

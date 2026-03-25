@@ -14,17 +14,28 @@ interface LayoutState {
 		graphVersion: number,
 		positions: Map<string, NodePosition>,
 	) => void;
+	readonly updateNodePosition: (nodeId: string, position: NodePosition) => void;
 	readonly reset: () => void;
 }
 
 export type { NodePosition };
 
-export const useLayoutStore = create<LayoutState>()((set) => ({
+export const useLayoutStore = create<LayoutState>()((set, get) => ({
 	layoutGraphVersion: -1,
 	positions: null,
 
 	setPositions: (graphVersion, positions) => {
 		set({ layoutGraphVersion: graphVersion, positions });
+	},
+
+	updateNodePosition: (nodeId, position) => {
+		const current = get().positions;
+		if (current === null) {
+			return;
+		}
+		const newPositions = new Map(current);
+		newPositions.set(nodeId, position);
+		set({ positions: newPositions });
 	},
 
 	reset: () => {
