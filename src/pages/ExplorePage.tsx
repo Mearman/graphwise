@@ -6,9 +6,19 @@ import { ComparisonPanel } from "../components/comparison/ComparisonPanel";
 import { RankingPanel } from "../components/ranking/RankingPanel";
 import { CopyUrlButton } from "../components/shared/CopyUrlButton";
 import { useTourStore } from "../state/tour-store";
+import { useAnimationStore } from "../state/animation-store";
 
 export function ExplorePage(): React.ReactElement {
 	const setMode = useTourStore((state) => state.setMode);
+	const frames = useAnimationStore((state) => state.frames);
+	const currentFrameIndex = useAnimationStore(
+		(state) => state.currentFrameIndex,
+	);
+	const isPlaying = useAnimationStore((state) => state.isPlaying);
+	const speed = useAnimationStore((state) => state.speed);
+	const togglePlay = useAnimationStore((state) => state.togglePlay);
+	const setFrame = useAnimationStore((state) => state.setFrame);
+	const setSpeed = useAnimationStore((state) => state.setSpeed);
 
 	return (
 		<Stack gap={0} style={{ height: "100vh" }}>
@@ -60,22 +70,14 @@ export function ExplorePage(): React.ReactElement {
 							<PlaybackControls />
 							<div style={{ height: 300 }}>
 								<AnimationTimeline
-									totalFrames={0}
-									currentFrameIndex={0}
-									isPlaying={false}
-									onPlay={(): void => {
-										/* todo: wire to animation store */
-									}}
-									onPause={(): void => {
-										/* todo: wire to animation store */
-									}}
-									onSeek={(): void => {
-										/* todo: wire to animation store */
-									}}
-									speed={1}
-									onSpeedChange={(): void => {
-										/* todo: wire to animation store */
-									}}
+									totalFrames={frames.length}
+									currentFrameIndex={currentFrameIndex}
+									isPlaying={isPlaying}
+									onPlay={togglePlay}
+									onPause={togglePlay}
+									onSeek={setFrame}
+									speed={speed}
+									onSpeedChange={setSpeed}
 								/>
 							</div>
 						</Stack>
