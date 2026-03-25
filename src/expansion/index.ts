@@ -25,3 +25,6 @@ export * from "./flux";
 export * from "./standard-bfs";
 export * from "./frontier-balanced";
 export * from "./random-priority";
+export * from "./dfs-priority";
+export * from "./k-hop";
+export * from "./random-walk";
