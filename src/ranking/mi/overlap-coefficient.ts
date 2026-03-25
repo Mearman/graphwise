@@ -10,7 +10,9 @@
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
+import type { AsyncReadableGraph } from "../../graph/async-interfaces";
 import { neighbourSet, neighbourOverlap } from "../../utils";
+import { collectAsyncIterable } from "../../async/utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -48,5 +50,49 @@ export function overlapCoefficient<N extends NodeData, E extends EdgeData>(
 	const score = intersection / denominator;
 
 	// Apply epsilon floor for numerical stability
+	return Math.max(epsilon, score);
+}
+
+/**
+ * Async variant of Overlap Coefficient for use with async graph data sources.
+ *
+ * Fetches both neighbourhoods concurrently, then applies the same formula.
+ */
+export async function overlapCoefficientAsync<
+	N extends NodeData,
+	E extends EdgeData,
+>(
+	graph: AsyncReadableGraph<N, E>,
+	source: NodeId,
+	target: NodeId,
+	config?: MIConfig,
+): Promise<number> {
+	const { epsilon = 1e-10 } = config ?? {};
+
+	// Fetch both neighbourhoods in parallel
+	const [sourceArr, targetArr] = await Promise.all([
+		collectAsyncIterable(graph.neighbours(source)),
+		collectAsyncIterable(graph.neighbours(target)),
+	]);
+
+	const srcSet = new Set(sourceArr.filter((n) => n !== target));
+	const tgtSet = new Set(targetArr.filter((n) => n !== source));
+
+	// Compute intersection size
+	let intersection = 0;
+	for (const n of srcSet) {
+		if (tgtSet.has(n)) intersection++;
+	}
+
+	// Compute denominator: min(|N(u)|, |N(v)|)
+	const denominator = Math.min(srcSet.size, tgtSet.size);
+
+	// Avoid division by zero
+	if (denominator === 0) {
+		return 0;
+	}
+
+	const score = intersection / denominator;
+
 	return Math.max(epsilon, score);
 }

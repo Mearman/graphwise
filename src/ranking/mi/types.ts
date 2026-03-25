@@ -6,6 +6,7 @@
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
+import type { AsyncReadableGraph } from "../../graph/async-interfaces";
 
 /**
  * MI function computes association strength between connected nodes.
@@ -19,6 +20,26 @@ export type MIFunction<
 	N extends NodeData = NodeData,
 	E extends EdgeData = EdgeData,
 > = (graph: ReadableGraph<N, E>, source: NodeId, target: NodeId) => number;
+
+/**
+ * Async MI function computes association strength between connected nodes
+ * on an async graph data source.
+ *
+ * @param graph - Async source graph
+ * @param source - Source node ID
+ * @param target - Target node ID
+ * @param config - Optional configuration
+ * @returns Promise of MI score in [0, 1] range (0 = no association, 1 = perfect)
+ */
+export type AsyncMIFunction<
+	N extends NodeData = NodeData,
+	E extends EdgeData = EdgeData,
+> = (
+	graph: AsyncReadableGraph<N, E>,
+	source: NodeId,
+	target: NodeId,
+	config?: MIConfig,
+) => Promise<number>;
 
 /**
  * Names of available MI variants.

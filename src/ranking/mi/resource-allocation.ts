@@ -9,7 +9,9 @@
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
+import type { AsyncReadableGraph } from "../../graph/async-interfaces";
 import { neighbourSet, neighbourIntersection } from "../../utils";
+import { collectAsyncIterable } from "../../async/utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -56,5 +58,64 @@ export function resourceAllocation<N extends NodeData, E extends EdgeData>(
 	}
 
 	// Apply epsilon floor for numerical stability
+	return Math.max(epsilon, score);
+}
+
+/**
+ * Async variant of Resource Allocation index for use with async graph data sources.
+ *
+ * Fetches both neighbourhoods concurrently, then fetches degree for each common
+ * neighbour to compute the inverse-degree weighted sum.
+ */
+export async function resourceAllocationAsync<
+	N extends NodeData,
+	E extends EdgeData,
+>(
+	graph: AsyncReadableGraph<N, E>,
+	source: NodeId,
+	target: NodeId,
+	config?: MIConfig,
+): Promise<number> {
+	const { epsilon = 1e-10, normalise = true } = config ?? {};
+
+	// Fetch both neighbourhoods in parallel
+	const [sourceArr, targetArr] = await Promise.all([
+		collectAsyncIterable(graph.neighbours(source)),
+		collectAsyncIterable(graph.neighbours(target)),
+	]);
+
+	const srcSet = new Set(sourceArr.filter((n) => n !== target));
+	const tgtSet = new Set(targetArr.filter((n) => n !== source));
+
+	// Find common neighbours
+	const commonNeighbours: NodeId[] = [];
+	for (const n of srcSet) {
+		if (tgtSet.has(n)) commonNeighbours.push(n);
+	}
+
+	if (commonNeighbours.length === 0) {
+		return epsilon;
+	}
+
+	// Fetch degrees of all common neighbours in parallel
+	const degrees = await Promise.all(
+		commonNeighbours.map((n) => graph.degree(n)),
+	);
+
+	// Sum inverse degrees
+	let score = 0;
+	for (const degree of degrees) {
+		if (degree > 0) {
+			score += 1 / degree;
+		}
+	}
+
+	// Normalise to [0, 1] if requested
+	if (normalise) {
+		// Max possible is when all common neighbours have minimum degree (1)
+		const maxScore = commonNeighbours.length;
+		score = score / maxScore;
+	}
+
 	return Math.max(epsilon, score);
 }

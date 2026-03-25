@@ -1,19 +1,26 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../../graph";
 import type { NodeData, EdgeData } from "../../graph";
-import { jaccard } from "./jaccard";
-import { adamicAdar } from "./adamic-adar";
-import { cosine } from "./cosine";
-import { sorensen } from "./sorensen";
-import { resourceAllocation } from "./resource-allocation";
-import { overlapCoefficient } from "./overlap-coefficient";
-import { hubPromoted } from "./hub-promoted";
-import { scale } from "./scale";
-import { skew } from "./skew";
-import { span } from "./span";
-import { etch } from "./etch";
-import { notch } from "./notch";
-import { adaptive } from "./adaptive";
+import { wrapAsync } from "../../__test__/fixtures/wrap-async";
+import { jaccard, jaccardAsync } from "./jaccard";
+import { adamicAdar, adamicAdarAsync } from "./adamic-adar";
+import { cosine, cosineAsync } from "./cosine";
+import { sorensen, sorensenAsync } from "./sorensen";
+import {
+	resourceAllocation,
+	resourceAllocationAsync,
+} from "./resource-allocation";
+import {
+	overlapCoefficient,
+	overlapCoefficientAsync,
+} from "./overlap-coefficient";
+import { hubPromoted, hubPromotedAsync } from "./hub-promoted";
+import { scale, scaleAsync } from "./scale";
+import { skew, skewAsync } from "./skew";
+import { span, spanAsync } from "./span";
+import { etch, etchAsync } from "./etch";
+import { notch, notchAsync } from "./notch";
+import { adaptive, adaptiveAsync } from "./adaptive";
 
 interface TestNode extends NodeData {
 	readonly label: string;
@@ -458,6 +465,58 @@ describe("MI variants", () => {
 				const forward = fn(graph, "A", "B");
 				const backward = fn(graph, "B", "A");
 				expect(Math.abs(forward - backward)).toBeLessThan(0.001);
+			});
+		}
+	});
+
+	describe("async variants match sync on wrapped graph", () => {
+		const asyncVariants = [
+			{ name: "jaccardAsync", syncFn: jaccard, asyncFn: jaccardAsync },
+			{ name: "adamicAdarAsync", syncFn: adamicAdar, asyncFn: adamicAdarAsync },
+			{ name: "cosineAsync", syncFn: cosine, asyncFn: cosineAsync },
+			{ name: "sorensenAsync", syncFn: sorensen, asyncFn: sorensenAsync },
+			{
+				name: "resourceAllocationAsync",
+				syncFn: resourceAllocation,
+				asyncFn: resourceAllocationAsync,
+			},
+			{
+				name: "overlapCoefficientAsync",
+				syncFn: overlapCoefficient,
+				asyncFn: overlapCoefficientAsync,
+			},
+			{
+				name: "hubPromotedAsync",
+				syncFn: hubPromoted,
+				asyncFn: hubPromotedAsync,
+			},
+			{ name: "scaleAsync", syncFn: scale, asyncFn: scaleAsync },
+			{ name: "skewAsync", syncFn: skew, asyncFn: skewAsync },
+			{ name: "spanAsync", syncFn: span, asyncFn: spanAsync },
+			{ name: "etchAsync", syncFn: etch, asyncFn: etchAsync },
+			{ name: "notchAsync", syncFn: notch, asyncFn: notchAsync },
+			{ name: "adaptiveAsync", syncFn: adaptive, asyncFn: adaptiveAsync },
+		];
+
+		for (const { name, syncFn, asyncFn } of asyncVariants) {
+			it(`${name} matches sync variant on test graph`, async () => {
+				const graph = createTestGraph();
+				const asyncGraph = wrapAsync(graph);
+
+				const syncScore = syncFn(graph, "A", "B");
+				const asyncScore = await asyncFn(asyncGraph, "A", "B");
+
+				expect(asyncScore).toBeCloseTo(syncScore, 10);
+			});
+
+			it(`${name} matches sync variant on triangle graph`, async () => {
+				const graph = createTriangleGraph();
+				const asyncGraph = wrapAsync(graph);
+
+				const syncScore = syncFn(graph, "A", "B");
+				const asyncScore = await asyncFn(asyncGraph, "A", "B");
+
+				expect(asyncScore).toBeCloseTo(syncScore, 10);
 			});
 		}
 	});
