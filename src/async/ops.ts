@@ -102,3 +102,45 @@ export function* opProgress<
 >(stats: ProgressStats): Generator<GraphOp, void, GraphOpResponse<N, E>> {
 	yield { tag: "progress", stats };
 }
+
+export function* opBatchNeighbours<
+	N extends NodeData = NodeData,
+	E extends EdgeData = EdgeData,
+>(
+	ids: readonly NodeId[],
+	direction?: Direction,
+): Generator<
+	GraphOp,
+	ReadonlyMap<NodeId, readonly NodeId[]>,
+	GraphOpResponse<N, E>
+> {
+	const op: GraphOp =
+		direction !== undefined
+			? { tag: "batchNeighbours", ids, direction }
+			: { tag: "batchNeighbours", ids };
+	const response: GraphOpResponse<N, E> = yield op;
+	if (response.tag !== "batchNeighbours") {
+		throw new TypeError(
+			`Expected batchNeighbours response, got ${response.tag}`,
+		);
+	}
+	return response.value;
+}
+
+export function* opBatchDegree<
+	N extends NodeData = NodeData,
+	E extends EdgeData = EdgeData,
+>(
+	ids: readonly NodeId[],
+	direction?: Direction,
+): Generator<GraphOp, ReadonlyMap<NodeId, number>, GraphOpResponse<N, E>> {
+	const op: GraphOp =
+		direction !== undefined
+			? { tag: "batchDegree", ids, direction }
+			: { tag: "batchDegree", ids };
+	const response: GraphOpResponse<N, E> = yield op;
+	if (response.tag !== "batchDegree") {
+		throw new TypeError(`Expected batchDegree response, got ${response.tag}`);
+	}
+	return response.value;
+}

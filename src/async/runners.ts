@@ -9,7 +9,7 @@
  * @module async/runners
  */
 
-import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../graph";
 import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type { GraphOp, GraphOpResponse } from "./protocol";
 import type { AsyncRunnerOptions } from "./types";
@@ -47,6 +47,20 @@ export function resolveSyncOp<N extends NodeData, E extends EdgeData>(
 			return { tag: "getEdge", value: graph.getEdge(op.source, op.target) };
 		case "hasNode":
 			return { tag: "hasNode", value: graph.hasNode(op.id) };
+		case "batchNeighbours": {
+			const result = new Map<NodeId, readonly NodeId[]>();
+			for (const id of op.ids) {
+				result.set(id, Array.from(graph.neighbours(id, op.direction)));
+			}
+			return { tag: "batchNeighbours", value: result };
+		}
+		case "batchDegree": {
+			const result = new Map<NodeId, number>();
+			for (const id of op.ids) {
+				result.set(id, graph.degree(id, op.direction));
+			}
+			return { tag: "batchDegree", value: result };
+		}
 		case "yield":
 			return { tag: "yield" };
 		case "progress":
@@ -114,6 +128,23 @@ export async function resolveAsyncOp<N extends NodeData, E extends EdgeData>(
 			};
 		case "hasNode":
 			return { tag: "hasNode", value: await graph.hasNode(op.id) };
+		case "batchNeighbours": {
+			const promises = op.ids.map(async (id) => {
+				const neighbours = await collectAsyncIterable(
+					graph.neighbours(id, op.direction),
+				);
+				return [id, neighbours] as const;
+			});
+			const results = await Promise.all(promises);
+			return { tag: "batchNeighbours", value: new Map(results) };
+		}
+		case "batchDegree": {
+			const promises = op.ids.map(
+				async (id) => [id, await graph.degree(id, op.direction)] as const,
+			);
+			const results = await Promise.all(promises);
+			return { tag: "batchDegree", value: new Map(results) };
+		}
 		case "yield":
 			return { tag: "yield" };
 		case "progress":

@@ -29,6 +29,16 @@ export type GraphOp =
 			readonly target: NodeId;
 	  }
 	| { readonly tag: "hasNode"; readonly id: NodeId }
+	| {
+			readonly tag: "batchNeighbours";
+			readonly ids: readonly NodeId[];
+			readonly direction?: Direction;
+	  }
+	| {
+			readonly tag: "batchDegree";
+			readonly ids: readonly NodeId[];
+			readonly direction?: Direction;
+	  }
 	| { readonly tag: "yield" }
 	| { readonly tag: "progress"; readonly stats: ProgressStats };
 
@@ -47,6 +57,11 @@ export type GraphOpResponse<
 	| { readonly tag: "getNode"; readonly value: N | undefined }
 	| { readonly tag: "getEdge"; readonly value: E | undefined }
 	| { readonly tag: "hasNode"; readonly value: boolean }
+	| {
+			readonly tag: "batchNeighbours";
+			readonly value: ReadonlyMap<NodeId, readonly NodeId[]>;
+	  }
+	| { readonly tag: "batchDegree"; readonly value: ReadonlyMap<NodeId, number> }
 	| { readonly tag: "yield" }
 	| { readonly tag: "progress" };
 
