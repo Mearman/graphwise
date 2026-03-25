@@ -16,8 +16,6 @@
 import type { ReadableGraph, NodeId } from "../graph";
 import type { ComputeBackend } from "../gpu/types";
 import type { GraphwiseGPURoot } from "../gpu/root";
-import type { Seed } from "../schemas/index";
-import { gpuPageRank } from "../gpu/operations";
 import {
 	miniBatchKMeans,
 	zScoreNormalise,
@@ -66,10 +64,10 @@ export interface GPUGraspOptions extends GraspOptions {
  * console.log(`Sampled ${result.pairs.length} pairs from ${result.sampledNodeCount} nodes`);
  * ```
  */
-export async function graspGpu(
+export function graspGpu(
 	graph: ReadableGraph,
 	options: GPUGraspOptions = {},
-): Promise<GraspResult> {
+): GraspResult {
 	const config = {
 		...options,
 	};
@@ -83,7 +81,7 @@ export async function graspGpu(
 	const startTime = performance.now();
 
 	// Phase 1: Reservoir sampling (CPU)
-	const rng = createRNG(config.rngSeed);
+	const rng = createRNG(config.rngSeed ?? 0);
 	const { nodeIds, neighbourMap } = reservoirSample(
 		graph,
 		config.sampleSize ?? 200000,
@@ -91,11 +89,10 @@ export async function graspGpu(
 	);
 
 	// Phase 2: GPU PageRank on reservoir subgraph
-	const pagerankScores = await computePageRankGPU(
+	const pagerankScores = computePageRankGPU(
 		nodeIds,
 		neighbourMap,
 		config.pagerankIterations ?? 10,
-		options,
 	);
 
 	// Phase 2: Compute structural features
@@ -110,7 +107,7 @@ export async function graspGpu(
 	const k = Math.min(config.nClusters ?? 100, features.length);
 	const kmeansResult = miniBatchKMeans(features, {
 		k,
-		seed: config.rngSeed,
+		seed: config.rngSeed ?? 0,
 		maxIterations: 100,
 	});
 
@@ -136,8 +133,18 @@ export async function graspGpu(
 	};
 
 	// Log timing in development
-	if (process.env.NODE_ENV === "development") {
-		console.log(`GPU GRASP completed in ${(endTime - startTime).toFixed(2)}ms`);
+	try {
+		if (
+			/* eslint-disable-next-line @typescript-eslint/consistent-type-assertions */
+			(globalThis as { process?: { env?: { NODE_ENV?: string } } }).process?.env
+				?.NODE_ENV === "development"
+		) {
+			console.log(
+				`GPU GRASP completed in ${(endTime - startTime).toFixed(2)}ms`,
+			);
+		}
+	} catch {
+		// Silently ignore access errors in environments where process is not available
 	}
 
 	return result;
@@ -229,12 +236,11 @@ function reservoirSample(
 /**
  * Compute PageRank using GPU acceleration.
  */
-async function computePageRankGPU(
+function computePageRankGPU(
 	nodeIds: Set<NodeId>,
 	neighbourMap: Map<NodeId, Set<NodeId>>,
 	iterations: number,
-	options: GPUGraspOptions,
-): Promise<Map<NodeId, number>> {
+): Map<NodeId, number> {
 	const n = nodeIds.size;
 	if (n === 0) return new Map();
 
