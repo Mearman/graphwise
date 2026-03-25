@@ -69,8 +69,12 @@ export interface BatchPriorityContext<
 	readonly graph: ReadableGraph<N, E>;
 	/** Set of all visited nodes */
 	readonly visited: ReadonlySet<NodeId>;
+	/** Map of node ID to frontier index that visited it */
+	readonly visitedByFrontier: ReadonlyMap<NodeId, number>;
 	/** Frontier ID for the current batch */
 	readonly frontierId: number;
+	/** Paths discovered so far (for REACH-style algorithms) */
+	readonly discoveredPaths: readonly ExpansionPath[];
 	/** Optional GPU backend selection */
 	readonly backend?: ComputeBackend;
 	/** Optional TypeGPU root for GPU acceleration */

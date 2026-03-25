@@ -10,19 +10,25 @@
  * @module expansion/fuse
  */
 
-import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { NodeData, EdgeData, ReadableGraph, NodeId } from "../graph";
 import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
 	ExpansionConfig,
 	PriorityContext,
+	BatchPriorityContext,
+	BatchPriorityFunction,
 } from "./types";
 import { base } from "./base";
 import type { AsyncExpansionConfig } from "./base";
 import { baseAsync } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
-import { avgFrontierMI } from "./priority-helpers";
+import {
+	avgFrontierMI,
+	batchAvgMI,
+	getSameFrontierVisited,
+} from "./priority-helpers";
 
 /**
  * Configuration for FUSE expansion.
@@ -122,4 +128,68 @@ export async function fuseAsync<N extends NodeData, E extends EdgeData>(
 		fusePriority(nodeId, context, mi, salienceWeight);
 
 	return baseAsync(graph, seeds, { ...restConfig, priority });
+}
+
+/**
+ * Create a batch priority function for FUSE with configurable weight.
+ *
+ * Combines degree with average frontier MI:
+ * Priority = (1 - w) * degree + w * (1 - avgMI)
+ *
+ * @param salienceWeight - Weight for MI component (0-1, default: 0.5)
+ * @returns Batch priority function
+ */
+export function createFuseBatchPriority<N extends NodeData, E extends EdgeData>(
+	salienceWeight = 0.5,
+): BatchPriorityFunction<N, E> {
+	return (
+		candidates: readonly NodeId[],
+		context: BatchPriorityContext<N, E>,
+	): ReadonlyMap<NodeId, number> => {
+		// Get nodes visited by the same frontier
+		const sameFrontierVisited = getSameFrontierVisited(context);
+
+		// Compute batch MI scores
+		const avgMIScores = batchAvgMI(
+			context.graph,
+			candidates,
+			sameFrontierVisited,
+		);
+
+		// Compute priorities with degree + MI blend
+		const priorities = new Map<NodeId, number>();
+		for (const candidate of candidates) {
+			const avgMI = avgMIScores.get(candidate) ?? 0;
+			const degree = context.graph.degree(candidate);
+			const degreeComponent = (1 - salienceWeight) * degree;
+			const salienceComponent = salienceWeight * (1 - avgMI);
+			priorities.set(candidate, degreeComponent + salienceComponent);
+		}
+
+		return priorities;
+	};
+}
+
+/**
+ * Default FUSE batch priority function with salienceWeight = 0.5.
+ */
+export const fuseBatchPriority: BatchPriorityFunction =
+	createFuseBatchPriority(0.5);
+
+/**
+ * Create a FUSE config with batch priority enabled.
+ *
+ * @param config - Base FUSE configuration
+ * @returns Configuration with batchPriority set
+ */
+export function fuseWithBatchPriority<
+	N extends NodeData = NodeData,
+	E extends EdgeData = EdgeData,
+>(
+	config?: FUSEConfig<N, E>,
+): FUSEConfig<N, E> & { batchPriority: BatchPriorityFunction<N, E> } {
+	return {
+		...config,
+		batchPriority: createFuseBatchPriority(config?.salienceWeight ?? 0.5),
+	};
 }

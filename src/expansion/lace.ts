@@ -9,19 +9,25 @@
  * @module expansion/lace
  */
 
-import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { NodeData, EdgeData, ReadableGraph, NodeId } from "../graph";
 import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
 	ExpansionConfig,
 	PriorityContext,
+	BatchPriorityContext,
+	BatchPriorityFunction,
 } from "./types";
 import { base } from "./base";
 import type { AsyncExpansionConfig } from "./base";
 import { baseAsync } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
-import { avgFrontierMI } from "./priority-helpers";
+import {
+	avgFrontierMI,
+	batchAvgMI,
+	getSameFrontierVisited,
+} from "./priority-helpers";
 
 /**
  * Configuration for LACE expansion.
@@ -105,4 +111,57 @@ export async function laceAsync<N extends NodeData, E extends EdgeData>(
 		lacePriority(nodeId, context, mi);
 
 	return baseAsync(graph, seeds, { ...restConfig, priority });
+}
+
+/**
+ * Batch priority function for LACE expansion.
+ *
+ * Computes average MI between each candidate and all nodes visited by the
+ * same frontier in a single batch operation. More efficient than computing
+ * MI per-candidate when there are many candidates and visited nodes.
+ *
+ * @param candidates - Candidate node IDs to prioritise
+ * @param context - Batch priority context
+ * @returns Map of node ID to priority (lower = higher priority)
+ */
+export function laceBatchPriority<N extends NodeData, E extends EdgeData>(
+	candidates: readonly NodeId[],
+	context: BatchPriorityContext<N, E>,
+): ReadonlyMap<NodeId, number> {
+	// Get nodes visited by the same frontier
+	const sameFrontierVisited = getSameFrontierVisited(context);
+
+	// Compute batch MI scores
+	const avgMIScores = batchAvgMI(
+		context.graph,
+		candidates,
+		sameFrontierVisited,
+	);
+
+	// Convert to priorities: higher MI = lower priority value = expanded first
+	const priorities = new Map<NodeId, number>();
+	for (const candidate of candidates) {
+		const avgMI = avgMIScores.get(candidate) ?? 0;
+		priorities.set(candidate, 1 - avgMI);
+	}
+
+	return priorities;
+}
+
+/**
+ * Create a LACE config with batch priority enabled.
+ *
+ * @param config - Base LACE configuration
+ * @returns Configuration with batchPriority set
+ */
+export function laceWithBatchPriority<
+	N extends NodeData = NodeData,
+	E extends EdgeData = EdgeData,
+>(
+	config?: LACEConfig<N, E>,
+): LACEConfig<N, E> & { batchPriority: BatchPriorityFunction<N, E> } {
+	return {
+		...config,
+		batchPriority: laceBatchPriority,
+	};
 }

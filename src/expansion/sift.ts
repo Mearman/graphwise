@@ -10,19 +10,25 @@
  * @module expansion/sift
  */
 
-import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { NodeData, EdgeData, ReadableGraph, NodeId } from "../graph";
 import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
 	ExpansionConfig,
 	PriorityContext,
+	BatchPriorityContext,
+	BatchPriorityFunction,
 } from "./types";
 import { base } from "./base";
 import type { AsyncExpansionConfig } from "./base";
 import { baseAsync } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
-import { avgFrontierMI } from "./priority-helpers";
+import {
+	avgFrontierMI,
+	batchAvgMI,
+	getSameFrontierVisited,
+} from "./priority-helpers";
 
 /**
  * Configuration for REACH expansion.
@@ -118,4 +124,72 @@ export async function siftAsync<N extends NodeData, E extends EdgeData>(
 		siftPriority(nodeId, context, mi, miThreshold);
 
 	return baseAsync(graph, seeds, { ...restConfig, priority });
+}
+
+/**
+ * Create a batch priority function for SIFT with configurable threshold.
+ *
+ * Nodes with average MI above the threshold get high priority (low value).
+ * Nodes below the threshold are deferred with degree-based penalty.
+ *
+ * @param miThreshold - MI threshold for phase transition (default: 0.25)
+ * @returns Batch priority function
+ */
+export function createSiftBatchPriority<N extends NodeData, E extends EdgeData>(
+	miThreshold = 0.25,
+): BatchPriorityFunction<N, E> {
+	return (
+		candidates: readonly NodeId[],
+		context: BatchPriorityContext<N, E>,
+	): ReadonlyMap<NodeId, number> => {
+		// Get nodes visited by the same frontier
+		const sameFrontierVisited = getSameFrontierVisited(context);
+
+		// Compute batch MI scores
+		const avgMIScores = batchAvgMI(
+			context.graph,
+			candidates,
+			sameFrontierVisited,
+		);
+
+		// Compute priorities with threshold-based logic
+		const priorities = new Map<NodeId, number>();
+		for (const candidate of candidates) {
+			const avgMI = avgMIScores.get(candidate) ?? 0;
+			if (avgMI >= miThreshold) {
+				// High MI = low priority value = expanded first
+				priorities.set(candidate, 1 - avgMI);
+			} else {
+				// Low MI = delayed expansion
+				const degree = context.graph.degree(candidate);
+				priorities.set(candidate, degree + 100);
+			}
+		}
+
+		return priorities;
+	};
+}
+
+/**
+ * Default SIFT batch priority function with miThreshold = 0.25.
+ */
+export const siftBatchPriority: BatchPriorityFunction =
+	createSiftBatchPriority(0.25);
+
+/**
+ * Create a SIFT config with batch priority enabled.
+ *
+ * @param config - Base SIFT configuration
+ * @returns Configuration with batchPriority set
+ */
+export function siftWithBatchPriority<
+	N extends NodeData = NodeData,
+	E extends EdgeData = EdgeData,
+>(
+	config?: REACHConfig<N, E>,
+): REACHConfig<N, E> & { batchPriority: BatchPriorityFunction<N, E> } {
+	return {
+		...config,
+		batchPriority: createSiftBatchPriority(config?.miThreshold ?? 0.25),
+	};
 }

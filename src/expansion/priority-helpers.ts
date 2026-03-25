@@ -8,7 +8,127 @@
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../graph";
-import type { PriorityContext, ExpansionPath } from "./types";
+import type {
+	PriorityContext,
+	ExpansionPath,
+	BatchPriorityContext,
+} from "./types";
+import { graphToCSR } from "../gpu/csr";
+import {
+	intersectionBatch,
+	jaccardFromIntersection,
+	type IntersectionResult,
+} from "../gpu/kernels/intersection/logic";
+
+/**
+ * Compute average MI between each candidate and a set of reference nodes.
+ *
+ * Uses batch intersection computation for efficiency. Returns a Map of
+ * candidate ID to average MI score.
+ *
+ * @param graph - Source graph
+ * @param candidates - Candidate node IDs to compute priorities for
+ * @param referenceNodes - Reference nodes to compute MI against
+ * @returns Map of candidate ID to average MI score
+ */
+export function batchAvgMI<N extends NodeData, E extends EdgeData>(
+	graph: ReadableGraph<N, E>,
+	candidates: readonly NodeId[],
+	referenceNodes: ReadonlySet<NodeId>,
+): ReadonlyMap<NodeId, number> {
+	const result = new Map<NodeId, number>();
+
+	if (candidates.length === 0 || referenceNodes.size === 0) {
+		for (const candidate of candidates) {
+			result.set(candidate, 0);
+		}
+		return result;
+	}
+
+	// Convert to CSR for efficient batch computation
+	const { csr, indexMap } = graphToCSR(graph);
+	const { nodeToIndex } = indexMap;
+
+	// Build pairs: (candidate, referenceNode) for all combinations
+	const pairs: (readonly [number, number])[] = [];
+	const pairToCandidate = new Map<number, NodeId>(); // Maps pair index back to candidate
+
+	const referenceArray = Array.from(referenceNodes);
+
+	for (const candidate of candidates) {
+		const candIdx = nodeToIndex.get(candidate);
+		if (candIdx === undefined) {
+			// Node not in CSR (shouldn't happen for valid candidates)
+			result.set(candidate, 0);
+			continue;
+		}
+
+		const startIdx = pairs.length;
+		for (const refNode of referenceArray) {
+			const refIdx = nodeToIndex.get(refNode);
+			if (refIdx !== undefined && refIdx !== candIdx) {
+				pairs.push([candIdx, refIdx]);
+			}
+		}
+		const endIdx = pairs.length;
+
+		// Track which pairs belong to this candidate
+		for (let i = startIdx; i < endIdx; i++) {
+			pairToCandidate.set(i, candidate);
+		}
+	}
+
+	if (pairs.length === 0) {
+		for (const candidate of candidates) {
+			if (!result.has(candidate)) {
+				result.set(candidate, 0);
+			}
+		}
+		return result;
+	}
+
+	// Compute all intersections in batch
+	const { intersections, sizeUs, sizeVs } = intersectionBatch(
+		csr.rowOffsets,
+		csr.colIndices,
+		pairs,
+	);
+
+	// Aggregate MI scores per candidate
+	const candidateScores = new Map<NodeId, { total: number; count: number }>();
+
+	for (let i = 0; i < pairs.length; i++) {
+		const candidate = pairToCandidate.get(i);
+		if (candidate === undefined) continue;
+
+		const intersectionResult: IntersectionResult = {
+			intersection: intersections[i] ?? 0,
+			sizeU: sizeUs[i] ?? 0,
+			sizeV: sizeVs[i] ?? 0,
+		};
+
+		const mi = jaccardFromIntersection(intersectionResult);
+		const existing = candidateScores.get(candidate);
+		if (existing === undefined) {
+			candidateScores.set(candidate, { total: mi, count: 1 });
+		} else {
+			existing.total += mi;
+			existing.count++;
+		}
+	}
+
+	// Compute averages
+	for (const candidate of candidates) {
+		const scores = candidateScores.get(candidate);
+		if (scores === undefined || scores.count === 0) {
+			result.set(candidate, 0);
+		} else {
+			result.set(candidate, scores.total / scores.count);
+		}
+	}
+
+	return result;
+}
 
 /**
  * Compute the average mutual information between a node and all visited
@@ -42,6 +162,24 @@ export function avgFrontierMI<N extends NodeData, E extends EdgeData>(
 	}
 
 	return count > 0 ? total / count : 0;
+}
+
+/**
+ * Get nodes visited by the same frontier (for batch MI computation).
+ *
+ * @param context - Batch priority context
+ * @returns Set of node IDs visited by the same frontier
+ */
+export function getSameFrontierVisited<N extends NodeData, E extends EdgeData>(
+	context: BatchPriorityContext<N, E>,
+): Set<NodeId> {
+	const result = new Set<NodeId>();
+	for (const [nodeId, frontierIdx] of context.visitedByFrontier) {
+		if (frontierIdx === context.frontierId) {
+			result.add(nodeId);
+		}
+	}
+	return result;
 }
 
 /**

@@ -261,7 +261,9 @@ export function* baseCore<N extends NodeData, E extends EdgeData>(
 				const batchContext: BatchPriorityContext<N, E> = {
 					graph: graphRef ?? makeNoGraphSentinel<N, E>(),
 					visited: allVisited,
+					visitedByFrontier: combinedVisited,
 					frontierId: activeFrontier,
+					discoveredPaths,
 				};
 
 				const priorities = batchPriority(unvisitedNeighbours, batchContext);
