@@ -41,7 +41,7 @@ export const useTourStore = create<TourState>()((set, get) => ({
 	goToStep: (step) => {
 		const { totalSteps } = get();
 		const clampedStep = Math.max(0, Math.min(step, totalSteps - 1));
-		set({ currentStep: clampedStep });
+		set({ currentStep: clampedStep, isAutoPlaying: false });
 	},
 
 	nextStep: () => {
@@ -56,7 +56,7 @@ export const useTourStore = create<TourState>()((set, get) => ({
 	previousStep: () => {
 		const { currentStep } = get();
 		if (currentStep > 0) {
-			set({ currentStep: currentStep - 1 });
+			set({ currentStep: currentStep - 1, isAutoPlaying: false });
 		}
 	},
 
