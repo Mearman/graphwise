@@ -27,6 +27,7 @@ import { useGraphStore } from "../../state/graph-store";
 import { useComparisonStore } from "../../state/comparison-store";
 import { useAnimationStore } from "../../state/animation-store";
 import { runComparison } from "../../engine/comparison-runner";
+import { runMIVariantComparison } from "../../engine/comparison-runner";
 import { runWithFrameCapture } from "../../engine/animation-runner";
 import { runRanking } from "../../engine/ranking-runner";
 import { getAlgorithm } from "../../engine/algorithm-registry";
@@ -116,6 +117,10 @@ export function PipelinePanel(_props: PipelinePanelProps): ReactNode {
 
 	const animationLoadResult = useAnimationStore((state) => state.loadResult);
 	const loadResults = useComparisonStore((state) => state.loadResults);
+	const loadMIResults = useComparisonStore((state) => state.loadMIResults);
+	const selectedMIVariants = useComparisonStore(
+		(state) => state.selectedMIVariants,
+	);
 	const comparisonIsRunning = useComparisonStore((state) => state.isRunning);
 	const setComparisonRunning = useComparisonStore((state) => state.setRunning);
 
@@ -177,6 +182,7 @@ export function PipelinePanel(_props: PipelinePanelProps): ReactNode {
 					const animResult = runWithFrameCapture(graph, seeds, info.run);
 					animationLoadResult(animResult, primaryAlgorithm);
 				}
+				setExpansionRunning(false);
 			} catch (error) {
 				console.error("Expansion failed:", error);
 				setExpansionRunning(false);
@@ -227,6 +233,38 @@ export function PipelinePanel(_props: PipelinePanelProps): ReactNode {
 	const canRunRanking =
 		expansionResult !== null &&
 		expansionResult.paths.length > 0 &&
+		!comparisonIsRunning;
+
+	const handleRunMIComparison = useCallback(() => {
+		if (expansionResult === null) return;
+		if (selectedMIVariants.length === 0) return;
+
+		setComparisonRunning(true);
+		setTimeout(() => {
+			try {
+				const result = runMIVariantComparison(
+					graph,
+					expansionResult.paths,
+					selectedMIVariants,
+				);
+				loadMIResults(result.entries, result.totalDurationMs);
+			} catch (error) {
+				console.error("MI comparison failed:", error);
+				setComparisonRunning(false);
+			}
+		}, 10);
+	}, [
+		expansionResult,
+		selectedMIVariants,
+		graph,
+		loadMIResults,
+		setComparisonRunning,
+	]);
+
+	const canRunMIComparison =
+		expansionResult !== null &&
+		expansionResult.paths.length > 0 &&
+		selectedMIVariants.length > 0 &&
 		!comparisonIsRunning;
 
 	return (
@@ -337,6 +375,17 @@ export function PipelinePanel(_props: PipelinePanelProps): ReactNode {
 							fullWidth
 						>
 							Rank Paths
+						</Button>
+
+						<Button
+							size="xs"
+							variant="light"
+							onClick={handleRunMIComparison}
+							disabled={!canRunMIComparison}
+							loading={comparisonIsRunning}
+							fullWidth
+						>
+							Compare MI Variants
 						</Button>
 
 						{rankingResult !== null ? (
