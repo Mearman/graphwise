@@ -8,8 +8,9 @@
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
 import type { ExpansionPath } from "../../expansion/types";
-import type { BaselineConfig, BaselineResult, ScoredPath } from "./types";
+import type { BaselineConfig, BaselineResult } from "./types";
 import { jaccard } from "../mi/jaccard";
+import { normaliseAndRank } from "./utils";
 
 /**
  * Rank paths by arithmetic mean of edge Jaccard similarities.
@@ -58,30 +59,5 @@ export function jaccardArithmetic<N extends NodeData, E extends EdgeData>(
 		return { path, score };
 	});
 
-	// Find max for normalisation
-	const maxScore = Math.max(...scored.map((s) => s.score));
-
-	// Handle zero-max case
-	if (maxScore === 0) {
-		return {
-			paths: paths.map((path) => ({
-				...path,
-				score: 0,
-			})),
-			method: "jaccard-arithmetic",
-		};
-	}
-
-	// Normalise and sort
-	const ranked: ScoredPath[] = scored
-		.map(({ path, score }) => ({
-			...path,
-			score: includeScores ? score / maxScore : score,
-		}))
-		.sort((a, b) => b.score - a.score);
-
-	return {
-		paths: ranked,
-		method: "jaccard-arithmetic",
-	};
+	return normaliseAndRank(paths, scored, "jaccard-arithmetic", includeScores);
 }

@@ -10,7 +10,7 @@
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
-import { neighbourSet, neighbourOverlap } from "../../utils";
+import { computeJaccard } from "../../utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -30,23 +30,17 @@ export function jaccard<N extends NodeData, E extends EdgeData>(
 ): number {
 	const { epsilon = 1e-10 } = config ?? {};
 
-	// Get neighbourhoods, excluding opposite endpoint
-	const sourceNeighbours = neighbourSet(graph, source, target);
-	const targetNeighbours = neighbourSet(graph, target, source);
-
-	// Compute intersection and union
-	const { intersection, union } = neighbourOverlap(
+	const {
+		jaccard: jaccardScore,
 		sourceNeighbours,
 		targetNeighbours,
-	);
+	} = computeJaccard(graph, source, target);
 
-	// Avoid division by zero
-	if (union === 0) {
+	// Return 0 only when the union is empty (no neighbours on either side)
+	if (sourceNeighbours.size === 0 && targetNeighbours.size === 0) {
 		return 0;
 	}
 
-	const score = intersection / union;
-
 	// Apply epsilon floor for numerical stability
-	return Math.max(epsilon, score);
+	return Math.max(epsilon, jaccardScore);
 }

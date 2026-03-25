@@ -8,7 +8,8 @@
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
 import type { ExpansionPath } from "../../expansion/types";
-import type { BaselineConfig, BaselineResult, ScoredPath } from "./types";
+import type { BaselineConfig, BaselineResult } from "./types";
+import { normaliseAndRank } from "./utils";
 
 /**
  * Compute effective resistance between two nodes via Laplacian pseudoinverse.
@@ -239,30 +240,5 @@ export function resistanceDistance<N extends NodeData, E extends EdgeData>(
 		return { path, score };
 	});
 
-	// Find max for normalisation
-	const maxScore = Math.max(...scored.map((s) => s.score));
-
-	// Handle zero-max case
-	if (maxScore === 0) {
-		return {
-			paths: paths.map((path) => ({
-				...path,
-				score: 0,
-			})),
-			method: "resistance-distance",
-		};
-	}
-
-	// Normalise and sort
-	const ranked: ScoredPath[] = scored
-		.map(({ path, score }) => ({
-			...path,
-			score: includeScores ? score / maxScore : score / maxScore,
-		}))
-		.sort((a, b) => b.score - a.score);
-
-	return {
-		paths: ranked,
-		method: "resistance-distance",
-	};
+	return normaliseAndRank(paths, scored, "resistance-distance", includeScores);
 }

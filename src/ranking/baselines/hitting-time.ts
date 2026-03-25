@@ -14,7 +14,8 @@
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
 import type { ExpansionPath } from "../../expansion/types";
-import type { BaselineConfig, BaselineResult, ScoredPath } from "./types";
+import type { BaselineConfig, BaselineResult } from "./types";
+import { normaliseAndRank } from "./utils";
 
 /**
  * Configuration for hitting-time ranking.
@@ -433,30 +434,14 @@ export function hittingTime<N extends NodeData, E extends EdgeData>(
 		return { path, score };
 	});
 
-	// Find max for normalisation
+	// Guard against non-finite scores before normalisation
 	const maxScore = Math.max(...scored.map((s) => s.score));
-
-	// Handle zero-max case
-	if (maxScore === 0 || !Number.isFinite(maxScore)) {
+	if (!Number.isFinite(maxScore)) {
 		return {
-			paths: paths.map((path) => ({
-				...path,
-				score: 0,
-			})),
+			paths: paths.map((path) => ({ ...path, score: 0 })),
 			method: "hitting-time",
 		};
 	}
 
-	// Normalise and sort
-	const ranked: ScoredPath[] = scored
-		.map(({ path, score }) => ({
-			...path,
-			score: includeScores ? score / maxScore : score / maxScore,
-		}))
-		.sort((a, b) => b.score - a.score);
-
-	return {
-		paths: ranked,
-		method: "hitting-time",
-	};
+	return normaliseAndRank(paths, scored, "hitting-time", includeScores);
 }

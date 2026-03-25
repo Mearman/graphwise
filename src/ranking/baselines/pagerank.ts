@@ -9,7 +9,8 @@
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
 import type { ExpansionPath } from "../../expansion/types";
-import type { BaselineConfig, BaselineResult, ScoredPath } from "./types";
+import type { BaselineConfig, BaselineResult } from "./types";
+import { normaliseAndRank } from "./utils";
 
 /**
  * Compute PageRank centrality for all nodes using power iteration.
@@ -117,30 +118,5 @@ export function pagerank<N extends NodeData, E extends EdgeData>(
 		return { path, score: prSum };
 	});
 
-	// Find max for normalisation
-	const maxScore = Math.max(...scored.map((s) => s.score));
-
-	// Handle zero-max case
-	if (maxScore === 0) {
-		return {
-			paths: paths.map((path) => ({
-				...path,
-				score: 0,
-			})),
-			method: "pagerank",
-		};
-	}
-
-	// Normalise and sort
-	const ranked: ScoredPath[] = scored
-		.map(({ path, score }) => ({
-			...path,
-			score: includeScores ? score / maxScore : score / maxScore,
-		}))
-		.sort((a, b) => b.score - a.score);
-
-	return {
-		paths: ranked,
-		method: "pagerank",
-	};
+	return normaliseAndRank(paths, scored, "pagerank", includeScores);
 }

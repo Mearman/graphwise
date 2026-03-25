@@ -8,7 +8,8 @@
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
 import type { ExpansionPath } from "../../expansion/types";
-import type { BaselineConfig, BaselineResult, ScoredPath } from "./types";
+import type { BaselineConfig, BaselineResult } from "./types";
+import { normaliseAndRank } from "./utils";
 
 /**
  * Rank paths by sum of node degrees.
@@ -41,30 +42,5 @@ export function degreeSum<N extends NodeData, E extends EdgeData>(
 		return { path, score: degreeSum };
 	});
 
-	// Find max for normalisation
-	const maxScore = Math.max(...scored.map((s) => s.score));
-
-	// Handle zero-max case
-	if (maxScore === 0) {
-		return {
-			paths: paths.map((path) => ({
-				...path,
-				score: 0,
-			})),
-			method: "degree-sum",
-		};
-	}
-
-	// Normalise and sort
-	const ranked: ScoredPath[] = scored
-		.map(({ path, score }) => ({
-			...path,
-			score: includeScores ? score / maxScore : score,
-		}))
-		.sort((a, b) => b.score - a.score);
-
-	return {
-		paths: ranked,
-		method: "degree-sum",
-	};
+	return normaliseAndRank(paths, scored, "degree-sum", includeScores);
 }

@@ -13,9 +13,8 @@
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
-import { neighbourSet, neighbourOverlap } from "../../utils";
+import { computeJaccard, neighbourOverlap } from "../../utils";
 import type { AdaptiveMIConfig } from "./types";
-import { jaccard } from "./jaccard";
 import { adamicAdar } from "./adamic-adar";
 
 /**
@@ -43,8 +42,19 @@ export function adaptive<N extends NodeData, E extends EdgeData>(
 		overlapWeight = 0.3,
 	} = config ?? {};
 
+	// Compute Jaccard and retrieve neighbourhood sets for the overlap coefficient
+	const {
+		jaccard: jaccardScore,
+		sourceNeighbours,
+		targetNeighbours,
+	} = computeJaccard(graph, source, target);
+
 	// Component 1: Structural similarity (Jaccard)
-	const structural = jaccard(graph, source, target, { epsilon });
+	// Returns 0 only when both neighbourhood sets are empty (union = 0); otherwise applies epsilon floor
+	const structural =
+		sourceNeighbours.size === 0 && targetNeighbours.size === 0
+			? 0
+			: Math.max(epsilon, jaccardScore);
 
 	// Component 2: Degree-weighted association (Adamic-Adar, normalised)
 	const degreeComponent = adamicAdar(graph, source, target, {
@@ -53,9 +63,6 @@ export function adaptive<N extends NodeData, E extends EdgeData>(
 	});
 
 	// Component 3: Overlap coefficient
-	const sourceNeighbours = neighbourSet(graph, source, target);
-	const targetNeighbours = neighbourSet(graph, target, source);
-
 	let overlap: number;
 	if (sourceNeighbours.size > 0 && targetNeighbours.size > 0) {
 		const { intersection } = neighbourOverlap(

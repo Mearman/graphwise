@@ -11,7 +11,7 @@
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
-import { neighbourSet, neighbourOverlap } from "../../utils";
+import { computeJaccard } from "../../utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -25,16 +25,7 @@ export function scale<N extends NodeData, E extends EdgeData>(
 ): number {
 	const { epsilon = 1e-10 } = config ?? {};
 
-	// Get neighbourhoods, excluding opposite endpoint
-	const sourceNeighbours = neighbourSet(graph, source, target);
-	const targetNeighbours = neighbourSet(graph, target, source);
-
-	// Compute Jaccard
-	const { intersection, union } = neighbourOverlap(
-		sourceNeighbours,
-		targetNeighbours,
-	);
-	const jaccard = union > 0 ? intersection / union : 0;
+	const { jaccard: jaccardScore } = computeJaccard(graph, source, target);
 
 	// Compute graph density
 	const n = graph.nodeCount;
@@ -50,7 +41,7 @@ export function scale<N extends NodeData, E extends EdgeData>(
 		return epsilon;
 	}
 
-	const score = jaccard / density;
+	const score = jaccardScore / density;
 
 	// Apply epsilon floor for numerical stability
 	return Math.max(epsilon, score);

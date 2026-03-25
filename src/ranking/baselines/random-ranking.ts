@@ -8,7 +8,8 @@
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
 import type { ExpansionPath } from "../../expansion/types";
-import type { BaselineConfig, BaselineResult, ScoredPath } from "./types";
+import type { BaselineConfig, BaselineResult } from "./types";
+import { normaliseAndRank } from "./utils";
 
 /**
  * Configuration for random ranking.
@@ -66,30 +67,5 @@ export function randomRanking<N extends NodeData, E extends EdgeData>(
 		return { path, score };
 	});
 
-	// Find max for normalisation
-	const maxScore = Math.max(...scored.map((s) => s.score));
-
-	// Handle zero-max case (very unlikely)
-	if (maxScore === 0) {
-		return {
-			paths: paths.map((path) => ({
-				...path,
-				score: 0,
-			})),
-			method: "random",
-		};
-	}
-
-	// Normalise and sort
-	const ranked: ScoredPath[] = scored
-		.map(({ path, score }) => ({
-			...path,
-			score: includeScores ? score / maxScore : score / maxScore,
-		}))
-		.sort((a, b) => b.score - a.score);
-
-	return {
-		paths: ranked,
-		method: "random",
-	};
+	return normaliseAndRank(paths, scored, "random", includeScores);
 }

@@ -11,6 +11,47 @@
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../graph";
 
 /**
+ * Result of a Jaccard computation, including the intermediate neighbourhood sets.
+ *
+ * Carrying the neighbourhood sets avoids recomputing them in MI variants that need
+ * both the Jaccard score and the raw sets (e.g. for overlap coefficient or intersection).
+ */
+export interface JaccardResult {
+	readonly jaccard: number;
+	readonly sourceNeighbours: ReadonlySet<NodeId>;
+	readonly targetNeighbours: ReadonlySet<NodeId>;
+}
+
+/**
+ * Compute Jaccard similarity between the neighbourhoods of two nodes.
+ *
+ * Each endpoint is excluded from the other's neighbourhood set to avoid
+ * the direct edge inflating the overlap score.
+ *
+ * @param graph - The graph to traverse
+ * @param source - Source node ID
+ * @param target - Target node ID
+ * @returns JaccardResult containing the score and both neighbourhood sets
+ */
+export function computeJaccard<N extends NodeData, E extends EdgeData>(
+	graph: ReadableGraph<N, E>,
+	source: NodeId,
+	target: NodeId,
+): JaccardResult {
+	const sourceNeighbours = neighbourSet(graph, source, target);
+	const targetNeighbours = neighbourSet(graph, target, source);
+	const { intersection, union } = neighbourOverlap(
+		sourceNeighbours,
+		targetNeighbours,
+	);
+	return {
+		jaccard: union > 0 ? intersection / union : 0,
+		sourceNeighbours,
+		targetNeighbours,
+	};
+}
+
+/**
  * Collect neighbours into a Set, optionally excluding a specific node.
  *
  * @param graph - The graph to traverse

@@ -12,7 +12,7 @@
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
-import { neighbourSet, neighbourOverlap, countNodesOfType } from "../../utils";
+import { computeJaccard, countNodesOfType } from "../../utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -26,16 +26,7 @@ export function notch<N extends NodeData, E extends EdgeData>(
 ): number {
 	const { epsilon = 1e-10 } = config ?? {};
 
-	// Get neighbourhoods, excluding opposite endpoint
-	const sourceNeighbours = neighbourSet(graph, source, target);
-	const targetNeighbours = neighbourSet(graph, target, source);
-
-	// Compute Jaccard
-	const { intersection, union } = neighbourOverlap(
-		sourceNeighbours,
-		targetNeighbours,
-	);
-	const jaccard = union > 0 ? intersection / union : 0;
+	const { jaccard: jaccardScore } = computeJaccard(graph, source, target);
 
 	// Get node data
 	const sourceNode = graph.getNode(source);
@@ -43,7 +34,7 @@ export function notch<N extends NodeData, E extends EdgeData>(
 
 	// If either node lacks a type, fall back to Jaccard
 	if (sourceNode?.type === undefined || targetNode?.type === undefined) {
-		return Math.max(epsilon, jaccard);
+		return Math.max(epsilon, jaccardScore);
 	}
 
 	// Compute node rarity: log(total nodes / nodes of this type)
@@ -52,13 +43,13 @@ export function notch<N extends NodeData, E extends EdgeData>(
 
 	// Avoid division by zero
 	if (sourceTypeCount === 0 || targetTypeCount === 0) {
-		return Math.max(epsilon, jaccard);
+		return Math.max(epsilon, jaccardScore);
 	}
 
 	const sourceRarity = Math.log(graph.nodeCount / sourceTypeCount);
 	const targetRarity = Math.log(graph.nodeCount / targetTypeCount);
 
-	const score = jaccard * sourceRarity * targetRarity;
+	const score = jaccardScore * sourceRarity * targetRarity;
 
 	// Apply epsilon floor for numerical stability
 	return Math.max(epsilon, score);

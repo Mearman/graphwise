@@ -8,7 +8,7 @@
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
-import { neighbourSet, neighbourOverlap } from "../../utils";
+import { computeJaccard } from "../../utils";
 import type { MIConfig } from "./types";
 
 /**
@@ -22,16 +22,7 @@ export function skew<N extends NodeData, E extends EdgeData>(
 ): number {
 	const { epsilon = 1e-10 } = config ?? {};
 
-	// Get neighbourhoods, excluding opposite endpoint
-	const sourceNeighbours = neighbourSet(graph, source, target);
-	const targetNeighbours = neighbourSet(graph, target, source);
-
-	// Compute Jaccard
-	const { intersection, union } = neighbourOverlap(
-		sourceNeighbours,
-		targetNeighbours,
-	);
-	const jaccard = union > 0 ? intersection / union : 0;
+	const { jaccard: jaccardScore } = computeJaccard(graph, source, target);
 
 	// Compute IDF-style weights for endpoints
 	const N = graph.nodeCount;
@@ -41,7 +32,7 @@ export function skew<N extends NodeData, E extends EdgeData>(
 	const sourceIdf = Math.log(N / (sourceDegree + 1));
 	const targetIdf = Math.log(N / (targetDegree + 1));
 
-	const score = jaccard * sourceIdf * targetIdf;
+	const score = jaccardScore * sourceIdf * targetIdf;
 
 	// Apply epsilon floor for numerical stability
 	return Math.max(epsilon, score);
