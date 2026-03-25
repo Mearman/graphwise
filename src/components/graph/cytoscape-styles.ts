@@ -15,7 +15,11 @@ export const SEED_SOURCE = "#10b981";
 export const SEED_TARGET = "#f59e0b";
 export const SEED_BIDIRECTIONAL = "#6366f1";
 export const NODE_DEFAULT = "#64748b";
+export const NODE_VISITED = "#3b82f6";
+export const NODE_FRONTIER = "#8b5cf6";
+export const NODE_EXPANDED = "#f97316";
 export const EDGE_DEFAULT = "#cbd5e1";
+export const EDGE_VISITED = "#3b82f6";
 export const PATH_HIGHLIGHT = "#ec4899";
 
 /** Valid seed roles */
@@ -72,6 +76,26 @@ export function createStyles(directed: boolean): readonly RelaxedStylesheet[] {
 			},
 		},
 		{
+			selector: "node.visited",
+			style: {
+				backgroundColor: NODE_VISITED,
+			},
+		},
+		{
+			selector: "node.frontier",
+			style: {
+				backgroundColor: NODE_FRONTIER,
+			},
+		},
+		{
+			selector: "node.expanded",
+			style: {
+				backgroundColor: NODE_EXPANDED,
+				borderColor: NODE_EXPANDED,
+				borderWidth: 3,
+			},
+		},
+		{
 			selector: "node.highlighted",
 			style: {
 				borderColor: PATH_HIGHLIGHT,
@@ -89,6 +113,18 @@ export function createStyles(directed: boolean): readonly RelaxedStylesheet[] {
 							targetArrowColor: EDGE_DEFAULT,
 							targetArrowShape: "triangle",
 							arrowScale: 0.8,
+						}
+					: {}),
+			},
+		},
+		{
+			selector: "edge.visited",
+			style: {
+				lineColor: EDGE_VISITED,
+				width: 2,
+				...(directed
+					? {
+							targetArrowColor: EDGE_VISITED,
 						}
 					: {}),
 			},
