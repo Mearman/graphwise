@@ -1,3 +1,40 @@
+## [1.9.0](https://github.com/Mearman/graphwise/compare/v1.8.1...v1.9.0) (2026-03-25)
+
+### ⚠ BREAKING CHANGES
+
+* **gpu:** GPUContext class removed; use initGPU() instead
+
+### Features
+
+* **ci:** add tarball validation with smoke test job ([462b35b](https://github.com/Mearman/graphwise/commit/462b35b5fb4e1aa0fe63f5e5e316a1d73763e948))
+* **gpu:** add CPU logic for BFS level kernel ([8d252a8](https://github.com/Mearman/graphwise/commit/8d252a8dbd9c2d343470807612812cf93d2c4d77))
+* **gpu:** add CPU logic for degree histogram kernel ([381fe59](https://github.com/Mearman/graphwise/commit/381fe59f84dbc842a355c797d1373c8bba64286d))
+* **gpu:** add CPU logic for Jaccard similarity kernel ([8eb73d2](https://github.com/Mearman/graphwise/commit/8eb73d29d68776e0f88efa1d4da329bae761747e))
+* **gpu:** add CPU logic for PageRank kernel ([84a6d7f](https://github.com/Mearman/graphwise/commit/84a6d7fe414c5f0a7fbef7e0ad6863212b8fc6f6))
+* **gpu:** add CPU logic for sparse matrix-vector multiply kernel ([a88414e](https://github.com/Mearman/graphwise/commit/a88414ee8406b89e083f8d46d3ff7cc5e3c79ab4))
+* **gpu:** add dispatch layer and high-level GPU operations ([dab17b6](https://github.com/Mearman/graphwise/commit/dab17b6a19839ae6dae33d3a29c5d20f95b6004e))
+* **gpu:** add TypeGPU dependencies and vite plugin ([76d55e6](https://github.com/Mearman/graphwise/commit/76d55e6852f89d2ca5ad8c0473790def9a203cfc))
+
+### Bug Fixes
+
+* **build:** resolve build issues ([a439712](https://github.com/Mearman/graphwise/commit/a4397122c100d09d30171f9ba1608a0705c4d0ab))
+* **build:** run tsc on full project in lint-staged ([d206471](https://github.com/Mearman/graphwise/commit/d20647160c7dad57a07b54ca6b8bd275617f1a49))
+* **ci:** add --ignoreConfig flag to tsc command in smoke-test ([90956bd](https://github.com/Mearman/graphwise/commit/90956bdbe678fa6871dc6ee511eebce9d283ea45))
+* **ci:** add dom lib to smoke-test tsconfig ([146fda1](https://github.com/Mearman/graphwise/commit/146fda174970484476149786a64609651df3d6f9))
+* **ci:** add tsconfig for smoke-test fixture ([05e3ae3](https://github.com/Mearman/graphwise/commit/05e3ae39e91f4ad3a6d991d7c6e4f1e8efbd1ae3))
+* **ci:** download smoke-test tarball to fixture directory ([1b80f47](https://github.com/Mearman/graphwise/commit/1b80f47fd8ecb9668fbbd051ec29b755f7312b76))
+* **ci:** use local file path for smoke-test tarball install ([7a79e2c](https://github.com/Mearman/graphwise/commit/7a79e2c78d2ce7de6aa83520bd8172b256025ba4))
+
+### Code Refactoring
+
+* **gpu:** replace GPUContext with TypeGPU root ([986cf54](https://github.com/Mearman/graphwise/commit/986cf542e2babb3899a37f5542e531cddc34080d))
+* **gpu:** replace raw GPUBuffer with TypeGPU typed buffers ([8296b54](https://github.com/Mearman/graphwise/commit/8296b54fcbd637676a09adef14fa71b27f0d5e20))
+
+### Miscellaneous Chores
+
+* **config:** remove wgsl exclusion from coverage config ([e3b6255](https://github.com/Mearman/graphwise/commit/e3b62559b36283e2e77dd8d1486c63014b9942d5))
+* **gpu:** remove deprecated WGSL shader files ([dc52a87](https://github.com/Mearman/graphwise/commit/dc52a8761384f659cbc171c0881a46c8c98c9c00))
+
 ## [1.8.1](https://github.com/Mearman/graphwise/compare/v1.8.0...v1.8.1) (2026-03-25)
 
 ### Build System
