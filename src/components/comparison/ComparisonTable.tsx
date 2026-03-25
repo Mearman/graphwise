@@ -1,17 +1,21 @@
 import { type ReactNode } from "react";
-import { Table, Group, Text, Badge, Stack, Box } from "@mantine/core";
+import { Table, Group, Text, Badge, Stack, Box, Button } from "@mantine/core";
+import { IconPlayerPlay } from "@tabler/icons-react";
 import { getAlgorithm } from "../../engine/algorithm-registry";
 import type { ComparisonEntry } from "../../state/comparison-store";
 import { useComparisonStore } from "../../state/comparison-store";
+import type { ExpansionAlgorithmName } from "../../engine/algorithm-registry";
 
 export interface ComparisonTableProps {
 	readonly entries: readonly ComparisonEntry[];
 	readonly totalDurationMs: number;
+	readonly onReplay?: (algorithmName: ExpansionAlgorithmName) => void;
 }
 
 export function ComparisonTable({
 	entries,
 	totalDurationMs,
+	onReplay,
 }: ComparisonTableProps): ReactNode {
 	if (entries.length === 0) {
 		return (
@@ -49,11 +53,16 @@ export function ComparisonTable({
 							<Table.Th>Paths</Table.Th>
 							<Table.Th>Iterations</Table.Th>
 							<Table.Th>Time (ms)</Table.Th>
+							{onReplay ? <Table.Th>Action</Table.Th> : null}
 						</Table.Tr>
 					</Table.Thead>
 					<Table.Tbody>
 						{sortedEntries.map((entry) => (
-							<ComparisonRow key={entry.algorithmName} entry={entry} />
+							<ComparisonRow
+								key={entry.algorithmName}
+								entry={entry}
+								{...(onReplay ? { onReplay } : {})}
+							/>
 						))}
 					</Table.Tbody>
 				</Table>
@@ -64,9 +73,10 @@ export function ComparisonTable({
 
 interface ComparisonRowProps {
 	readonly entry: ComparisonEntry;
+	readonly onReplay?: (algorithmName: ExpansionAlgorithmName) => void;
 }
 
-function ComparisonRow({ entry }: ComparisonRowProps): ReactNode {
+function ComparisonRow({ entry, onReplay }: ComparisonRowProps): ReactNode {
 	const highlightedAlgorithm = useComparisonStore(
 		(state) => state.highlightedAlgorithm,
 	);
@@ -122,6 +132,24 @@ function ComparisonRow({ entry }: ComparisonRowProps): ReactNode {
 					{stats.durationMs.toFixed(1)}
 				</Text>
 			</Table.Td>
+			{onReplay ? (
+				<Table.Td
+					onClick={(e) => {
+						e.stopPropagation();
+					}}
+				>
+					<Button
+						size="xs"
+						variant="subtle"
+						title={`Replay ${info?.label ?? entry.algorithmName} animation`}
+						onClick={() => {
+							onReplay(entry.algorithmName);
+						}}
+					>
+						<IconPlayerPlay size={14} />
+					</Button>
+				</Table.Td>
+			) : null}
 		</Table.Tr>
 	);
 }
