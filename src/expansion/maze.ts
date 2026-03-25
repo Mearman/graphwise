@@ -23,6 +23,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph, NodeId } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
@@ -30,6 +31,8 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import type { AsyncExpansionConfig } from "./base";
+import { baseAsync } from "./base";
 import { updateSalienceCounts } from "./priority-helpers";
 
 /** Default threshold for switching to phase 2 (after M paths) */
@@ -115,4 +118,72 @@ export function maze<N extends NodeData, E extends EdgeData>(
 		...config,
 		priority: mazePriority,
 	});
+}
+
+/**
+ * Run MAZE expansion asynchronously.
+ *
+ * Creates fresh closure state (salienceCounts, phase tracking) for this
+ * invocation. The MAZE priority function accesses `context.graph` to
+ * retrieve neighbour lists for path potential computation. Full async
+ * equivalence requires PriorityContext refactoring (Phase 4b deferred).
+ * This export establishes the async API surface.
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - Expansion and async runner configuration
+ * @returns Promise resolving to the expansion result
+ */
+export async function mazeAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	// Fresh closure state — independent of any concurrent sync invocations
+	const salienceCounts = new Map<NodeId, number>();
+	let inPhase2 = false;
+	let lastPathCount = 0;
+
+	function mazePriority(
+		nodeId: NodeId,
+		context: PriorityContext<N, E>,
+	): number {
+		const pathCount = context.discoveredPaths.length;
+
+		if (pathCount >= DEFAULT_PHASE2_THRESHOLD && !inPhase2) {
+			inPhase2 = true;
+			updateSalienceCounts(salienceCounts, context.discoveredPaths, 0);
+		}
+
+		if (inPhase2 && pathCount > lastPathCount) {
+			lastPathCount = updateSalienceCounts(
+				salienceCounts,
+				context.discoveredPaths,
+				lastPathCount,
+			);
+		}
+
+		// context.graph is the sentinel in pure async mode — Phase 4b will resolve this
+		const nodeNeighbours = context.graph.neighbours(nodeId);
+		let pathPotential = 0;
+
+		for (const neighbour of nodeNeighbours) {
+			const visitedBy = context.visitedByFrontier.get(neighbour);
+			if (visitedBy !== undefined && visitedBy !== context.frontierIndex) {
+				pathPotential++;
+			}
+		}
+
+		if (!inPhase2) {
+			return context.degree / (1 + pathPotential);
+		}
+
+		const salience = salienceCounts.get(nodeId) ?? 0;
+		const basePriority = context.degree / (1 + pathPotential);
+		const salienceFactor = 1 / (1 + SALIENCE_WEIGHT * salience);
+
+		return basePriority * salienceFactor;
+	}
+
+	return baseAsync(graph, seeds, { ...config, priority: mazePriority });
 }

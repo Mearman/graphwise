@@ -13,6 +13,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
@@ -20,6 +21,8 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import type { AsyncExpansionConfig } from "./base";
+import { baseAsync } from "./base";
 import { countCrossFrontierNeighbours } from "./priority-helpers";
 
 /**
@@ -137,4 +140,34 @@ export function flux<N extends NodeData, E extends EdgeData>(
 		...restConfig,
 		priority,
 	});
+}
+
+/**
+ * Run FLUX expansion asynchronously.
+ *
+ * Note: the FLUX priority function accesses `context.graph` to compute
+ * local density and cross-frontier bridge scores. Full async equivalence
+ * requires PriorityContext refactoring (Phase 4b deferred). This export
+ * establishes the async API surface.
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - FLUX (MAZEConfig) configuration combined with async runner options
+ * @returns Promise resolving to the expansion result
+ */
+export async function fluxAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: MAZEConfig<N, E> & AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	const {
+		densityThreshold = 0.5,
+		bridgeThreshold = 0.3,
+		...restConfig
+	} = config ?? {};
+
+	const priority = (nodeId: string, context: PriorityContext<N, E>): number =>
+		fluxPriority(nodeId, context, densityThreshold, bridgeThreshold);
+
+	return baseAsync(graph, seeds, { ...restConfig, priority });
 }

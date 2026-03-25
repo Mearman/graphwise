@@ -10,6 +10,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
@@ -17,6 +18,8 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import type { AsyncExpansionConfig } from "./base";
+import { baseAsync } from "./base";
 import { countCrossFrontierNeighbours } from "./priority-helpers";
 
 /**
@@ -66,6 +69,30 @@ export function warp<N extends NodeData, E extends EdgeData>(
 	config?: ExpansionConfig<N, E>,
 ): ExpansionResult {
 	return base(graph, seeds, {
+		...config,
+		priority: warpPriority,
+	});
+}
+
+/**
+ * Run WARP expansion asynchronously.
+ *
+ * Note: the WARP priority function accesses `context.graph` via
+ * `countCrossFrontierNeighbours`. Full async equivalence requires
+ * PriorityContext refactoring (Phase 4b deferred). This export
+ * establishes the async API surface.
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - Expansion and async runner configuration
+ * @returns Promise resolving to the expansion result
+ */
+export async function warpAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	return baseAsync(graph, seeds, {
 		...config,
 		priority: warpPriority,
 	});

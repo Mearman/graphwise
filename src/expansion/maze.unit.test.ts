@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import { maze } from "./maze";
+import { maze, mazeAsync } from "./maze";
 import type { Seed } from "./types";
 import { createLinearChainGraph } from "../__test__/fixtures/graphs/linear-chain";
 import type { KGNode } from "../__test__/fixtures/types";
@@ -145,5 +145,15 @@ describe("MAZE expansion", () => {
 		const result = maze(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.nodesVisited).toBeGreaterThan(0);
+	});
+});
+
+describe("mazeAsync export", () => {
+	it("is an async function", () => {
+		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
+		// The priority function accesses context.graph which is the sentinel in async mode.
+		// This test verifies the export exists with the correct async signature.
+		expect(typeof mazeAsync).toBe("function");
+		expect(mazeAsync.constructor.name).toBe("AsyncFunction");
 	});
 });

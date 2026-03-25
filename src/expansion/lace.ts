@@ -10,6 +10,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
@@ -17,6 +18,8 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import type { AsyncExpansionConfig } from "./base";
+import { baseAsync } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
 import { avgFrontierMI } from "./priority-helpers";
 
@@ -76,4 +79,30 @@ export function lace<N extends NodeData, E extends EdgeData>(
 		...restConfig,
 		priority,
 	});
+}
+
+/**
+ * Run LACE expansion asynchronously.
+ *
+ * Note: the LACE priority function accesses `context.graph` via
+ * `avgFrontierMI`. Full async equivalence requires PriorityContext
+ * refactoring (Phase 4b deferred). This export establishes the async
+ * API surface.
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - LACE configuration combined with async runner options
+ * @returns Promise resolving to the expansion result
+ */
+export async function laceAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: LACEConfig<N, E> & AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	const { mi = jaccard, ...restConfig } = config ?? {};
+
+	const priority = (nodeId: string, context: PriorityContext<N, E>): number =>
+		lacePriority(nodeId, context, mi);
+
+	return baseAsync(graph, seeds, { ...restConfig, priority });
 }

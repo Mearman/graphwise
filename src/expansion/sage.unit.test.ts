@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import { sage } from "./sage";
+import { sage, sageAsync } from "./sage";
 import type { Seed } from "./types";
 import { createLinearChainGraph } from "../__test__/fixtures/graphs/linear-chain";
 import type { KGNode } from "../__test__/fixtures/types";
+import { wrapAsync } from "../__test__/fixtures/wrap-async";
 
 describe("SAGE expansion", () => {
 	it("returns empty result for no seeds", () => {
@@ -102,5 +103,33 @@ describe("SAGE expansion", () => {
 
 		expect(result.paths.length).toBeGreaterThan(0);
 		expect(result.stats.nodesVisited).toBeGreaterThan(0);
+	});
+});
+
+describe("sageAsync", () => {
+	it("is an async function", () => {
+		expect(typeof sageAsync).toBe("function");
+		expect(sageAsync.constructor.name).toBe("AsyncFunction");
+	});
+
+	it("produces the same paths and nodesVisited as the sync version", async () => {
+		// SAGE's priority function does not access context.graph, so it is safe
+		// to run in async mode via baseAsync with no graphRef.
+		const graph = createLinearChainGraph();
+		const seeds: Seed[] = [{ id: "A" }, { id: "E" }];
+
+		const syncResult = sage(graph, seeds);
+		const asyncResult = await sageAsync(wrapAsync(graph), seeds);
+
+		expect(asyncResult.paths.length).toBe(syncResult.paths.length);
+		expect(asyncResult.stats.nodesVisited).toBe(syncResult.stats.nodesVisited);
+	});
+
+	it("returns empty result for no seeds", async () => {
+		const graph = createLinearChainGraph();
+		const result = await sageAsync(wrapAsync(graph), []);
+
+		expect(result.paths).toHaveLength(0);
+		expect(result.stats.termination).toBe("exhausted");
 	});
 });

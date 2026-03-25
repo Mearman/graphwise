@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import { warp } from "./warp";
+import { warp, warpAsync } from "./warp";
 import type { Seed } from "./types";
 import {
 	createLinearChainGraph,
@@ -209,5 +209,16 @@ describe("warp expansion", () => {
 		const result = warp(graph, seeds);
 
 		expect(result.paths.length).toBeGreaterThan(0);
+	});
+});
+
+describe("warpAsync export", () => {
+	it("is an async function", () => {
+		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
+		// The priority function accesses context.graph via countCrossFrontierNeighbours
+		// which is the sentinel in async mode. This test verifies the export exists with
+		// the correct async signature.
+		expect(typeof warpAsync).toBe("function");
+		expect(warpAsync.constructor.name).toBe("AsyncFunction");
 	});
 });

@@ -18,6 +18,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph, NodeId } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
@@ -25,6 +26,8 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import type { AsyncExpansionConfig } from "./base";
+import { baseAsync } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
 
 /**
@@ -118,4 +121,59 @@ export function reach<N extends NodeData, E extends EdgeData>(
 		...config,
 		priority: reachPriority,
 	});
+}
+
+/**
+ * Run REACH expansion asynchronously.
+ *
+ * Creates fresh closure state (phase tracking, Jaccard cache) for this
+ * invocation. The REACH priority function uses `jaccard(context.graph, ...)`
+ * in Phase 2; in async mode `context.graph` is the sentinel and will throw.
+ * Full async equivalence requires PriorityContext refactoring (Phase 4b
+ * deferred). This export establishes the async API surface.
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - Expansion and async runner configuration
+ * @returns Promise resolving to the expansion result
+ */
+export async function reachAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	// Fresh closure state — independent of any concurrent sync invocations
+	let inPhase2 = false;
+
+	// Note: in Phase 2, jaccard(context.graph, ...) is called. In async mode,
+	// context.graph is the sentinel and will throw. Phase 4b will resolve this.
+	function reachPriority(
+		nodeId: NodeId,
+		context: PriorityContext<N, E>,
+	): number {
+		const pathCount = context.discoveredPaths.length;
+
+		if (pathCount > 0 && !inPhase2) {
+			inPhase2 = true;
+		}
+
+		if (!inPhase2) {
+			return Math.log(context.degree + 1);
+		}
+
+		let totalMI = 0;
+		let endpointCount = 0;
+
+		for (const path of context.discoveredPaths) {
+			// context.graph is the sentinel in async mode — throws on access
+			totalMI += jaccard(context.graph, nodeId, path.fromSeed.id);
+			totalMI += jaccard(context.graph, nodeId, path.toSeed.id);
+			endpointCount += 2;
+		}
+
+		const miHat = endpointCount > 0 ? totalMI / endpointCount : 0;
+		return Math.log(context.degree + 1) * (1 - miHat);
+	}
+
+	return baseAsync(graph, seeds, { ...config, priority: reachPriority });
 }

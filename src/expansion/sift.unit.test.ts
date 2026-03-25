@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sift } from "./sift";
+import { sift, siftAsync } from "./sift";
 import type { Seed } from "./types";
 import {
 	createLinearChainGraph,
@@ -117,5 +117,16 @@ describe("sift expansion", () => {
 
 		expect(result.visitedPerFrontier).toBeDefined();
 		expect(Array.isArray(result.visitedPerFrontier)).toBe(true);
+	});
+});
+
+describe("siftAsync export", () => {
+	it("is an async function", () => {
+		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
+		// The priority function accesses context.graph via avgFrontierMI which is the
+		// sentinel in async mode. This test verifies the export exists with the correct
+		// async signature.
+		expect(typeof siftAsync).toBe("function");
+		expect(siftAsync.constructor.name).toBe("AsyncFunction");
 	});
 });

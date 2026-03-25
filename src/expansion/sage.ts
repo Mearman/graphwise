@@ -16,6 +16,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph, NodeId } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
@@ -23,6 +24,8 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import type { AsyncExpansionConfig } from "./base";
+import { baseAsync } from "./base";
 import { updateSalienceCounts } from "./priority-helpers";
 
 /**
@@ -86,4 +89,55 @@ export function sage<N extends NodeData, E extends EdgeData>(
 		...config,
 		priority: sagePriority,
 	});
+}
+
+/**
+ * Run SAGE expansion asynchronously.
+ *
+ * Creates fresh closure state (salienceCounts, phase tracking) for this
+ * invocation. The SAGE priority function does not access `context.graph`
+ * directly, so it is safe to use in async mode via `baseAsync`.
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - Expansion and async runner configuration
+ * @returns Promise resolving to the expansion result
+ */
+export async function sageAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	// Fresh closure state — independent of any concurrent sync invocations
+	const salienceCounts = new Map<NodeId, number>();
+	let inPhase2 = false;
+	let lastPathCount = 0;
+
+	function sagePriority(
+		nodeId: NodeId,
+		context: PriorityContext<N, E>,
+	): number {
+		const pathCount = context.discoveredPaths.length;
+
+		if (pathCount > 0 && !inPhase2) {
+			inPhase2 = true;
+		}
+
+		if (pathCount > lastPathCount) {
+			lastPathCount = updateSalienceCounts(
+				salienceCounts,
+				context.discoveredPaths,
+				lastPathCount,
+			);
+		}
+
+		if (!inPhase2) {
+			return Math.log(context.degree + 1);
+		}
+
+		const salience = salienceCounts.get(nodeId) ?? 0;
+		return -(salience * 1000 - context.degree);
+	}
+
+	return baseAsync(graph, seeds, { ...config, priority: sagePriority });
 }

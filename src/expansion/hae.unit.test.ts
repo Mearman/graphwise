@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { NodeData, EdgeData } from "../graph";
-import { hae } from "./hae";
+import { hae, haeAsync } from "./hae";
 import type { Seed } from "./types";
 import {
 	createLinearChainGraph,
@@ -99,5 +99,15 @@ describe("hae expansion", () => {
 		const result = hae(graph, [{ id: "A" }, { id: "E" }]);
 
 		expect(result.paths.length).toBeGreaterThan(0);
+	});
+});
+
+describe("haeAsync export", () => {
+	it("is an async function", () => {
+		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
+		// The priority function accesses context.graph which is the sentinel in async mode.
+		// This test verifies the export exists with the correct async signature.
+		expect(typeof haeAsync).toBe("function");
+		expect(haeAsync.constructor.name).toBe("AsyncFunction");
 	});
 });

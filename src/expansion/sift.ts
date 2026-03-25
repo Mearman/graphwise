@@ -11,6 +11,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
@@ -18,6 +19,8 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import type { AsyncExpansionConfig } from "./base";
+import { baseAsync } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
 import { avgFrontierMI } from "./priority-helpers";
 
@@ -89,4 +92,30 @@ export function sift<N extends NodeData, E extends EdgeData>(
 		...restConfig,
 		priority,
 	});
+}
+
+/**
+ * Run SIFT expansion asynchronously.
+ *
+ * Note: the SIFT priority function accesses `context.graph` via
+ * `avgFrontierMI`. Full async equivalence requires PriorityContext
+ * refactoring (Phase 4b deferred). This export establishes the async
+ * API surface.
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - SIFT (REACHConfig) configuration combined with async runner options
+ * @returns Promise resolving to the expansion result
+ */
+export async function siftAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: REACHConfig<N, E> & AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	const { mi = jaccard, miThreshold = 0.25, ...restConfig } = config ?? {};
+
+	const priority = (nodeId: string, context: PriorityContext<N, E>): number =>
+		siftPriority(nodeId, context, mi, miThreshold);
+
+	return baseAsync(graph, seeds, { ...restConfig, priority });
 }

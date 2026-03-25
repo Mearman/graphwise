@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import { lace } from "./lace";
+import { lace, laceAsync } from "./lace";
 import type { LACEConfig } from "./lace";
 import type { Seed } from "./types";
 import { jaccard } from "../ranking/mi/jaccard";
@@ -189,5 +189,16 @@ describe("lace expansion", () => {
 
 		expect(result1.stats.nodesVisited).toBe(result2.stats.nodesVisited);
 		expect(result1.paths.length).toBe(result2.paths.length);
+	});
+});
+
+describe("laceAsync export", () => {
+	it("is an async function", () => {
+		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
+		// The priority function accesses context.graph via avgFrontierMI which is the
+		// sentinel in async mode. This test verifies the export exists with the correct
+		// async signature.
+		expect(typeof laceAsync).toBe("function");
+		expect(laceAsync.constructor.name).toBe("AsyncFunction");
 	});
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pipe } from "./pipe";
+import { pipe, pipeAsync } from "./pipe";
 import type { Seed } from "./types";
 import {
 	createLinearChainGraph,
@@ -63,5 +63,15 @@ describe("pipe expansion", () => {
 
 		// PIPE should discover paths through bridging nodes
 		expect(result.paths.length).toBeGreaterThan(0);
+	});
+});
+
+describe("pipeAsync export", () => {
+	it("is an async function", () => {
+		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
+		// The priority function accesses context.graph which is the sentinel in async mode.
+		// This test verifies the export exists with the correct async signature.
+		expect(typeof pipeAsync).toBe("function");
+		expect(pipeAsync.constructor.name).toBe("AsyncFunction");
 	});
 });

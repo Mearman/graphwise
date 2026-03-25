@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import { flux } from "./flux";
+import { flux, fluxAsync } from "./flux";
 import type { Seed } from "./types";
 import {
 	createLinearChainGraph,
@@ -276,5 +276,16 @@ describe("flux expansion", () => {
 				expect(firstPath.nodes.length).toBeGreaterThan(0);
 			}
 		}
+	});
+});
+
+describe("fluxAsync export", () => {
+	it("is an async function", () => {
+		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
+		// The priority function accesses context.graph to compute local density and
+		// cross-frontier bridge scores, which is the sentinel in async mode. This test
+		// verifies the export exists with the correct async signature.
+		expect(typeof fluxAsync).toBe("function");
+		expect(fluxAsync.constructor.name).toBe("AsyncFunction");
 	});
 });

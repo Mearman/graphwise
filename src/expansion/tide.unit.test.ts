@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tide } from "./tide";
+import { tide, tideAsync } from "./tide";
 import type { Seed } from "./types";
 import {
 	createLinearChainGraph,
@@ -48,5 +48,15 @@ describe("tide expansion", () => {
 		const result = tide(graph, [{ id: "A" }, { id: "B" }]);
 
 		expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
+	});
+});
+
+describe("tideAsync export", () => {
+	it("is an async function", () => {
+		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
+		// The priority function accesses context.graph which is the sentinel in async mode.
+		// This test verifies the export exists with the correct async signature.
+		expect(typeof tideAsync).toBe("function");
+		expect(tideAsync.constructor.name).toBe("AsyncFunction");
 	});
 });

@@ -11,6 +11,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
@@ -18,6 +19,8 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import type { AsyncExpansionConfig } from "./base";
+import { baseAsync } from "./base";
 import { jaccard } from "../ranking/mi/jaccard";
 import { avgFrontierMI } from "./priority-helpers";
 
@@ -93,4 +96,30 @@ export function fuse<N extends NodeData, E extends EdgeData>(
 		...restConfig,
 		priority,
 	});
+}
+
+/**
+ * Run FUSE expansion asynchronously.
+ *
+ * Note: the FUSE priority function accesses `context.graph` via
+ * `avgFrontierMI`. Full async equivalence requires PriorityContext
+ * refactoring (Phase 4b deferred). This export establishes the async
+ * API surface.
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - FUSE configuration combined with async runner options
+ * @returns Promise resolving to the expansion result
+ */
+export async function fuseAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: FUSEConfig<N, E> & AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	const { mi = jaccard, salienceWeight = 0.5, ...restConfig } = config ?? {};
+
+	const priority = (nodeId: string, context: PriorityContext<N, E>): number =>
+		fusePriority(nodeId, context, mi, salienceWeight);
+
+	return baseAsync(graph, seeds, { ...restConfig, priority });
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { ReadableGraph } from "../graph";
-import { fuse, type FUSEConfig } from "./fuse";
+import { fuse, fuseAsync, type FUSEConfig } from "./fuse";
 import type { Seed } from "./types";
 import {
 	createLinearChainGraph,
@@ -255,5 +255,16 @@ describe("fuse with graph containing shared neighbours", () => {
 
 		// Should have sampled some nodes during expansion
 		expect(result.sampledNodes.size).toBeGreaterThanOrEqual(0);
+	});
+});
+
+describe("fuseAsync export", () => {
+	it("is an async function", () => {
+		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
+		// The priority function accesses context.graph via avgFrontierMI which is the
+		// sentinel in async mode. This test verifies the export exists with the correct
+		// async signature.
+		expect(typeof fuseAsync).toBe("function");
+		expect(fuseAsync.constructor.name).toBe("AsyncFunction");
 	});
 });

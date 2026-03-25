@@ -12,6 +12,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
+import type { AsyncReadableGraph } from "../graph/async-interfaces";
 import type {
 	Seed,
 	ExpansionResult,
@@ -19,6 +20,8 @@ import type {
 	PriorityContext,
 } from "./types";
 import { base } from "./base";
+import type { AsyncExpansionConfig } from "./base";
+import { baseAsync } from "./base";
 import { localTypeEntropy } from "../utils/entropy";
 
 const EPSILON = 1e-10;
@@ -90,6 +93,32 @@ export function hae<N extends NodeData, E extends EdgeData>(
 	const typeMapper = config?.typeMapper ?? defaultTypeMapper;
 
 	return base(graph, seeds, {
+		...config,
+		priority: createHAEPriority<N, E>(typeMapper),
+	});
+}
+
+/**
+ * Run HAE expansion asynchronously.
+ *
+ * Note: the HAE priority function accesses `context.graph` to retrieve
+ * neighbour types. Full async equivalence requires PriorityContext
+ * refactoring (Phase 4b deferred). This export establishes the async API
+ * surface; use with a `wrapAsync`-wrapped sync graph for testing.
+ *
+ * @param graph - Async source graph
+ * @param seeds - Seed nodes for expansion
+ * @param config - HAE configuration combined with async runner options
+ * @returns Promise resolving to the expansion result
+ */
+export async function haeAsync<N extends NodeData, E extends EdgeData>(
+	graph: AsyncReadableGraph<N, E>,
+	seeds: readonly Seed[],
+	config?: HAEConfig<N, E> & AsyncExpansionConfig<N, E>,
+): Promise<ExpansionResult> {
+	const typeMapper = config?.typeMapper ?? defaultTypeMapper;
+
+	return baseAsync(graph, seeds, {
 		...config,
 		priority: createHAEPriority<N, E>(typeMapper),
 	});

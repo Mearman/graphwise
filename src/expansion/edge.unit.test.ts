@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { edge } from "./edge";
+import { edge, edgeAsync } from "./edge";
 import type { Seed } from "./types";
 import {
 	createLinearChainGraph,
@@ -56,5 +56,15 @@ describe("edge expansion", () => {
 
 		// At least the seed nodes should be visited
 		expect(result.sampledNodes.size).toBeGreaterThan(0);
+	});
+});
+
+describe("edgeAsync export", () => {
+	it("is an async function", () => {
+		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
+		// The priority function accesses context.graph which is the sentinel in async mode.
+		// This test verifies the export exists with the correct async signature.
+		expect(typeof edgeAsync).toBe("function");
+		expect(edgeAsync.constructor.name).toBe("AsyncFunction");
 	});
 });
