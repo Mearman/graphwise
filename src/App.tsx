@@ -29,11 +29,18 @@ import {
 
 import "@mantine/core/styles.css";
 
-const FIXTURE_NAME_SET = new Set(fixtureNames());
-
-function isFixtureName(value: string): value is FixtureName {
-	return FIXTURE_NAME_SET.has(value);
-
+function isFixtureName(value: unknown): value is FixtureName {
+	return (
+		value === "linear-chain" ||
+		value === "social-hub" ||
+		value === "two-department" ||
+		value === "city-village" ||
+		value === "city-suburban-village" ||
+		value === "three-community" ||
+		value === "typed-entity" ||
+		value === "quality-vs-popularity"
+	);
+}
 
 function MainContent(): ReactNode {
 	const mode = useTourStore((state) => state.mode);
@@ -45,7 +52,9 @@ function MainContent(): ReactNode {
 	const setSeeds = useGraphStore((state) => state.setSeeds);
 
 	const frames = useAnimationStore((state) => state.frames);
-	const currentFrameIndex = useAnimationStore((state) => state.currentFrameIndex);
+	const currentFrameIndex = useAnimationStore(
+		(state) => state.currentFrameIndex,
+	);
 	const isPlaying = useAnimationStore((state) => state.isPlaying);
 	const speed = useAnimationStore((state) => state.speed);
 	const togglePlay = useAnimationStore((state) => state.togglePlay);
@@ -61,7 +70,7 @@ function MainContent(): ReactNode {
 			setSeeds(fixture.seeds);
 		},
 		[setGraph, setSeeds],
-	)
+	);
 
 	const handleCompleteTour = useCallback(() => {
 		setMode("explore");
