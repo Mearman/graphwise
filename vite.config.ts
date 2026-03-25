@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 import dts from "vite-plugin-dts";
+import typegpu from "unplugin-typegpu/vite";
 
 const entries = {
 	index: resolve(__dirname, "src/index.ts"),
@@ -41,6 +42,7 @@ export default defineConfig({
 		minify: false,
 	},
 	plugins: [
+		typegpu(),
 		dts({
 			include: ["src/**/*.ts"],
 			outDir: "dist",

@@ -115,6 +115,7 @@
     "url": "git+https://github.com/Mearman/graphwise.git"
   },
   "dependencies": {
+    "typegpu": "0.10.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -139,6 +140,7 @@
     "turbo": "2.8.20",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.57.2",
+    "unplugin-typegpu": "0.10.2",
     "vite": "^8.0.2",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.1.1"
