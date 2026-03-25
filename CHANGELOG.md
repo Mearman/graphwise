@@ -1,3 +1,14 @@
+## [1.7.0](https://github.com/Mearman/graphwise/compare/v1.6.0...v1.7.0) (2026-03-25)
+
+### Features
+
+* **expansion:** add baseCore generator for async-capable expansion ([635ddc8](https://github.com/Mearman/graphwise/commit/635ddc89c7a0471df1c600061453d7002e064230))
+* **expansion:** rewire base() to use baseCore + add baseAsync() ([7731e94](https://github.com/Mearman/graphwise/commit/7731e947ea4ebda9b4ff750cf1aae15f7b72e1fd))
+
+### Code Refactoring
+
+* **expansion:** extract pure helpers from BASE engine ([06f95ed](https://github.com/Mearman/graphwise/commit/06f95ed3cc84196732410982cf6c3ee75d1d3683))
+
 ## [1.6.0](https://github.com/Mearman/graphwise/compare/v1.5.2...v1.6.0) (2026-03-25)
 
 ### Features
