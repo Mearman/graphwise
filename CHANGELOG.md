@@ -1,3 +1,16 @@
+## [1.5.0](https://github.com/Mearman/graphwise/compare/v1.4.3...v1.5.0) (2026-03-25)
+
+### Features
+
+* **expansion:** add DFS, k-hop, random walk expansion baselines ([8b90d67](https://github.com/Mearman/graphwise/commit/8b90d67f4c761a680e0f194dc6fef0184bdf24d4))
+* **ranking:** add cosine, sorensen, resource allocation, overlap, hub-promoted MI variants ([7a78257](https://github.com/Mearman/graphwise/commit/7a78257c6d508c1e52edb420777dd6d340a2f19b))
+* **ranking:** add hitting time ranking baseline ([4a49da3](https://github.com/Mearman/graphwise/commit/4a49da399af6d9306523115c223a5e233594f1a5))
+* **utils:** add comparison metrics module for algorithm evaluation ([d3c9ce0](https://github.com/Mearman/graphwise/commit/d3c9ce07cd920641b919f278f6deee97ebeacfa3))
+
+### Bug Fixes
+
+* **expansion:** correct FLUX sign mismatch and LACE test assertion ([bc9a5d8](https://github.com/Mearman/graphwise/commit/bc9a5d85d4aca77114c4316d4f7500b23b31a3a1))
+
 ## [1.4.3](https://github.com/Mearman/graphwise/compare/v1.4.2...v1.4.3) (2026-03-24)
 
 ### Documentation
