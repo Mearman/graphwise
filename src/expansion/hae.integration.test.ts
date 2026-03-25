@@ -9,8 +9,14 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createQualityVsPopularityFixture } from "../__test__/fixtures";
+import {
+	createQualityVsPopularityFixture,
+	meanPathMI,
+} from "../__test__/fixtures";
 import { hae } from "./hae";
+import { dome } from "./dome";
+import { standardBfs } from "./standard-bfs";
+import { jaccard } from "../ranking/mi";
 
 describe("HAE integration: heterogeneity-aware expansion", () => {
 	it("discovers paths using default type mapping", () => {
@@ -93,5 +99,40 @@ describe("HAE integration: heterogeneity-aware expansion", () => {
 		});
 
 		expect(result.stats.nodesVisited).toBeLessThanOrEqual(5);
+	});
+
+	it("achieves mean path MI at least 90% of dome and standardBfs baselines", () => {
+		const fixture = createQualityVsPopularityFixture();
+		const { graph } = fixture;
+
+		const seeds = [
+			{ id: "source", role: "source" as const },
+			{ id: "target", role: "target" as const },
+		];
+
+		const haeResult = hae(graph, seeds);
+		const domeResult = dome(graph, seeds);
+		const bfsResult = standardBfs(graph, seeds);
+
+		if (haeResult.paths.length > 0) {
+			const haeMI = meanPathMI(graph, haeResult.paths, jaccard);
+
+			// Compare against dome baseline when it finds paths
+			if (domeResult.paths.length > 0) {
+				const domeMI = meanPathMI(graph, domeResult.paths, jaccard);
+				expect(haeMI).toBeGreaterThanOrEqual(domeMI * 0.9);
+			}
+
+			// Compare against standardBfs baseline when it finds paths
+			if (bfsResult.paths.length > 0) {
+				const bfsMI = meanPathMI(graph, bfsResult.paths, jaccard);
+				expect(haeMI).toBeGreaterThanOrEqual(bfsMI * 0.9);
+			}
+		}
+
+		// At least one algorithm should discover paths on this fixture
+		expect(
+			haeResult.paths.length + domeResult.paths.length + bfsResult.paths.length,
+		).toBeGreaterThan(0);
 	});
 });

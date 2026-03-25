@@ -7,9 +7,11 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createSocialHubFixture } from "../__test__/fixtures";
+import { createSocialHubFixture, meanPathMI } from "../__test__/fixtures";
 import { sage } from "./sage";
 import { dome } from "./dome";
+import { standardBfs } from "./standard-bfs";
+import { jaccard } from "../ranking/mi";
 
 describe("SAGE integration: salience-guided exploration", () => {
 	it("discovers paths and tracks node salience through phases", () => {
@@ -96,5 +98,43 @@ describe("SAGE integration: salience-guided exploration", () => {
 		for (const nodeId of result.sampledNodes) {
 			expect(graph.hasNode(nodeId)).toBe(true);
 		}
+	});
+
+	it("achieves mean path MI at least 90% of dome and standardBfs baselines", () => {
+		const fixture = createSocialHubFixture();
+		const { graph } = fixture;
+
+		const seeds = [
+			{ id: "bob", role: "source" as const },
+			{ id: "grace", role: "target" as const },
+		];
+
+		const sageResult = sage(graph, seeds);
+		const domeResult = dome(graph, seeds);
+		const bfsResult = standardBfs(graph, seeds);
+
+		if (sageResult.paths.length > 0) {
+			const sageMI = meanPathMI(graph, sageResult.paths, jaccard);
+
+			// SAGE's salience-based phase transition should keep path quality
+			// competitive with the degree-only dome baseline
+			if (domeResult.paths.length > 0) {
+				const domeMI = meanPathMI(graph, domeResult.paths, jaccard);
+				expect(sageMI).toBeGreaterThanOrEqual(domeMI * 0.9);
+			}
+
+			// Should also be competitive with the simple BFS baseline
+			if (bfsResult.paths.length > 0) {
+				const bfsMI = meanPathMI(graph, bfsResult.paths, jaccard);
+				expect(sageMI).toBeGreaterThanOrEqual(bfsMI * 0.9);
+			}
+		}
+
+		// At least one algorithm should discover paths on this fixture
+		expect(
+			sageResult.paths.length +
+				domeResult.paths.length +
+				bfsResult.paths.length,
+		).toBeGreaterThan(0);
 	});
 });

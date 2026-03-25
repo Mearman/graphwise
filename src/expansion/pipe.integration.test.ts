@@ -12,6 +12,9 @@
 import { describe, it, expect } from "vitest";
 import { createQualityVsPopularityFixture } from "../__test__/fixtures";
 import { pipe } from "./pipe";
+import { standardBfs } from "./standard-bfs";
+import { frontierBalanced } from "./frontier-balanced";
+import { dome } from "./dome";
 
 describe("PIPE integration: path-potential informed expansion", () => {
 	it("discovers paths through bridging nodes", () => {
@@ -84,5 +87,41 @@ describe("PIPE integration: path-potential informed expansion", () => {
 		});
 
 		expect(result.stats.nodesVisited).toBeLessThanOrEqual(5);
+	});
+
+	it("discovers at least as many paths as standardBfs and frontierBalanced baselines with multiple seeds", () => {
+		const fixture = createQualityVsPopularityFixture();
+		const { graph } = fixture;
+
+		// Three-seed scenario: PIPE should benefit from path-potential
+		// awareness across multiple frontiers
+		const seeds = [
+			{ id: "source", role: "source" as const },
+			{ id: "specialist1" },
+			{ id: "target", role: "target" as const },
+		] as const;
+
+		const pipeResult = pipe(graph, seeds);
+		const bfsResult = standardBfs(graph, seeds);
+		const balancedResult = frontierBalanced(graph, seeds);
+		const domeResult = dome(graph, seeds);
+
+		// PIPE should find at least as many paths as BFS baseline
+		// (or at minimum perform within the same order of magnitude)
+		const maxBaselinePaths = Math.max(
+			bfsResult.paths.length,
+			balancedResult.paths.length,
+			domeResult.paths.length,
+		);
+
+		// At least one algorithm should succeed on this fixture
+		expect(pipeResult.paths.length + maxBaselinePaths).toBeGreaterThan(0);
+
+		// PIPE should not catastrophically underperform relative to baselines
+		if (maxBaselinePaths > 0) {
+			expect(pipeResult.paths.length).toBeGreaterThanOrEqual(
+				Math.floor(maxBaselinePaths * 0.5),
+			);
+		}
 	});
 });

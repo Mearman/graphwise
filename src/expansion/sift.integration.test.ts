@@ -18,6 +18,7 @@ import {
 } from "../__test__/fixtures";
 import { sift } from "./sift";
 import { dome } from "./dome";
+import { standardBfs } from "./standard-bfs";
 import { jaccard } from "../ranking/mi";
 
 describe("SIFT integration: adaptive MI filtering", () => {
@@ -230,6 +231,31 @@ describe("SIFT integration: adaptive MI filtering", () => {
 		expect(siftResult.paths.length + domeResult.paths.length).toBeGreaterThan(
 			0,
 		);
+	});
+
+	it("achieves mean path MI at least 90% of standardBfs baseline", () => {
+		const fixture = createQualityVsPopularityFixture();
+		const { graph } = fixture;
+
+		const seeds = [
+			{ id: "source", role: "source" as const },
+			{ id: "target", role: "target" as const },
+		];
+
+		const siftResult = sift(graph, seeds, { maxNodes: 16 });
+		const bfsResult = standardBfs(graph, seeds, { maxNodes: 16 });
+
+		if (siftResult.paths.length > 0 && bfsResult.paths.length > 0) {
+			const siftMI = meanPathMI(graph, siftResult.paths, jaccard);
+			const bfsMI = meanPathMI(graph, bfsResult.paths, jaccard);
+
+			// SIFT's MI-threshold filtering should yield paths at least as
+			// high quality as the unguided BFS baseline
+			expect(siftMI).toBeGreaterThanOrEqual(bfsMI * 0.9);
+		}
+
+		// At least one algorithm should discover paths on this fixture
+		expect(siftResult.paths.length + bfsResult.paths.length).toBeGreaterThan(0);
 	});
 
 	it("handles source-to-target seed roles consistently", () => {
