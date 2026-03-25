@@ -1,41 +1,25 @@
-import { type ReactNode, useCallback } from "react";
-import { MantineProvider, Stack, Paper, Text, Select } from "@mantine/core";
+import { type ReactNode } from "react";
+import { MantineProvider, Stack, Paper, Text, Box } from "@mantine/core";
 import { theme } from "./theme";
 import { AppShell } from "./components/layout/AppShell";
 import { GraphCanvas } from "./components/graph/GraphCanvas";
 import { GraphToolbar } from "./components/graph/GraphToolbar";
-import { SeedPicker } from "./components/graph/SeedPicker";
 import { AnimationTimeline } from "./components/animation/AnimationTimeline";
-import { ComparisonPanel } from "./components/comparison/ComparisonPanel";
+import { StatsOverlay } from "./components/animation/StatsOverlay";
+import { AnimationLegend } from "./components/animation/AnimationLegend";
+import { PipelinePanel } from "./components/pipeline/PipelinePanel";
+import { FrameInspector } from "./components/inspector/FrameInspector";
+import { ComparisonTable } from "./components/comparison/ComparisonTable";
 import { useUrlSync } from "./components/app/use-url-sync";
 import { useGraphStore } from "./state/graph-store";
 import { useAnimationStore } from "./state/animation-store";
-import {
-	loadFixture,
-	fixtureNames,
-	type FixtureName,
-} from "./engine/fixture-loader";
+import { useComparisonStore } from "./state/comparison-store";
 
 import "@mantine/core/styles.css";
-
-function isFixtureName(value: unknown): value is FixtureName {
-	return (
-		value === "linear-chain" ||
-		value === "social-hub" ||
-		value === "two-department" ||
-		value === "city-village" ||
-		value === "city-suburban-village" ||
-		value === "three-community" ||
-		value === "typed-entity" ||
-		value === "quality-vs-popularity"
-	);
-}
 
 function MainContent(): ReactNode {
 	const graph = useGraphStore((state) => state.graph);
 	const seeds = useGraphStore((state) => state.seeds);
-	const setGraph = useGraphStore((state) => state.setGraph);
-	const setSeeds = useGraphStore((state) => state.setSeeds);
 
 	const frames = useAnimationStore((state) => state.frames);
 	const currentFrameIndex = useAnimationStore(
@@ -47,21 +31,8 @@ function MainContent(): ReactNode {
 	const setFrame = useAnimationStore((state) => state.setFrame);
 	const setSpeed = useAnimationStore((state) => state.setSpeed);
 
-	const handleLoadFixture = useCallback(
-		(value: string | null) => {
-			if (value === null) return;
-			if (!isFixtureName(value)) return;
-			const fixture = loadFixture(value);
-			setGraph(fixture.graph, fixture.graph.directed);
-			setSeeds(fixture.seeds);
-		},
-		[setGraph, setSeeds],
-	);
-
-	const fixtureOptions = fixtureNames().map((name) => ({
-		value: name,
-		label: name,
-	}));
+	const entries = useComparisonStore((state) => state.entries);
+	const totalDurationMs = useComparisonStore((state) => state.totalDurationMs);
 
 	return (
 		<div
@@ -71,24 +42,12 @@ function MainContent(): ReactNode {
 				height: "100%",
 			}}
 		>
-			<div style={{ width: "16.67%", flexShrink: 0 }}>
-				<Stack gap="md">
-					<Paper p="sm" withBorder>
-						<Text size="sm" fw={500} mb="xs">
-							Load Fixture
-						</Text>
-						<Select
-							size="xs"
-							placeholder="Select a graph..."
-							data={fixtureOptions}
-							onChange={handleLoadFixture}
-						/>
-					</Paper>
-					<GraphToolbar cy={null} />
-					<SeedPicker />
-				</Stack>
+			{/* Left Sidebar: Pipeline Panel */}
+			<div style={{ width: 280, flexShrink: 0, overflow: "auto" }}>
+				<PipelinePanel />
 			</div>
 
+			{/* Centre: Graph Canvas + Timeline */}
 			<div
 				style={{
 					flex: 1,
@@ -104,6 +63,15 @@ function MainContent(): ReactNode {
 					style={{ flex: 1, minHeight: 0, position: "relative" }}
 				>
 					<GraphCanvas />
+
+					{/* Canvas Overlays */}
+					<Box style={{ position: "absolute", top: 16, left: 16, zIndex: 100 }}>
+						<GraphToolbar cy={null} />
+					</Box>
+
+					<StatsOverlay />
+
+					<AnimationLegend />
 				</Paper>
 
 				<Paper shadow="sm" withBorder p="sm" style={{ flexShrink: 0 }}>
@@ -120,9 +88,19 @@ function MainContent(): ReactNode {
 				</Paper>
 			</div>
 
-			<div style={{ width: "25%", flexShrink: 0, overflow: "auto" }}>
+			{/* Right Sidebar: Frame Inspector + Comparison Table */}
+			<div style={{ width: 320, flexShrink: 0, overflow: "auto" }}>
 				<Stack gap="md" style={{ height: "100%" }}>
-					<ComparisonPanel />
+					<FrameInspector />
+
+					{entries.length > 0 ? (
+						<Paper p="sm" withBorder>
+							<ComparisonTable
+								entries={entries}
+								totalDurationMs={totalDurationMs}
+							/>
+						</Paper>
+					) : null}
 
 					<Paper p="sm" withBorder>
 						<Text size="xs" c="dimmed">
