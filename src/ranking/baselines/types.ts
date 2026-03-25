@@ -8,6 +8,7 @@
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
 import type { ExpansionPath } from "../../expansion/types";
+import type { GPUComputeOptions } from "../../gpu/types";
 
 /**
  * Configuration for baseline ranking methods.
@@ -15,6 +16,8 @@ import type { ExpansionPath } from "../../expansion/types";
 export interface BaselineConfig {
 	/** Whether to include scores in result */
 	readonly includeScores?: boolean;
+	/** GPU acceleration options */
+	readonly gpu?: GPUComputeOptions;
 }
 
 /**
