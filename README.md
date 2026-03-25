@@ -177,6 +177,17 @@ Density-adaptive strategy switching. Selects between DOME, EDGE, and PIPE modes 
 
 ---
 
+#### Expansion Baselines
+
+| Algorithm             | Priority Function              | Description                                |
+| --------------------- | ------------------------------ | ------------------------------------------ |
+| **BFS**               | Discovery order (FIFO)         | Standard breadth-first search              |
+| **DFS**               | Negative iteration (LIFO)      | Depth-first exploration                    |
+| **Frontier-Balanced** | Round-robin across frontiers   | Fair inter-frontier distribution           |
+| **Random Priority**   | Seeded hash (FNV-1a)           | Null hypothesis baseline                   |
+| **k-Hop**             | BFS with depth limit $k$       | Fixed-depth ego-network extraction         |
+| **Random Walk**       | Stochastic neighbour selection | Random walk with restart ($\alpha = 0.15$) |
+
 ---
 
 ### Path Ranking: PARSE
@@ -251,19 +262,33 @@ where $c(\tau_u)$ is the count of nodes with the same type as $u$. Weights Jacca
 
 ---
 
+#### MI Baselines
+
+| Measure                 | Formula                                                                                          | Description                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| **Cosine Similarity**   | $\frac{\lvert N(u) \cap N(v) \rvert}{\sqrt{\lvert N(u) \rvert} \cdot \sqrt{\lvert N(v) \rvert}}$ | Neighbourhood vector cosine; more tolerant of degree asymmetry than Jaccard          |
+| **Sorensen-Dice**       | $\frac{2 \lvert N(u) \cap N(v) \rvert}{\lvert N(u) \rvert + \lvert N(v) \rvert}$                 | Harmonic mean variant of Jaccard; equivalent to F1-score                             |
+| **Resource Allocation** | $\sum_{w \in N(u) \cap N(v)} \frac{1}{\deg(w)}$                                                  | Like Adamic-Adar but without the log; penalises hubs more aggressively               |
+| **Overlap Coefficient** | $\frac{\lvert N(u) \cap N(v) \rvert}{\min(\lvert N(u) \rvert, \lvert N(v) \rvert)}$              | Fraction of smaller neighbourhood that is shared; less sensitive to degree asymmetry |
+| **Hub Promoted**        | $\frac{\lvert N(u) \cap N(v) \rvert}{\min(\deg(u), \deg(v))}$                                    | Promotes hub connections; edges involving high-degree nodes score higher             |
+
+---
+
 ### Ranking Baselines
 
-| Measure                     | Formula                                             |
-| --------------------------- | --------------------------------------------------- |
-| **Katz Index**              | $\sum_{k=1}^{\infty} \beta^k (A^k)_{st}$            |
-| **Communicability**         | $(e^A)_{st}$                                        |
-| **Resistance Distance**     | $L^{+}\_{ss} + L^{+}\_{tt} - 2L^{+}\_{st}$          |
-| **Jaccard Arithmetic Mean** | $\frac{1}{k} \sum J(N(u), N(v))$                    |
-| **Degree-Sum**              | $\sum_{v \in P} \deg(v)$                            |
-| **Widest Path**             | $\min_{(u,v) \in P} w(u,v)$                         |
-| **PageRank**                | Stationary distribution of random walk with damping |
-| **Betweenness**             | Fraction of shortest paths through node             |
-| **Random**                  | Uniform random score (null baseline)                |
+| Measure                     | Formula                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------- |
+| **Katz Index**              | $\sum_{k=1}^{\infty} \beta^k (A^k)_{st}$                                               |
+| **Communicability**         | $(e^A)_{st}$                                                                           |
+| **Resistance Distance**     | $L^{+}\_{ss} + L^{+}\_{tt} - 2L^{+}\_{st}$                                             |
+| **Jaccard Arithmetic Mean** | $\frac{1}{k} \sum J(N(u), N(v))$                                                       |
+| **Degree-Sum**              | $\sum_{v \in P} \deg(v)$                                                               |
+| **Widest Path**             | $\min_{(u,v) \in P} w(u,v)$                                                            |
+| **PageRank**                | Stationary distribution of random walk with damping                                    |
+| **Betweenness**             | Fraction of shortest paths through node                                                |
+| **Hitting Time**            | $H(s,t) = \left((I - Q)^{-1} \mathbf{1}\right)_s$ (exact) or Monte Carlo approximation |
+| **Shortest Path**           | Hop count on unweighted graphs                                                         |
+| **Random**                  | Uniform random score (null baseline)                                                   |
 
 ---
 
