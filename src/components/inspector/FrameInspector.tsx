@@ -21,12 +21,14 @@ import {
 import { useState } from "react";
 import { useAnimationStore } from "../../state/animation-store";
 import { useGraphStore } from "../../state/graph-store";
+import { useComparisonStore } from "../../state/comparison-store";
 import {
 	getAlgorithm,
 	type ExpansionAlgorithmName,
 } from "../../engine/algorithm-registry";
 import { FrontierGauge } from "./FrontierGauge";
 import { PathTimeline } from "./PathTimeline";
+import { ComparisonTable } from "../comparison/ComparisonTable";
 
 export type FrameInspectorProps = Record<string, never>;
 
@@ -42,6 +44,9 @@ export function FrameInspector(_props: FrameInspectorProps): ReactNode {
 	const setFrame = useAnimationStore((state) => state.setFrame);
 
 	const graph = useGraphStore((state) => state.graph);
+
+	const entries = useComparisonStore((state) => state.entries);
+	const totalDurationMs = useComparisonStore((state) => state.totalDurationMs);
 
 	const currentFrame = frames[currentFrameIndex] ?? null;
 	const algorithmInfo =
@@ -258,9 +263,16 @@ export function FrameInspector(_props: FrameInspectorProps): ReactNode {
 				</Group>
 				<Collapse in={showComparison}>
 					<Box mt="xs">
-						<Text size="xs" c="dimmed">
-							Comparison table will be shown here
-						</Text>
+						{entries.length > 0 ? (
+							<ComparisonTable
+								entries={entries}
+								totalDurationMs={totalDurationMs}
+							/>
+						) : (
+							<Text size="xs" c="dimmed">
+								Run a comparison to see results
+							</Text>
+						)}
 					</Box>
 				</Collapse>
 			</Paper>
