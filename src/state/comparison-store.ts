@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { ExpansionStats } from "graphwise/expansion";
 import type { ExpansionAlgorithmName } from "../engine/algorithm-registry";
 
-interface ComparisonEntry {
+export interface ComparisonEntry {
 	readonly algorithmName: ExpansionAlgorithmName;
 	readonly stats: ExpansionStats;
 }
@@ -36,8 +36,10 @@ interface ComparisonState {
 	readonly setHighlightedAlgorithm: (
 		name: ExpansionAlgorithmName | null,
 	) => void;
-	/** Reset */
+	/** Reset comparison results */
 	readonly reset: () => void;
+	/** Clear all selections */
+	readonly clearSelection: () => void;
 }
 
 export const useComparisonStore = create<ComparisonState>()((set, get) => ({
@@ -53,8 +55,7 @@ export const useComparisonStore = create<ComparisonState>()((set, get) => ({
 
 	toggleAlgorithm: (name) => {
 		const { selectedAlgorithms } = get();
-		const index = selectedAlgorithms.indexOf(name);
-		if (index >= 0) {
+		if (selectedAlgorithms.includes(name)) {
 			set({
 				selectedAlgorithms: selectedAlgorithms.filter((a) => a !== name),
 			});
@@ -79,11 +80,14 @@ export const useComparisonStore = create<ComparisonState>()((set, get) => ({
 
 	reset: () => {
 		set({
-			selectedAlgorithms: [],
 			entries: [],
 			isRunning: false,
 			totalDurationMs: 0,
 			highlightedAlgorithm: null,
 		});
+	},
+
+	clearSelection: () => {
+		set({ selectedAlgorithms: [] });
 	},
 }));

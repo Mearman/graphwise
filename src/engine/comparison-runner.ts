@@ -7,14 +7,14 @@ import type {
 import type { ExpansionAlgorithmName } from "./algorithm-registry";
 import { getAlgorithm } from "./algorithm-registry";
 
-export interface ComparisonEntry {
+export interface ComparisonRunnerEntry {
 	readonly algorithmName: ExpansionAlgorithmName;
 	readonly result: ExpansionResult;
 	readonly stats: ExpansionStats;
 }
 
-export interface ComparisonResult {
-	readonly entries: readonly ComparisonEntry[];
+export interface ComparisonRunnerResult {
+	readonly entries: readonly ComparisonRunnerEntry[];
 	readonly totalDurationMs: number;
 }
 
@@ -22,13 +22,14 @@ export function runComparison<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	seeds: readonly Seed[],
 	algorithms: readonly ExpansionAlgorithmName[],
-): ComparisonResult {
+): ComparisonRunnerResult {
 	const startTime = performance.now();
-	const entries: ComparisonEntry[] = [];
+	const entries: ComparisonRunnerEntry[] = [];
 
 	for (const name of algorithms) {
 		const info = getAlgorithm(name);
 		if (info === undefined) {
+			console.warn(`Unknown algorithm: ${name}`);
 			continue;
 		}
 
@@ -40,7 +41,6 @@ export function runComparison<N extends NodeData, E extends EdgeData>(
 				stats: result.stats,
 			});
 		} catch (error) {
-			// Skip algorithms that fail — could log error
 			console.error(`Algorithm ${name} failed:`, error);
 		}
 	}
