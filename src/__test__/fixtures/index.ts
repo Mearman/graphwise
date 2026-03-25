@@ -9,3 +9,4 @@ export * from "./types";
 export * from "./helpers";
 export * from "./graphs";
 export * from "./metrics";
+export * from "./wrap-async";
