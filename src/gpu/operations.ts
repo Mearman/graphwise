@@ -27,6 +27,8 @@ import {
 } from "./kernels/intersection/logic";
 import type { GraphwiseGPURoot } from "./root";
 import { d } from "typegpu";
+// clustering helper not imported; local implementations used below
+
 
 /**
  * Degree statistics from histogram computation.
@@ -576,21 +578,208 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 				sizeU: sizeUs[i] ?? 0,
 				sizeV: sizeVs[i] ?? 0,
 			};
-			scores[i] = applyMIVariant(result, variant);
+			let base = applyMIVariant(result, "jaccard");
+			// Apply correction variants
+			switch (variant) {
+				case "scale": {
+					const rho = computeGraphDensity(csr);
+					scores[i] = rho > 0 ? base / rho : base;
+					break;
+				}
+				case "skew": {
+					const N = csr.rowOffsets.length - 1;
+					const degU = result.sizeU;
+					const degV = result.sizeV;
+					const w = Math.log(N / (degU + 1)) * Math.log(N / (degV + 1));
+					scores[i] = base * w;
+					break;
+				}
+				case "span": {
+					const clustering = computeClusteringCoefficients(csr);
+					const cu = clustering[indexMap.nodeToIndex.get((pairs[i] as any)[0]) ?? 0] ?? 0;
+					const cv = clustering[indexMap.nodeToIndex.get((pairs[i] as any)[1]) ?? 0] ?? 0;
+					scores[i] = base * (1 - Math.max(cu, cv));
+					break;
+				}
+				default:
+					scores[i] = applyMIVariant(result, variant);
+			}
 		}
 
 		return { scores, intersections, sizeUs, sizeVs };
 	};
 
-	// GPU implementation uses same intersection kernel, just dispatched via GPU
-	// For now, we use CPU implementation as the intersection kernel is already efficient
-	// Full GPU dispatch would require TypeGPU intersection kernel dispatch
-	const gpuFn = (_root: GraphwiseGPURoot): MIBatchResult => {
-		// Intersection kernel currently CPU-only
-		// GPU dispatch would use dispatchIntersection kernel when available
-		void _root;
-		return cpuFn();
+	// GPU implementation uses same intersection kernel, dispatched via GPU when available
+	const gpuFn = async (root: GraphwiseGPURoot): Promise<MIBatchResult> => {
+		// Prepare CSR buffers for GPU
+		const csrBuffers = csrToTypedBuffers(root, csr);
+
+		// Convert node IDs to numeric indices for GPU buffers
+		const uArr = new Uint32Array(pairCount);
+		const vArr = new Uint32Array(pairCount);
+		const validPair: boolean[] = new Array(pairCount);
+		for (let i = 0; i < pairCount; i++) {
+			const p = pairs[i] ?? (null as any);
+			const uIdxRaw = p ? indexMap.nodeToIndex.get(p[0]) : undefined;
+			const vIdxRaw = p ? indexMap.nodeToIndex.get(p[1]) : undefined;
+			const uIdx = uIdxRaw ?? 0;
+			const vIdx = vIdxRaw ?? 0;
+			if (uIdxRaw !== undefined && vIdxRaw !== undefined) {
+				uArr[i] = uIdx;
+				vArr[i] = vIdx;
+				validPair[i] = true;
+			} else {
+				uArr[i] = 0;
+				vArr[i] = 0;
+				validPair[i] = false;
+			}
+		}
+
+		// Create GPU buffers
+		const pairsUBuffer = root
+			.createBuffer(d.arrayOf(d.u32, pairCount), Array.from(uArr))
+			.$usage("storage");
+		const pairsVBuffer = root
+			.createBuffer(d.arrayOf(d.u32, pairCount), Array.from(vArr))
+			.$usage("storage");
+
+		const intersectionsBuffer = root
+			.createBuffer(d.arrayOf(d.u32, pairCount))
+			.$usage("storage");
+		const sizeUsBuffer = root
+			.createBuffer(d.arrayOf(d.u32, pairCount))
+			.$usage("storage");
+		const sizeVsBuffer = root
+			.createBuffer(d.arrayOf(d.u32, pairCount))
+			.$usage("storage");
+
+
+		if (variant === "adamic-adar") {
+			// Dispatch dedicated Adamic-Adar kernel which also writes raw counts
+			const resultsBuffer = root
+				.createBuffer(d.arrayOf(d.f32, pairCount))
+				.$usage("storage");
+
+			const { dispatchAdamicAdar } = await import(
+				"./kernels/adamic-adar/kernel.js"
+			);
+			dispatchAdamicAdar(
+				root,
+				csrBuffers,
+				pairsUBuffer,
+				pairsVBuffer,
+				resultsBuffer,
+				intersectionsBuffer,
+				sizeUsBuffer,
+				sizeVsBuffer,
+				pairCount,
+			);
+
+			const scoresRaw = await resultsBuffer.read();
+			const intersectionsRaw = await intersectionsBuffer.read();
+			const sizeUsRaw = await sizeUsBuffer.read();
+			const sizeVsRaw = await sizeVsBuffer.read();
+
+			const scores = new Float32Array(scoresRaw);
+			const intersections = new Uint32Array(intersectionsRaw);
+			const sizeUs = new Uint32Array(sizeUsRaw);
+			const sizeVs = new Uint32Array(sizeVsRaw);
+
+			// Zero-out invalid pairs
+			for (let i = 0; i < pairCount; i++) {
+				if (validPair[i] !== true) {
+					scores[i] = 0;
+					intersections[i] = 0;
+					sizeUs[i] = 0;
+					sizeVs[i] = 0;
+				}
+			}
+
+			return { scores, intersections, sizeUs, sizeVs };
+		} else {
+			// Dispatch intersection kernel
+			const { dispatchIntersection } = await import("./kernels/intersection/kernel.js");
+			dispatchIntersection(
+				root,
+				csrBuffers,
+				pairsUBuffer,
+				pairsVBuffer,
+				intersectionsBuffer,
+				sizeUsBuffer,
+				sizeVsBuffer,
+				pairCount,
+			);
+
+			// Read back results
+			const intersectionsRaw = await intersectionsBuffer.read();
+			const sizeUsRaw = await sizeUsBuffer.read();
+			const sizeVsRaw = await sizeVsBuffer.read();
+
+			const intersections = new Uint32Array(intersectionsRaw);
+			const sizeUs = new Uint32Array(sizeUsRaw);
+			const sizeVs = new Uint32Array(sizeVsRaw);
+
+			// Compute MI scores on CPU from raw counts (and apply GPU-side corrections)
+			const scores = new Float32Array(pairCount);
+			if (variant === "scale" || variant === "skew" || variant === "span") {
+				// Precompute helpers
+				const clustering = variant === "span" ? computeClusteringCoefficients(csr) : undefined;
+				const N = csr.rowOffsets.length - 1;
+				const rho = variant === "scale" ? computeGraphDensity(csr) : undefined;
+
+				for (let i = 0; i < pairCount; i++) {
+					if (validPair[i] !== true) {
+						scores[i] = 0;
+						continue;
+					}
+					const result: IntersectionResult = {
+						intersection: intersections[i] ?? 0,
+						sizeU: sizeUs[i] ?? 0,
+						sizeV: sizeVs[i] ?? 0,
+					};
+					const base = applyMIVariant(result, "jaccard");
+					switch (variant) {
+						case "scale":
+							if (rho && rho > 0) scores[i] = base / rho; else scores[i] = base;
+							break;
+						case "skew": {
+							const degU = result.sizeU;
+							const degV = result.sizeV;
+							const w = Math.log(N / (degU + 1)) * Math.log(N / (degV + 1));
+							scores[i] = base * w;
+							break;
+						}
+						case "span": {
+							const uId = pairs[i] ? (pairs[i] as any)[0] : undefined;
+							const vId = pairs[i] ? (pairs[i] as any)[1] : undefined;
+							const uIdx = uId !== undefined ? indexMap.nodeToIndex.get(uId) : undefined;
+							const vIdx = vId !== undefined ? indexMap.nodeToIndex.get(vId) : undefined;
+							const cu = (uIdx !== undefined) ? (clustering?.[uIdx] ?? 0) : 0;
+							const cv = (vIdx !== undefined) ? (clustering?.[vIdx] ?? 0) : 0;
+							scores[i] = base * (1 - Math.max(cu, cv));
+							break;
+						}
+					}
+				}
+			} else {
+				for (let i = 0; i < pairCount; i++) {
+					if (validPair[i] !== true) {
+						scores[i] = 0;
+						continue;
+					}
+					const result: IntersectionResult = {
+						intersection: intersections[i] ?? 0,
+						sizeU: sizeUs[i] ?? 0,
+						sizeV: sizeVs[i] ?? 0,
+					};
+					scores[i] = applyMIVariant(result, variant);
+				}
+			}
+
+			return { scores, intersections, sizeUs, sizeVs };
+		}
 	};
+
 
 	const dispatchOpts: DispatchOptions = {
 		backend: options?.backend,
@@ -604,6 +793,40 @@ export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
 /**
  * Apply MI variant formula to intersection result.
  */
+function computeGraphDensity(csr: any): number {
+	const n = csr.rowOffsets.length - 1;
+	const m = csr.colIndices.length;
+	return n > 1 ? (2 * m) / (n * (n - 1)) : 0;
+}
+
+function computeClusteringCoefficients(csr: any): number[] {
+	// Naive local clustering coefficient per node: 2 * number of closed triplets / (deg * (deg-1))
+	const n = csr.rowOffsets.length - 1;
+	const coeffs = new Array<number>(n).fill(0);
+	for (let v = 0; v < n; v++) {
+		const start = csr.rowOffsets[v] ?? 0;
+		const end = csr.rowOffsets[v + 1] ?? 0;
+		const deg = end - start;
+		if (deg < 2) {
+			coeffs[v] = 0;
+			continue;
+		}
+		const neighbours = new Set(csr.colIndices.slice(start, end));
+		let links = 0;
+		for (const u of neighbours) {
+			const uIndex = Number(u) || 0;
+    const uStart = csr.rowOffsets[uIndex] ?? 0;
+			const uEnd = csr.rowOffsets[uIndex + 1] ?? 0;
+			for (let k = uStart; k < uEnd; k++) {
+				if (neighbours.has(csr.colIndices[k])) links++;
+			}
+		}
+		// each edge counted twice
+		coeffs[v] = (2 * links) / (deg * (deg - 1));
+	}
+	return coeffs;
+}
+
 function applyMIVariant(
 	result: IntersectionResult,
 	variant: MIVariantName,
@@ -718,11 +941,11 @@ export async function gpuKMeansAssign(
 		}
 
 		const pointsBuffer = root
-			.createBuffer(d.arrayOf(d.vec3f, pointCount), points)
+			.createBuffer(d.arrayOf(d.vec3f, pointCount), Array.from(points) as any)
 			.$usage("storage");
 
 		const centroidsBuffer = root
-			.createBuffer(d.arrayOf(d.vec3f, k), centroids)
+			.createBuffer(d.arrayOf(d.vec3f, k), Array.from(centroids) as any)
 			.$usage("storage");
 
 		const assignmentsBuffer = root
