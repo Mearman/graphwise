@@ -8,6 +8,7 @@
  */
 
 import type { NodeData, EdgeData, NodeId, ReadableGraph } from "../graph";
+import type { MIVariantName } from "../ranking/mi/types";
 import type { ComputeResult, GPUComputeOptions } from "./types";
 import { withBackend, type DispatchOptions } from "./dispatch";
 import { graphToCSR, csrToTypedBuffers } from "./csr";
@@ -15,6 +16,15 @@ import { dispatchSpmv } from "./kernels/spmv/kernel";
 import { dispatchPagerank } from "./kernels/pagerank/kernel";
 import { dispatchJaccard } from "./kernels/jaccard/kernel";
 import { dispatchDegreeHistogram } from "./kernels/degree-histogram/kernel";
+import {
+	intersectionBatch,
+	jaccardFromIntersection,
+	cosineFromIntersection,
+	sorensenDiceFromIntersection,
+	overlapFromIntersection,
+	hubPromotedFromIntersection,
+	type IntersectionResult,
+} from "./kernels/intersection/logic";
 import type { GraphwiseGPURoot } from "./root";
 import { d } from "typegpu";
 
@@ -492,4 +502,141 @@ export async function gpuDegreeHistogram<
 	};
 
 	return withBackend(dispatchOpts, cpuFn, gpuFn);
+}
+
+/**
+ * Result of batch MI computation.
+ */
+export interface MIBatchResult {
+	/** MI scores for each pair */
+	readonly scores: Float32Array;
+	/** Raw intersection counts for each pair */
+	readonly intersections: Uint32Array;
+	/** Size of first neighbourhood for each pair */
+	readonly sizeUs: Uint32Array;
+	/** Size of second neighbourhood for each pair */
+	readonly sizeVs: Uint32Array;
+}
+
+/**
+ * Batch MI computation for multiple node pairs on GPU.
+ *
+ * For Jaccard-family variants, uses the intersection kernel for raw counts
+ * then applies the variant-specific formula on CPU.
+ *
+ * @param graph - Input graph
+ * @param pairs - Array of [u, v] node ID pairs
+ * @param variant - MI variant to compute (default: jaccard)
+ * @param options - Compute options
+ * @returns MI scores and raw intersection data for each pair
+ */
+export async function gpuMIBatch<N extends NodeData, E extends EdgeData>(
+	graph: ReadableGraph<N, E>,
+	pairs: readonly (readonly [NodeId, NodeId])[],
+	variant: MIVariantName = "jaccard",
+	options?: GPUComputeOptions & { signal?: AbortSignal },
+): Promise<ComputeResult<MIBatchResult>> {
+	const pairCount = pairs.length;
+	const { csr, indexMap } = graphToCSR(graph);
+
+	const cpuFn = (): MIBatchResult => {
+		// Convert node IDs to numeric indices, tracking validity
+		const indexPairs: (readonly [number, number])[] = [];
+		const validPair: boolean[] = [];
+		for (const pair of pairs) {
+			const uIdx = indexMap.nodeToIndex.get(pair[0]);
+			const vIdx = indexMap.nodeToIndex.get(pair[1]);
+			if (uIdx !== undefined && vIdx !== undefined) {
+				indexPairs.push([uIdx, vIdx]);
+				validPair.push(true);
+			} else {
+				// Use sentinel values for invalid pairs
+				indexPairs.push([0, 0]);
+				validPair.push(false);
+			}
+		}
+
+		// Run intersection kernel
+		const { intersections, sizeUs, sizeVs } = intersectionBatch(
+			csr.rowOffsets,
+			csr.colIndices,
+			indexPairs,
+		);
+
+		// Compute MI scores based on variant
+		const scores = new Float32Array(pairCount);
+		for (let i = 0; i < pairCount; i++) {
+			// Invalid pairs get score of 0
+			if (validPair[i] !== true) {
+				scores[i] = 0;
+				continue;
+			}
+			const result: IntersectionResult = {
+				intersection: intersections[i] ?? 0,
+				sizeU: sizeUs[i] ?? 0,
+				sizeV: sizeVs[i] ?? 0,
+			};
+			scores[i] = applyMIVariant(result, variant);
+		}
+
+		return { scores, intersections, sizeUs, sizeVs };
+	};
+
+	// GPU implementation uses same intersection kernel, just dispatched via GPU
+	// For now, we use CPU implementation as the intersection kernel is already efficient
+	// Full GPU dispatch would require TypeGPU intersection kernel dispatch
+	const gpuFn = (_root: GraphwiseGPURoot): MIBatchResult => {
+		// Intersection kernel currently CPU-only
+		// GPU dispatch would use dispatchIntersection kernel when available
+		void _root;
+		return cpuFn();
+	};
+
+	const dispatchOpts: DispatchOptions = {
+		backend: options?.backend,
+		root: options?.root,
+		signal: options?.signal,
+	};
+
+	return withBackend(dispatchOpts, cpuFn, gpuFn);
+}
+
+/**
+ * Apply MI variant formula to intersection result.
+ */
+function applyMIVariant(
+	result: IntersectionResult,
+	variant: MIVariantName,
+): number {
+	switch (variant) {
+		case "jaccard":
+			return jaccardFromIntersection(result);
+		case "cosine":
+			return cosineFromIntersection(result);
+		case "sorensen":
+			return sorensenDiceFromIntersection(result);
+		case "overlap-coefficient":
+			return overlapFromIntersection(result);
+		case "hub-promoted":
+			return hubPromotedFromIntersection(result);
+		case "resource-allocation":
+			// Resource allocation requires shared neighbour degrees
+			// Fall back to Jaccard for now - dedicated kernel needed
+			return jaccardFromIntersection(result);
+		case "adamic-adar":
+			// Adamic-Adar requires shared neighbour degrees
+			// Fall back to Jaccard for now - dedicated kernel needed
+			return jaccardFromIntersection(result);
+		case "scale":
+		case "skew":
+		case "span":
+		case "etch":
+		case "notch":
+		case "adaptive":
+			// Correction-based variants require additional data
+			// Fall back to Jaccard for now
+			return jaccardFromIntersection(result);
+		default:
+			return jaccardFromIntersection(result);
+	}
 }

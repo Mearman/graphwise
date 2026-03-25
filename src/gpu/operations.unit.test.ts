@@ -10,6 +10,7 @@ import {
 	gpuJaccardBatch,
 	gpuBfsLevels,
 	gpuDegreeHistogram,
+	gpuMIBatch,
 } from "./operations";
 
 describe("GPU Operations (CPU backend)", () => {
@@ -220,6 +221,194 @@ describe("GPU Operations (CPU backend)", () => {
 			expect(result.value.min).toBe(0);
 			expect(result.value.max).toBe(0);
 			expect(result.value.mean).toBe(0);
+		});
+	});
+
+	describe("gpuMIBatch", () => {
+		it("computes Jaccard for multiple pairs", async () => {
+			const graph = AdjacencyMapGraph.undirected();
+			graph.addNode({ id: "A" });
+			graph.addNode({ id: "B" });
+			graph.addNode({ id: "C" });
+			graph.addNode({ id: "D" });
+			graph.addEdge({ source: "A", target: "B" });
+			graph.addEdge({ source: "A", target: "C" });
+			graph.addEdge({ source: "B", target: "C" });
+			graph.addEdge({ source: "C", target: "D" });
+
+			// A: {B, C}, B: {A, C}, C: {A, B, D}, D: {C}
+			const pairs: (readonly [string, string])[] = [
+				["A", "B"], // intersection: {C} = 1, union: {A, B, C} = 3 → 1/3
+				["A", "C"], // intersection: {B} = 1, union: {A, B, C, D} = 4 → 1/4
+				["B", "D"], // intersection: {C} = 1, union: {A, C} = 2 → 0.5
+			];
+
+			const result = await gpuMIBatch(graph, pairs, "jaccard", {
+				backend: "cpu",
+			});
+
+			expect(result.backend).toBe("cpu");
+			expect(result.value.scores.length).toBe(3);
+
+			// Jaccard(A,B) = 1/3 ≈ 0.333
+			expect(result.value.scores[0]).toBeCloseTo(0.333, 2);
+
+			// Jaccard(A,C) = 1/4 = 0.25
+			expect(result.value.scores[1]).toBeCloseTo(0.25, 2);
+
+			// Jaccard(B,D) = 1/2 = 0.5
+			expect(result.value.scores[2]).toBeCloseTo(0.5, 2);
+		});
+
+		it("computes Cosine similarity for multiple pairs", async () => {
+			const graph = AdjacencyMapGraph.undirected();
+			graph.addNode({ id: "A" });
+			graph.addNode({ id: "B" });
+			graph.addNode({ id: "C" });
+			graph.addNode({ id: "D" });
+			graph.addEdge({ source: "A", target: "B" });
+			graph.addEdge({ source: "A", target: "C" });
+			graph.addEdge({ source: "A", target: "D" });
+			graph.addEdge({ source: "B", target: "C" });
+			graph.addEdge({ source: "C", target: "D" });
+
+			// A: {B, C, D} (deg 3), B: {A, C} (deg 2), C: {A, B, D} (deg 3), D: {A, C} (deg 2)
+			// Intersection(A,B): {C} = 1 (C is in both)
+			// Intersection(B,D): {} = 0 (B has {A,C}, D has {A,C} - A and C are in both!)
+			const pairs: (readonly [string, string])[] = [
+				["A", "B"], // intersection: {C} = 1
+				["B", "D"], // intersection: {A, C} = 2
+			];
+
+			const result = await gpuMIBatch(graph, pairs, "cosine", {
+				backend: "cpu",
+			});
+
+			expect(result.backend).toBe("cpu");
+			expect(result.value.scores.length).toBe(2);
+
+			// Cosine(A,B) = 1 / sqrt(3*2) = 1 / sqrt(6) ≈ 0.408
+			expect(result.value.scores[0]).toBeCloseTo(0.408, 2);
+
+			// Cosine(B,D) = 2 / sqrt(2*2) = 2 / 2 = 1.0
+			expect(result.value.scores[1]).toBeCloseTo(1.0, 2);
+		});
+
+		it("computes Sorensen-Dice for multiple pairs", async () => {
+			const graph = AdjacencyMapGraph.undirected();
+			graph.addNode({ id: "A" });
+			graph.addNode({ id: "B" });
+			graph.addNode({ id: "C" });
+			graph.addEdge({ source: "A", target: "B" });
+			graph.addEdge({ source: "A", target: "C" });
+			graph.addEdge({ source: "B", target: "C" });
+
+			// A: {B, C}, B: {A, C}, C: {A, B}
+			const pairs: (readonly [string, string])[] = [["A", "B"]];
+
+			const result = await gpuMIBatch(graph, pairs, "sorensen", {
+				backend: "cpu",
+			});
+
+			// Sorensen-Dice(A,B) = 2*1 / (2+2) = 2/4 = 0.5
+			expect(result.value.scores[0]).toBeCloseTo(0.5, 2);
+		});
+
+		it("computes Overlap coefficient for multiple pairs", async () => {
+			const graph = AdjacencyMapGraph.undirected();
+			graph.addNode({ id: "A" });
+			graph.addNode({ id: "B" });
+			graph.addNode({ id: "C" });
+			graph.addNode({ id: "D" });
+			graph.addNode({ id: "E" });
+			graph.addEdge({ source: "A", target: "B" });
+			graph.addEdge({ source: "A", target: "C" });
+			graph.addEdge({ source: "A", target: "D" });
+			graph.addEdge({ source: "A", target: "E" });
+			graph.addEdge({ source: "B", target: "C" });
+
+			// A: {B, C, D, E} (deg 4), B: {A, C} (deg 2), intersection: {C} = 1
+			const pairs: (readonly [string, string])[] = [["A", "B"]];
+
+			const result = await gpuMIBatch(graph, pairs, "overlap-coefficient", {
+				backend: "cpu",
+			});
+
+			// Overlap(A,B) = 1 / min(4, 2) = 1/2 = 0.5
+			expect(result.value.scores[0]).toBeCloseTo(0.5, 2);
+		});
+
+		it("handles empty pairs array", async () => {
+			const graph = AdjacencyMapGraph.undirected();
+			graph.addNode({ id: "A" });
+
+			const result = await gpuMIBatch(graph, [], "jaccard", {
+				backend: "cpu",
+			});
+
+			expect(result.value.scores.length).toBe(0);
+			expect(result.value.intersections.length).toBe(0);
+		});
+
+		it("handles nodes with no neighbours", async () => {
+			const graph = AdjacencyMapGraph.undirected();
+			graph.addNode({ id: "A" });
+			graph.addNode({ id: "B" });
+			graph.addNode({ id: "C" });
+			graph.addEdge({ source: "A", target: "B" });
+
+			// A: {B}, B: {A}, C: {}
+			const pairs: (readonly [string, string])[] = [
+				["A", "C"], // A has neighbours, C has none → 0
+				["C", "C"], // Self-intersection of empty → 0
+			];
+
+			const result = await gpuMIBatch(graph, pairs, "jaccard", {
+				backend: "cpu",
+			});
+
+			expect(result.value.scores[0]).toBe(0);
+			expect(result.value.scores[1]).toBe(0);
+		});
+
+		it("handles invalid node IDs gracefully", async () => {
+			const graph = AdjacencyMapGraph.undirected();
+			graph.addNode({ id: "A" });
+			graph.addNode({ id: "B" });
+			graph.addEdge({ source: "A", target: "B" });
+
+			const pairs: (readonly [string, string])[] = [
+				["A", "NONEXISTENT"], // Invalid pair
+			];
+
+			const result = await gpuMIBatch(graph, pairs, "jaccard", {
+				backend: "cpu",
+			});
+
+			// Invalid pairs should return 0
+			expect(result.value.scores[0]).toBe(0);
+		});
+
+		it("returns raw intersection data alongside scores", async () => {
+			const graph = AdjacencyMapGraph.undirected();
+			graph.addNode({ id: "A" });
+			graph.addNode({ id: "B" });
+			graph.addNode({ id: "C" });
+			graph.addEdge({ source: "A", target: "B" });
+			graph.addEdge({ source: "A", target: "C" });
+			graph.addEdge({ source: "B", target: "C" });
+
+			const pairs: (readonly [string, string])[] = [["A", "B"]];
+
+			const result = await gpuMIBatch(graph, pairs, "jaccard", {
+				backend: "cpu",
+			});
+
+			// Intersection: {C} = 1
+			expect(result.value.intersections[0]).toBe(1);
+			// Size A: 2, Size B: 2
+			expect(result.value.sizeUs[0]).toBe(2);
+			expect(result.value.sizeVs[0]).toBe(2);
 		});
 	});
 });
