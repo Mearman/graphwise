@@ -4,38 +4,35 @@ import { defineSchema } from "../lib/define-schema";
 
 // Short keys minimise JSON size before compression
 const NodeSchema = z.object({
-	i: z.string(),
-	l: z.string().optional(),
-	t: z.string().optional(),
-	w: z.number().optional(),
+	i: z.string().describe("Node ID"),
+	l: z.string().optional().describe("Display label"),
+	t: z.string().optional().describe("Node type"),
+	w: z.number().optional().describe("Node weight"),
 });
 
 const EdgeSchema = z.object({
-	s: z.string(),
-	t: z.string(),
-	y: z.string().optional(),
-	w: z.number().optional(),
+	s: z.string().describe("Source node ID"),
+	t: z.string().describe("Target node ID"),
+	y: z.string().optional().describe("Edge type"),
+	w: z.number().optional().describe("Edge weight"),
 });
 
 const SeedSchema = z.object({
-	i: z.string(),
-	r: z.string().optional(),
+	i: z.string().describe("Seed node ID"),
+	r: z.string().optional().describe("Seed role (source, target, bidirectional)"),
 });
 
 export const SerialisedState = defineSchema(
 	z.object({
-		v: z.literal(1),
+		v: z.literal(1).describe("Schema version"),
 		g: z.object({
-			d: z.boolean(),
-			n: z.array(NodeSchema),
-			e: z.array(EdgeSchema),
-		}),
-		s: z.array(SeedSchema),
-		a: z.string().optional(),
-		f: z.number().optional(),
-		m: z.union([z.literal("t"), z.literal("e")]),
-		ts: z.number().optional(),
-		tb: z.string().optional(),
+			d: z.boolean().describe("Whether the graph is directed"),
+			n: z.array(NodeSchema).describe("Graph nodes"),
+			e: z.array(EdgeSchema).describe("Graph edges"),
+		}).describe("Graph structure"),
+		s: z.array(SeedSchema).describe("Seed nodes for expansion"),
+		a: z.string().optional().describe("Selected algorithm name"),
+		f: z.number().optional().describe("Current animation frame index"),
 	}),
 );
 

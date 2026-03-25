@@ -6,7 +6,6 @@ import {
 } from "../../state/url-state";
 import { useGraphStore } from "../../state/graph-store";
 import { useAnimationStore } from "../../state/animation-store";
-import { useTourStore } from "../../state/tour-store";
 import { AdjacencyMapGraph } from "graphwise/graph";
 import type { Seed, SeedRole } from "graphwise/expansion";
 
@@ -49,8 +48,6 @@ export function useUrlSync(): void {
 	const currentFrameIndex = useAnimationStore(
 		(state) => state.currentFrameIndex,
 	);
-
-	const mode = useTourStore((state) => state.mode);
 
 	const isInitialLoad = useRef(true);
 	const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -163,7 +160,6 @@ export function useUrlSync(): void {
 				})),
 				a: algorithmName.length > 0 ? algorithmName : undefined,
 				f: currentFrameIndex > 0 ? currentFrameIndex : undefined,
-				m: mode === "tour" ? "t" : "e",
 			};
 
 			updateHash(serialisedState);
@@ -175,5 +171,5 @@ export function useUrlSync(): void {
 				clearTimeout(updateTimeoutRef.current);
 			}
 		};
-	}, [graph, directed, seeds, algorithmName, currentFrameIndex, mode]);
+	}, [graph, directed, seeds, algorithmName, currentFrameIndex]);
 }
