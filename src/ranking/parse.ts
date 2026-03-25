@@ -166,15 +166,13 @@ export async function parseAsync<N extends NodeData, E extends EdgeData>(
 
 	const { mi = jaccardAsync, epsilon = 1e-10 } = config ?? {};
 
-	const rankedPaths: RankedPath[] = [];
-
-	for (const path of paths) {
-		const salience = await computePathSalienceAsync(graph, path, mi, epsilon);
-		rankedPaths.push({
+	// Compute salience for all paths in parallel
+	const rankedPaths = await Promise.all(
+		paths.map(async (path) => ({
 			...path,
-			salience,
-		});
-	}
+			salience: await computePathSalienceAsync(graph, path, mi, epsilon),
+		})),
+	);
 
 	// Sort by salience descending
 	rankedPaths.sort((a, b) => b.salience - a.salience);
