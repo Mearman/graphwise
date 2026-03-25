@@ -1,5 +1,3 @@
-import type { NodeData, EdgeData, ReadableGraph } from "graphwise/graph";
-import type { Seed } from "graphwise/expansion";
 import { useColumnStore } from "../state/column-store";
 import { useAnimationStore } from "../state/animation-store";
 import { useGraphStore } from "../state/graph-store";
@@ -16,11 +14,11 @@ import { runRanking } from "./ranking-runner";
  * 3. Run ranking with the column's MI variant and ranking algorithm
  * 4. Store results back in columnStore
  */
-export function runAllColumns<N extends NodeData, E extends EdgeData>(): void {
-	const graph = useGraphStore.getState().graph as ReadableGraph<N, E> | null;
+export function runAllColumns(): void {
+	const graph = useGraphStore.getState().graph;
 	const seeds = useGraphStore.getState().seeds;
 
-	if (graph === null || seeds.length < 2) {
+	if (seeds.length < 2) {
 		console.warn("Cannot run: graph not loaded or insufficient seeds");
 		return;
 	}

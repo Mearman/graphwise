@@ -1,179 +1,166 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo } from "react";
 import {
 	MantineProvider,
 	Stack,
 	Paper,
-	Text,
 	Box,
 	Group,
 	Button,
+	Text,
+	ActionIcon,
+	SegmentedControl,
+	Popover,
 } from "@mantine/core";
+import { IconPlus } from "@tabler/icons-react";
 import { theme } from "./theme";
 import { AppShell } from "./components/layout/AppShell";
-import { GraphCanvas } from "./components/graph/GraphCanvas";
-import { ComparisonGraphCanvas } from "./components/comparison/ComparisonGraphCanvas";
-import { MIStageComparisonView } from "./components/comparison/MIStageComparisonView";
-import { GraphToolbar } from "./components/graph/GraphToolbar";
 import { AnimationTimeline } from "./components/animation/AnimationTimeline";
-import { StatsOverlay } from "./components/animation/StatsOverlay";
-import { AnimationLegend } from "./components/animation/AnimationLegend";
-import { PipelinePanel } from "./components/pipeline/PipelinePanel";
-import { FrameInspector } from "./components/inspector/FrameInspector";
-import { ComparisonTable } from "./components/comparison/ComparisonTable";
+import { PipelineColumn } from "./components/column/PipelineColumn";
+import { SeedPicker } from "./components/graph/SeedPicker";
 import { useUrlSync } from "./components/app/use-url-sync";
 import { useGraphStore } from "./state/graph-store";
 import { useAnimationStore } from "./state/animation-store";
-import { useComparisonStore } from "./state/comparison-store";
+import { useColumnStore } from "./state/column-store";
+import { runAllColumns } from "./engine/column-runner";
 
 import "@mantine/core/styles.css";
 
 function MainContent(): ReactNode {
-	const graph = useGraphStore((state) => state.graph);
 	const seeds = useGraphStore((state) => state.seeds);
+	const columns = useColumnStore((state) => state.columns);
+	const viewMode = useColumnStore((state) => state.viewMode);
+	const addColumn = useColumnStore((state) => state.addColumn);
+	const setViewMode = useColumnStore((state) => state.setViewMode);
 
-	const frames = useAnimationStore((state) => state.frames);
-	const currentFrameIndex = useAnimationStore(
-		(state) => state.currentFrameIndex,
-	);
 	const isPlaying = useAnimationStore((state) => state.isPlaying);
-	const speed = useAnimationStore((state) => state.speed);
+	const syncedFrameIndex = useAnimationStore((state) => state.syncedFrameIndex);
 	const togglePlay = useAnimationStore((state) => state.togglePlay);
-	const setFrame = useAnimationStore((state) => state.setFrame);
-	const setSpeed = useAnimationStore((state) => state.setSpeed);
-
-	const entries = useComparisonStore((state) => state.entries);
-	const seedEntries = useComparisonStore((state) => state.seedEntries);
-	const miEntries = useComparisonStore((state) => state.miEntries);
-	const rankingEntries = useComparisonStore((state) => state.rankingEntries);
-	const subgraphEntries = useComparisonStore((state) => state.subgraphEntries);
-	const comparisonStage = useComparisonStore((state) => state.comparisonStage);
-	const totalDurationMs = useComparisonStore((state) => state.totalDurationMs);
-	const selectedAlgorithms = useComparisonStore(
-		(state) => state.selectedAlgorithms,
+	const setSyncedFrameIndex = useAnimationStore(
+		(state) => state.setSyncedFrameIndex,
 	);
+	const speed = useAnimationStore((state) => state.speed);
+	const setSpeed = useAnimationStore((state) => state.setSpeed);
+	const algorithmFrames = useAnimationStore((state) => state.algorithmFrames);
 
-	const [layoutMode, setLayoutMode] = useState<"single" | "split">("single");
+	// Calculate max frame count across all algorithms
+	const maxFrameCount = useMemo(() => {
+		let max = 0;
+		for (const frames of Object.values(algorithmFrames)) {
+			if (frames.length > max) {
+				max = frames.length;
+			}
+		}
+		return max;
+	}, [algorithmFrames]);
+
+	const handleRunAll = (): void => {
+		runAllColumns();
+	};
 
 	return (
-		<div
-			style={{
-				display: "flex",
-				gap: "var(--mantine-spacing-md)",
-				height: "100%",
-			}}
-		>
-			{/* Left Sidebar: Pipeline Panel */}
-			<div style={{ width: 280, flexShrink: 0, overflow: "auto" }}>
-				<PipelinePanel />
-			</div>
+		<Stack gap={0} h="100%">
+			{/* Header */}
+			<Paper shadow="sm" withBorder p="md" style={{ flexShrink: 0 }}>
+				<Group justify="space-between">
+					<Text fw={600} size="lg">
+						Graphwise Demo
+					</Text>
+					<Group>
+						{/* Seed Picker Popover */}
+						<Popover position="bottom-start">
+							<Popover.Target>
+								<Button size="xs" variant="light">
+									Seeds ({seeds.length})
+								</Button>
+							</Popover.Target>
+							<Popover.Dropdown>
+								<Box w={300}>
+									<SeedPicker />
+								</Box>
+							</Popover.Dropdown>
+						</Popover>
 
-			{/* Centre: Graph Canvas + Timeline */}
-			<div
-				style={{
-					flex: 1,
-					minWidth: 0,
-					display: "flex",
-					flexDirection: "column",
-					gap: "var(--mantine-spacing-md)",
-				}}
-			>
-				<Paper
-					shadow="sm"
-					withBorder
-					style={{ flex: 1, minHeight: 0, position: "relative" }}
-				>
-					{layoutMode === "single" ? (
-						<GraphCanvas />
-					) : comparisonStage === "mi" ? (
-						<MIStageComparisonView
-							entries={miEntries}
-							totalDurationMs={totalDurationMs}
+						{/* View Mode Toggle */}
+						<SegmentedControl
+							size="xs"
+							value={viewMode}
+							onChange={(value) => {
+								const mode = value === "overlay" ? "overlay" : "columns";
+								setViewMode(mode);
+							}}
+							data={[
+								{ label: "Columns", value: "columns" },
+								{ label: "Overlay", value: "overlay" },
+							]}
 						/>
-					) : (
-						<ComparisonGraphCanvas algorithms={selectedAlgorithms} />
-					)}
 
-					{/* Canvas Overlays */}
-					<Box style={{ position: "absolute", top: 16, left: 16, zIndex: 100 }}>
-						<GraphToolbar cy={null} />
-					</Box>
+						{/* Add Column Button */}
+						<ActionIcon
+							size="sm"
+							variant="light"
+							title="Add Column"
+							onClick={addColumn}
+						>
+							<IconPlus size={16} />
+						</ActionIcon>
 
-					<Box
-						style={{ position: "absolute", top: 16, right: 16, zIndex: 100 }}
-					>
-						<Group>
-							<Button
-								size="xs"
-								variant={layoutMode === "single" ? "filled" : "subtle"}
-								onClick={() => {
-									setLayoutMode("single");
-								}}
-							>
-								Single
-							</Button>
-							<Button
-								size="xs"
-								variant={layoutMode === "split" ? "filled" : "subtle"}
-								onClick={() => {
-									setLayoutMode("split");
-								}}
-							>
-								Compare
-							</Button>
-						</Group>
-					</Box>
+						{/* Run All Button */}
+						<Button size="xs" onClick={handleRunAll}>
+							Run All
+						</Button>
+					</Group>
+				</Group>
+			</Paper>
 
-					<StatsOverlay />
-
-					<AnimationLegend />
-				</Paper>
-
-				<Paper shadow="sm" withBorder p="sm" style={{ flexShrink: 0 }}>
-					<AnimationTimeline
-						totalFrames={frames.length}
-						currentFrameIndex={currentFrameIndex}
-						isPlaying={isPlaying}
-						onPlay={togglePlay}
-						onPause={togglePlay}
-						onSeek={setFrame}
-						speed={speed}
-						onSpeedChange={setSpeed}
-					/>
-				</Paper>
-			</div>
-
-			{/* Right Sidebar: Frame Inspector + Comparison Table */}
-			<div style={{ width: 320, flexShrink: 0, overflow: "auto" }}>
-				<Stack gap="md" style={{ height: "100%" }}>
-					<FrameInspector />
-
-					{entries.length > 0 ||
-					(comparisonStage === "mi" && miEntries.length > 0) ||
-					(comparisonStage === "seed-selection" && seedEntries.length > 0) ||
-					(comparisonStage === "ranking" && rankingEntries.length > 0) ||
-					(comparisonStage === "subgraph-extraction" &&
-						subgraphEntries.length > 0) ? (
-						<Paper p="sm" withBorder>
-							<ComparisonTable
-								entries={entries}
-								seedEntries={seedEntries}
-								miEntries={miEntries}
-								rankingEntries={rankingEntries}
-								subgraphEntries={subgraphEntries}
-								comparisonStage={comparisonStage}
-								totalDurationMs={totalDurationMs}
-							/>
-						</Paper>
-					) : null}
-
-					<Paper p="sm" withBorder>
-						<Text size="xs" c="dimmed">
-							{Array.from(graph.nodeIds()).length} nodes, {seeds.length} seeds
-						</Text>
+			{/* Main Content */}
+			<Stack
+				gap="md"
+				style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
+				p="md"
+			>
+				{/* Global Animation Timeline */}
+				{maxFrameCount > 0 && (
+					<Paper shadow="sm" withBorder p="sm">
+						<AnimationTimeline
+							totalFrames={maxFrameCount}
+							currentFrameIndex={syncedFrameIndex}
+							isPlaying={isPlaying}
+							onPlay={togglePlay}
+							onPause={togglePlay}
+							onSeek={setSyncedFrameIndex}
+							speed={speed}
+							onSpeedChange={setSpeed}
+						/>
 					</Paper>
-				</Stack>
-			</div>
-		</div>
+				)}
+
+				{/* Columns Container */}
+				<Box
+					style={{
+						display: "flex",
+						gap: "var(--mantine-spacing-md)",
+						overflowX: "auto",
+						flex: 1,
+						minHeight: 0,
+						scrollBehavior: "smooth",
+					}}
+				>
+					{columns.map((column) => (
+						<Box
+							key={column.id}
+							style={{
+								minWidth: 500,
+								flex: "0 0 500px",
+								display: "flex",
+								flexDirection: "column",
+							}}
+						>
+							<PipelineColumn columnId={column.id} />
+						</Box>
+					))}
+				</Box>
+			</Stack>
+		</Stack>
 	);
 }
 

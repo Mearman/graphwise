@@ -30,14 +30,14 @@ interface ColumnState {
 		updates: Partial<
 			Omit<
 				PipelineColumn,
-				| "id"
-				| "expansionResult"
-				| "rankingResult"
-				| "isRunning"
+				"id" | "expansionResult" | "rankingResult" | "isRunning"
 			>
 		>,
 	) => void;
-	readonly setExpansionResult: (id: string, result: ExpansionResult | null) => void;
+	readonly setExpansionResult: (
+		id: string,
+		result: ExpansionResult | null,
+	) => void;
 	readonly setRankingResult: (id: string, result: PARSEResult | null) => void;
 	readonly setRunning: (id: string, isRunning: boolean) => void;
 	readonly setViewMode: (mode: ViewMode) => void;
