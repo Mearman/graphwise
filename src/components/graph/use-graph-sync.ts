@@ -31,6 +31,7 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 
 		cy.layout({
 			name: "cose",
+			randomize: false,
 			animate: true,
 			animationDuration: 300,
 			fit: true,
