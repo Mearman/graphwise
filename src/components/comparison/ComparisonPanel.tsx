@@ -48,6 +48,7 @@ export function ComparisonPanel(_props: ComparisonPanelProps): ReactNode {
 				const storeEntries: ComparisonEntry[] = result.entries.map((e) => ({
 					algorithmName: e.algorithmName,
 					stats: e.stats,
+					result: e.result,
 				}));
 
 				loadResults(storeEntries, result.totalDurationMs);
