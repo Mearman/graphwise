@@ -30,3 +30,6 @@ export * from "./utils";
 
 // GPU module (optional WebGPU acceleration)
 export * from "./gpu";
+
+// Async module (generator coroutine protocol, sync/async runners)
+export * from "./async";

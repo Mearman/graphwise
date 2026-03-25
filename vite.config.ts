@@ -11,6 +11,7 @@ const entries = {
 	utils: resolve(__dirname, "src/utils/index.ts"),
 	gpu: resolve(__dirname, "src/gpu/index.ts"),
 	schemas: resolve(__dirname, "src/schemas/index.ts"),
+	async: resolve(__dirname, "src/async/index.ts"),
 };
 
 export default defineConfig({
