@@ -1,3 +1,21 @@
+## [1.8.0](https://github.com/Mearman/graphwise/compare/v1.7.0...v1.8.0) (2026-03-25)
+
+### Features
+
+* **expansion:** add async wrappers for complex expansion variants ([a2b45e0](https://github.com/Mearman/graphwise/commit/a2b45e0a9ae1190c79c376efe8b67e4af9d34c9b))
+* **expansion:** add async wrappers for simple expansion variants ([fb3dd2a](https://github.com/Mearman/graphwise/commit/fb3dd2a4861f51e88c30bbe1108f518ac2594300))
+* **graph:** add async module build entry and package exports ([366f8e6](https://github.com/Mearman/graphwise/commit/366f8e6f88bc11ac4fcbd8c1c58280be8b9cad3c))
+* **ranking:** add async MI variants for all 13 measures ([d95b25f](https://github.com/Mearman/graphwise/commit/d95b25f3807587e337f0bb5cb7488900847d5dc1))
+* **ranking:** add parseAsync for ranking paths over async graphs ([8c7a3a9](https://github.com/Mearman/graphwise/commit/8c7a3a9c1ac7546d483388ed5f3a63e420d5f0c7))
+
+### Bug Fixes
+
+* **utils:** remove unnecessary braces from lint-staged globs ([1a2fc18](https://github.com/Mearman/graphwise/commit/1a2fc1831a3b32a76fd5a6545428df6e49453e4e))
+
+### Documentation
+
+* **graph:** add async usage examples and module export documentation ([a0fb470](https://github.com/Mearman/graphwise/commit/a0fb4706ccbc7bbe344f7c7cc46b3a256729f220))
+
 ## [1.7.0](https://github.com/Mearman/graphwise/compare/v1.6.0...v1.7.0) (2026-03-25)
 
 ### Features
