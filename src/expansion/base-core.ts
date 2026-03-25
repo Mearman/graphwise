@@ -20,6 +20,7 @@ import type {
 	ExpansionStats,
 	ExpansionConfig,
 	PriorityContext,
+	BatchPriorityContext,
 } from "./types";
 import {
 	type QueueEntry,
@@ -73,6 +74,7 @@ export function* baseCore<N extends NodeData, E extends EdgeData>(
 		maxIterations = 0,
 		maxPaths = 0,
 		priority = degreePriority,
+		batchPriority,
 		debug = false,
 	} = config ?? {};
 
@@ -228,10 +230,10 @@ export function* baseCore<N extends NodeData, E extends EdgeData>(
 
 		// Expand neighbours — yield to the runner to retrieve them
 		const neighbours = yield* opNeighbours<N, E>(nodeId);
+
+		// Track sampled edges (normalised so source < target)
 		for (const neighbour of neighbours) {
 			edgesTraversed++;
-
-			// Track the sampled edge (normalised so source < target)
 			const [s, t] =
 				nodeId < neighbour ? [nodeId, neighbour] : [neighbour, nodeId];
 			let targets = sampledEdgeMap.get(s);
@@ -240,37 +242,73 @@ export function* baseCore<N extends NodeData, E extends EdgeData>(
 				sampledEdgeMap.set(s, targets);
 			}
 			targets.add(t);
+		}
 
+		// Collect unvisited neighbours for batch processing
+		const unvisitedNeighbours: NodeId[] = [];
+		for (const neighbour of neighbours) {
 			// Skip if already visited by this frontier
 			const fv = visitedByFrontier[activeFrontier];
 			if (fv === undefined || fv.has(neighbour)) {
 				continue;
 			}
+			unvisitedNeighbours.push(neighbour);
+		}
 
-			// Yield to get the neighbour's degree for priority context
-			const neighbourDegree = yield* opDegree<N, E>(neighbour);
+		if (unvisitedNeighbours.length > 0) {
+			if (batchPriority) {
+				// Use batch priority computation
+				const batchContext: BatchPriorityContext<N, E> = {
+					graph: graphRef ?? makeNoGraphSentinel<N, E>(),
+					visited: allVisited,
+					frontierId: activeFrontier,
+				};
 
-			const context = buildPriorityContext<N, E>(
-				neighbour,
-				activeFrontier,
-				combinedVisited,
-				allVisited,
-				discoveredPaths,
-				iterations + 1,
-				neighbourDegree,
-				graphRef,
-			);
+				const priorities = batchPriority(unvisitedNeighbours, batchContext);
 
-			const neighbourPriority = priority(neighbour, context);
+				// Push all neighbours with their computed priorities
+				for (const neighbour of unvisitedNeighbours) {
+					const priority = priorities.get(neighbour);
+					if (priority !== undefined) {
+						queue.push(
+							{
+								nodeId: neighbour,
+								frontierIndex: activeFrontier,
+								predecessor: nodeId,
+							},
+							priority,
+						);
+					}
+				}
+			} else {
+				// Use individual priority computation (existing path)
+				for (const neighbour of unvisitedNeighbours) {
+					// Yield to get the neighbour's degree for priority context
+					const neighbourDegree = yield* opDegree<N, E>(neighbour);
 
-			queue.push(
-				{
-					nodeId: neighbour,
-					frontierIndex: activeFrontier,
-					predecessor: nodeId,
-				},
-				neighbourPriority,
-			);
+					const context = buildPriorityContext<N, E>(
+						neighbour,
+						activeFrontier,
+						combinedVisited,
+						allVisited,
+						discoveredPaths,
+						iterations + 1,
+						neighbourDegree,
+						graphRef,
+					);
+
+					const neighbourPriority = priority(neighbour, context);
+
+					queue.push(
+						{
+							nodeId: neighbour,
+							frontierIndex: activeFrontier,
+							predecessor: nodeId,
+						},
+						neighbourPriority,
+					);
+				}
+			}
 		}
 
 		iterations++;

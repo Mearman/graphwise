@@ -5,6 +5,8 @@
  * that discover paths between seed nodes.
  */
 
+import type { ComputeBackend } from "../gpu/types";
+import type { GraphwiseGPURoot } from "../gpu/root";
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../graph";
 
 /**
@@ -55,6 +57,37 @@ export type PriorityFunction<
 	N extends NodeData = NodeData,
 	E extends EdgeData = EdgeData,
 > = (nodeId: NodeId, context: PriorityContext<N, E>) => number;
+
+/**
+ * Context provided to batch priority functions for batch processing.
+ */
+export interface BatchPriorityContext<
+	N extends NodeData = NodeData,
+	E extends EdgeData = EdgeData,
+> {
+	/** The source graph */
+	readonly graph: ReadableGraph<N, E>;
+	/** Set of all visited nodes */
+	readonly visited: ReadonlySet<NodeId>;
+	/** Frontier ID for the current batch */
+	readonly frontierId: number;
+	/** Optional GPU backend selection */
+	readonly backend?: ComputeBackend;
+	/** Optional TypeGPU root for GPU acceleration */
+	readonly root?: GraphwiseGPURoot;
+}
+
+/**
+ * Function that computes priorities for multiple nodes at once.
+ * Returns a Map of node ID to priority (lower values = higher priority).
+ */
+export type BatchPriorityFunction<
+	N extends NodeData = NodeData,
+	E extends EdgeData = EdgeData,
+> = (
+	candidates: readonly NodeId[],
+	context: BatchPriorityContext<N, E>,
+) => ReadonlyMap<NodeId, number>;
 
 /**
  * A path discovered by bidirectional expansion.
@@ -121,6 +154,10 @@ export interface ExpansionConfig<
 	readonly maxPaths?: number;
 	/** Custom priority function */
 	readonly priority?: PriorityFunction<N, E>;
+	/** Custom batch priority function for batch processing */
+	readonly batchPriority?: BatchPriorityFunction<N, E>;
+	/** Batch priority function for GPU acceleration */
+	readonly batchPriorityGPU?: BatchPriorityFunction<N, E>;
 	/** Random seed for reproducibility */
 	readonly seed?: number;
 	/** Enable debug logging */
