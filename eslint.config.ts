@@ -344,4 +344,18 @@ export default defineConfig(
 			],
 		},
 	},
+	// GPU kernel files use TypeGPU's 'use gpu' directive
+	// TypeGPU's $.field[index] accessor types are designed for GPU transpilation,
+	// not static type checking. Relax strict type-checked rules for these files.
+	{
+		files: ["src/gpu/kernels/*/kernel.ts"],
+		rules: {
+			// TypeGPU array access returns types that can't be statically verified
+			"@typescript-eslint/no-unsafe-assignment": "off",
+			"@typescript-eslint/no-unsafe-member-access": "off",
+			"@typescript-eslint/restrict-plus-operands": "off",
+			// ?? operators are needed for TypeScript but ESLint thinks they're unnecessary
+			"@typescript-eslint/no-unnecessary-condition": "off",
+		},
+	},
 );

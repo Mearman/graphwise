@@ -6,7 +6,7 @@
  * in three arrays: row offsets, column indices, and optional values.
  */
 
-import { d, type TgpuBuffer } from "typegpu";
+import { d, type StorageFlag, type TgpuBuffer } from "typegpu";
 import type { NodeId, Direction, NodeData, EdgeData } from "../graph/types";
 import type { ReadableGraph } from "../graph";
 import type { GraphwiseGPURoot } from "./root";
@@ -60,11 +60,14 @@ export interface CSRGraph {
  */
 export interface TypedBufferGroup {
 	/** Buffer containing rowOffsets data (u32 array) */
-	readonly rowOffsets: TgpuBuffer<ReturnType<typeof d.arrayOf<typeof d.u32>>>;
+	readonly rowOffsets: TgpuBuffer<ReturnType<typeof d.arrayOf<typeof d.u32>>> &
+		StorageFlag;
 	/** Buffer containing colIndices data (u32 array) */
-	readonly colIndices: TgpuBuffer<ReturnType<typeof d.arrayOf<typeof d.u32>>>;
+	readonly colIndices: TgpuBuffer<ReturnType<typeof d.arrayOf<typeof d.u32>>> &
+		StorageFlag;
 	/** Buffer containing values data (f32 array, optional) */
-	readonly values?: TgpuBuffer<ReturnType<typeof d.arrayOf<typeof d.f32>>>;
+	readonly values?: TgpuBuffer<ReturnType<typeof d.arrayOf<typeof d.f32>>> &
+		StorageFlag;
 	/** Number of nodes */
 	readonly nodeCount: number;
 	/** Number of edges */
