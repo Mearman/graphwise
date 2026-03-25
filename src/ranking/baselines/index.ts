@@ -18,3 +18,4 @@ export * from "./katz";
 export * from "./communicability";
 export * from "./resistance-distance";
 export * from "./random-ranking";
+export * from "./hitting-time";
