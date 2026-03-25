@@ -33,10 +33,56 @@ jobs:
             turbo-quality-${{ runner.os }}-
       - run: npx turbo run _typecheck _lint _test
 
+  pack:
+    name: Pack
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v5
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v5
+        with:
+          path: .turbo
+          key: turbo-pack-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-pack-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            turbo-pack-${{ runner.os }}-
+      - run: npx turbo run _build
+      - run: pnpm pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tarball
+          path: graphwise-*.tgz
+
+  smoke-test:
+    name: Smoke Test
+    needs: pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            __tests__/fixtures/smoke-test
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: tarball
+      - run: |
+          cd __tests__/fixtures/smoke-test
+          pnpm install ../../graphwise-*.tgz
+          pnpm exec tsc smoke-test.ts --noEmit
+
   release:
     name: Release
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: quality
+    needs: [quality, smoke-test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

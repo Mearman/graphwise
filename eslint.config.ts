@@ -269,6 +269,7 @@ export default defineConfig(
 			"coverage/**",
 			".turbo/**",
 			"commitlint.config.ts",
+			"__tests__/fixtures/**",
 		],
 	},
 	eslint.configs.recommended,
