@@ -119,7 +119,7 @@ function fluxPriority<N extends NodeData, E extends EdgeData>(
 		return 1 / (1 + bridge);
 	} else if (density >= densityThreshold) {
 		// EDGE mode: avoid dense regions, expand through sparse edges
-		return -degree; // Negative to prioritise low degree
+		return 1 / (degree + 1); // Low degree → low priority value → expanded first
 	} else {
 		// DOME mode: expand hubs first
 		return degree;
