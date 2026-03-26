@@ -10,6 +10,8 @@ interface GenerationState {
 	readonly setNodeCount: (count: number) => void;
 	readonly setSeed: (seed: number) => void;
 	readonly setGraphClassToggle: (key: GraphClassKey, value: boolean) => void;
+	/** Bulk-set the graph class without constraint cascading (for URL restore). */
+	readonly setGraphClass: (config: GraphClassConfig) => void;
 }
 
 export const useGenerationStore = create<GenerationState>()(
@@ -29,6 +31,9 @@ export const useGenerationStore = create<GenerationState>()(
 					const updated = { ...state.graphClass, [key]: value };
 					return { graphClass: applyConstraints(updated, key) };
 				});
+			},
+			setGraphClass: (config) => {
+				set({ graphClass: config });
 			},
 		}),
 		{
