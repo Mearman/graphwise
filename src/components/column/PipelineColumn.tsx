@@ -6,7 +6,6 @@ import type { Seed } from "graphwise/expansion";
 import { ColumnHeader } from "./ColumnHeader";
 import { ColumnMetrics } from "./ColumnMetrics";
 import { ColumnPathList } from "./ColumnPathList";
-import { GraphToolbar } from "../graph/GraphToolbar";
 import { useGraphStore } from "../../state/graph-store";
 import { useColumnStore } from "../../state/column-store";
 import { useFrameSync } from "../graph/use-frame-sync";
@@ -64,7 +63,7 @@ export function PipelineColumn({ columnId }: PipelineColumnProps): ReactNode {
 	const column = useColumnStore((state) =>
 		state.columns.find((c) => c.id === columnId),
 	);
-	const { cy, containerRef, isReady } = useCytoscape();
+	const { cy, containerRef, isReady } = useCytoscape(columnId);
 
 	if (!column) {
 		return null;
@@ -84,7 +83,6 @@ export function PipelineColumn({ columnId }: PipelineColumnProps): ReactNode {
 		>
 			<Stack gap="sm">
 				<ColumnHeader column={column} />
-				<GraphToolbar cy={cy} />
 
 				<Paper style={{ aspectRatio: 1, position: "relative" }} withBorder>
 					<ColumnGraph
