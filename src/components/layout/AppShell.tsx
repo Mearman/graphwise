@@ -369,7 +369,7 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 								{getColorSchemeIcon(colorSchemeMode)}
 							</ActionIcon>
 						</Tooltip>
-						<Stack gap={2}>
+						<Group gap="xs">
 							<Switch
 								size="xs"
 								label="Zoom"
@@ -394,7 +394,7 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 									setShowDiscoveryNumbers(e.currentTarget.checked);
 								}}
 							/>
-						</Stack>
+						</Group>
 					</Group>
 				</Group>
 			</MantineAppShell.Header>
