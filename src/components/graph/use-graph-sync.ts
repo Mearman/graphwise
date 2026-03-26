@@ -130,15 +130,14 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 				fit: true,
 				padding: 60,
 				nodeDimensionsIncludeLabels: true,
-				// High repulsion keeps non-adjacent nodes apart (reduces crossings)
-				nodeRepulsion: 600000,
-				// Short ideal edge length + low elasticity divisor = strong springs
-				// that pull connected nodes close, reducing both length and crossings
+				// Repulsion lower than before so edge springs can overcome it
+				nodeRepulsion: 150000,
 				idealEdgeLength: 80,
 				edgeElasticity: 0.1,
 				gravity: 0.02,
 				gravityRange: 3.8,
-				numIter: 5000,
+				// More iterations → better convergence on long edges
+				numIter: 8000,
 				nodeSeparation: 150,
 			};
 			const layout = cy.layout(fcoseOptions);
