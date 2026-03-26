@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useCallback } from "react";
 import {
 	MantineProvider,
+	useMantineColorScheme,
 	Stack,
 	Paper,
 	Box,
@@ -27,6 +28,7 @@ import { useAnimationStore } from "./state/animation-store";
 import { useColumnStore } from "./state/column-store";
 import { useGenerationStore } from "./state/generation-store";
 import { useAppStore } from "./state/app-store";
+import { useColorSchemeStore } from "./state/color-scheme-store";
 import { runAllColumns } from "./engine/column-runner";
 import { loadFixture, fixtureNames } from "./engine/fixture-loader";
 import { generateRandomGraph } from "./engine/random-graph-generator";
@@ -302,9 +304,26 @@ function AppWithSync(): ReactNode {
 	return <MainContent />;
 }
 
+/** Syncs color scheme store with Mantine's color scheme */
+function ColorSchemeSync(): null {
+	const mode = useColorSchemeStore((state) => state.mode);
+	const { setColorScheme } = useMantineColorScheme();
+
+	useEffect(() => {
+		if (mode === "system") {
+			setColorScheme("auto");
+		} else {
+			setColorScheme(mode);
+		}
+	}, [mode, setColorScheme]);
+
+	return null;
+}
+
 export function App(): ReactNode {
 	return (
 		<MantineProvider theme={theme}>
+			<ColorSchemeSync />
 			<AppShell>
 				<AppWithSync />
 			</AppShell>
