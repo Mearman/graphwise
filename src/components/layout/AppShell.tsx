@@ -8,6 +8,7 @@ import {
 	Stack,
 	ActionIcon,
 	Tooltip,
+	useMantineColorScheme,
 } from "@mantine/core";
 import {
 	IconZoomIn,
@@ -46,6 +47,21 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	const resetLayout = useLayoutStore((state) => state.reset);
 	const colorSchemeMode = useColorSchemeStore((state) => state.mode);
 	const cycleColorScheme = useColorSchemeStore((state) => state.cycleMode);
+	const { setColorScheme } = useMantineColorScheme();
+
+	// Sync Zustand store to Mantine's color scheme
+	const handleCycleColorScheme = (): void => {
+		cycleColorScheme();
+		// Map Zustand mode to Mantine color scheme
+		const nextMode: ColorSchemeMode =
+			colorSchemeMode === "system"
+				? "dark"
+				: colorSchemeMode === "dark"
+					? "light"
+					: "system";
+		const mantineScheme = nextMode === "system" ? "auto" : nextMode;
+		setColorScheme(mantineScheme);
+	};
 
 	const handleZoomIn = (): void => {
 		for (const cy of instances.values()) {
@@ -149,7 +165,7 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 						</Tooltip>
 						<Tooltip label={getColorSchemeLabel(colorSchemeMode)}>
 							<ActionIcon
-								onClick={cycleColorScheme}
+								onClick={handleCycleColorScheme}
 								size="sm"
 								variant="light"
 								aria-label={getColorSchemeLabel(colorSchemeMode)}
