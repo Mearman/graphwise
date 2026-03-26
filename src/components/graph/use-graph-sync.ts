@@ -1,5 +1,16 @@
 import { useEffect, useRef } from "react";
-import type { Core, NodeSingular } from "cytoscape";
+import type { Core, NodeSingular, ShapedLayoutOptions } from "cytoscape";
+
+/** fCoSE layout options (cytoscape-fcose has no bundled types). */
+interface FcoseLayoutOptions extends ShapedLayoutOptions {
+	readonly randomize?: boolean;
+	readonly nodeRepulsion?: number;
+	readonly idealEdgeLength?: number;
+	readonly gravity?: number;
+	readonly gravityRange?: number;
+	readonly numIter?: number;
+	readonly nodeSeparation?: number;
+}
 import type { AdjacencyMapGraph } from "graphwise/graph";
 import type { Seed } from "graphwise/expansion";
 import { graphToCytoscapeElements } from "../../engine/graph-bridge";
@@ -94,15 +105,22 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 				padding: 50,
 			}).run();
 		} else {
-			// Positions are stale or missing — run CoSE and store result
-			const layout = cy.layout({
-				name: "cose",
+			// Positions are stale or missing — run fCoSE and store result
+			const fcoseOptions: FcoseLayoutOptions = {
+				name: "fcose",
 				randomize: false,
 				animate: true,
-				animationDuration: 300,
+				animationDuration: 400,
 				fit: true,
 				padding: 50,
-			});
+				nodeRepulsion: 6000,
+				idealEdgeLength: 80,
+				gravity: 0.25,
+				gravityRange: 3.8,
+				numIter: 2500,
+				nodeSeparation: 75,
+			};
+			const layout = cy.layout(fcoseOptions);
 
 			layout.one("layoutstop", () => {
 				const newPositions = new Map<string, NodePosition>();

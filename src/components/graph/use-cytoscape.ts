@@ -1,5 +1,8 @@
 import cytoscape, { type Core } from "cytoscape";
+import fcose from "cytoscape-fcose";
 import { useEffect, useRef, useState, type RefObject } from "react";
+
+cytoscape.use(fcose);
 import { useCytoscapeInstancesStore } from "../../state/cytoscape-instances-store";
 
 interface UseCytoscapeReturn {
