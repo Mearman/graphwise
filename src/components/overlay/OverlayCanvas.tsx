@@ -91,7 +91,7 @@ export function OverlayCanvas(): ReactNode {
 	const syncedFrameIndex = useAnimationStore((state) => state.syncedFrameIndex);
 	const animationStore = useAnimationStore((state) => state);
 
-	const { cy, containerRef, isReady } = useCytoscape();
+	const { cy, containerRef, isReady } = useCytoscape("overlay");
 
 	// Sync base graph
 	useGraphSync({ cy, graph, seeds });
