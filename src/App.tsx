@@ -253,12 +253,10 @@ function MainContent(): ReactNode {
 						style={{
 							display: "grid",
 							gridAutoFlow: "column",
-							gridAutoColumns: "400px",
+							gridAutoColumns: "1fr",
 							gap: "var(--mantine-spacing-md)",
-							overflowX: "auto",
 							flex: 1,
 							minHeight: 0,
-							scrollBehavior: "smooth",
 						}}
 					>
 						{columns.map((column) => (
