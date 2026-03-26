@@ -1,5 +1,6 @@
 import cytoscape, { type Core } from "cytoscape";
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { useCytoscapeInstancesStore } from "../../state/cytoscape-instances-store";
 
 interface UseCytoscapeReturn {
 	readonly cy: Core | null;
@@ -7,10 +8,16 @@ interface UseCytoscapeReturn {
 	readonly isReady: boolean;
 }
 
-export function useCytoscape(): UseCytoscapeReturn {
+export function useCytoscape(id?: string): UseCytoscapeReturn {
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const [cy, setCy] = useState<Core | null>(null);
 	const [isReady, setIsReady] = useState(false);
+	const registerInstance = useCytoscapeInstancesStore(
+		(state) => state.registerInstance,
+	);
+	const unregisterInstance = useCytoscapeInstancesStore(
+		(state) => state.unregisterInstance,
+	);
 
 	useEffect(() => {
 		if (!containerRef.current) return;
@@ -62,12 +69,21 @@ export function useCytoscape(): UseCytoscapeReturn {
 		setCy(instance);
 		setIsReady(true);
 
+		// Register instance if id provided
+		if (id !== undefined) {
+			registerInstance(id, instance);
+		}
+
 		return () => {
+			// Unregister instance if id provided
+			if (id !== undefined) {
+				unregisterInstance(id);
+			}
 			instance.destroy();
 			setCy(null);
 			setIsReady(false);
 		};
-	}, []);
+	}, [id, registerInstance, unregisterInstance]);
 
 	return {
 		cy,
