@@ -106,6 +106,21 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			}).run();
 		} else {
 			// Positions are stale or missing — run fCoSE and store result
+			// Pre-position nodes in a circle so fCoSE starts from a spread
+			// state rather than all nodes at (0,0). Circle layout is fully
+			// deterministic (position = f(index, count)) so layout is stable
+			// for a given graph.
+			const allNodes = cy.nodes();
+			const nodeCount = allNodes.length;
+			const radius = Math.max(150, nodeCount * 25);
+			allNodes.forEach((node, i) => {
+				const angle = (2 * Math.PI * i) / nodeCount;
+				node.position({
+					x: radius * Math.cos(angle),
+					y: radius * Math.sin(angle),
+				});
+			});
+
 			const fcoseOptions: FcoseLayoutOptions = {
 				name: "fcose",
 				randomize: false,
