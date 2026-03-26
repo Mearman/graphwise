@@ -14,11 +14,18 @@ import {
 	IconZoomOut,
 	IconMaximize,
 	IconReload,
+	IconSun,
+	IconMoon,
+	IconDeviceDesktop,
 } from "@tabler/icons-react";
 import * as styles from "./AppShell.css";
 import { useInteractionStore } from "../../state/interaction-store";
 import { useCytoscapeInstancesStore } from "../../state/cytoscape-instances-store";
 import { useLayoutStore } from "../../state/layout-store";
+import {
+	useColorSchemeStore,
+	type ColorSchemeMode,
+} from "../../state/color-scheme-store";
 
 interface AppShellProps {
 	readonly children: ReactNode;
@@ -37,6 +44,8 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	);
 	const instances = useCytoscapeInstancesStore((state) => state.instances);
 	const resetLayout = useLayoutStore((state) => state.reset);
+	const colorSchemeMode = useColorSchemeStore((state) => state.mode);
+	const cycleColorScheme = useColorSchemeStore((state) => state.cycleMode);
 
 	const handleZoomIn = (): void => {
 		for (const cy of instances.values()) {
@@ -62,6 +71,28 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 		// Run CoSE layout on all instances
 		for (const cy of instances.values()) {
 			cy.layout({ name: "cose", animate: true }).run();
+		}
+	};
+
+	const getColorSchemeIcon = (mode: ColorSchemeMode): ReactNode => {
+		switch (mode) {
+			case "light":
+				return <IconSun size={16} />;
+			case "dark":
+				return <IconMoon size={16} />;
+			case "system":
+				return <IconDeviceDesktop size={16} />;
+		}
+	};
+
+	const getColorSchemeLabel = (mode: ColorSchemeMode): string => {
+		switch (mode) {
+			case "light":
+				return "Light Mode";
+			case "dark":
+				return "Dark Mode";
+			case "system":
+				return "System Mode";
 		}
 	};
 
@@ -114,6 +145,16 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 								aria-label="Reset Layout"
 							>
 								<IconReload size={16} />
+							</ActionIcon>
+						</Tooltip>
+						<Tooltip label={getColorSchemeLabel(colorSchemeMode)}>
+							<ActionIcon
+								onClick={cycleColorScheme}
+								size="sm"
+								variant="light"
+								aria-label={getColorSchemeLabel(colorSchemeMode)}
+							>
+								{getColorSchemeIcon(colorSchemeMode)}
 							</ActionIcon>
 						</Tooltip>
 						<Stack gap={2}>
