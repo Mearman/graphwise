@@ -107,11 +107,53 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 				padding: 50,
 			}).run();
 		} else {
-			// Positions are stale or missing — run fCoSE with spectral initial layout
+			// Positions are stale or missing — pre-position nodes then run fCoSE.
+			// randomize: false means fCoSE starts from existing positions rather than
+			// its own spectral stage, so we must set deterministic initial positions first.
+			const allNodes = cy.nodes();
+			const nodeCount = allNodes.length;
+			const radius = Math.max(80, nodeCount * 12);
+
+			// BFS-order placement: topology-close nodes start close on the circle
+			// so fCoSE only needs small adjustments rather than large migrations.
+			const visited = new Set<string>();
+			const bfsOrder: string[] = [];
+			const startNodeResult = allNodes.max((node) => node.degree(false));
+			const startNodeId = startNodeResult.ele.id();
+			const queue: string[] = [startNodeId];
+			visited.add(startNodeId);
+			while (queue.length > 0) {
+				const current = queue.shift();
+				if (current === undefined) break;
+				bfsOrder.push(current);
+				cy.getElementById(current)
+					.neighborhood("node")
+					.forEach((neighbour) => {
+						const nId = neighbour.id();
+						if (!visited.has(nId)) {
+							visited.add(nId);
+							queue.push(nId);
+						}
+					});
+			}
+			// Include unreachable nodes (disconnected components)
+			allNodes.forEach((node) => {
+				if (!visited.has(node.id())) {
+					bfsOrder.push(node.id());
+				}
+			});
+			bfsOrder.forEach((nodeId, i) => {
+				const angle = (2 * Math.PI * i) / nodeCount;
+				cy.getElementById(nodeId).position({
+					x: radius * Math.cos(angle),
+					y: radius * Math.sin(angle),
+				});
+			});
+
 			const fcoseOptions: FcoseLayoutOptions = {
 				name: "fcose",
 				quality: "proof",
-				randomize: true,
+				randomize: false,
 				animate: true,
 				animationDuration: 500,
 				fit: true,
