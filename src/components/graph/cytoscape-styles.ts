@@ -10,7 +10,23 @@ export interface RelaxedStylesheet {
 	readonly style: Record<string, unknown>;
 }
 
-/** Colour constants for graph styling */
+/** Colour scheme type */
+export type ColorScheme = "light" | "dark";
+
+/** Theme-aware colour constants */
+const LIGHT_COLOURS = {
+	nodeBorder: "#1e293b",
+	nodeText: "#1e293b",
+	edgeDefault: "#cbd5e1",
+} as const;
+
+const DARK_COLOURS = {
+	nodeBorder: "#e2e8f0",
+	nodeText: "#f1f5f9",
+	edgeDefault: "#475569",
+} as const;
+
+/** Semantic colours (same in both themes) */
 export const SEED_SOURCE = "#10b981";
 export const SEED_TARGET = "#f59e0b";
 export const SEED_BIDIRECTIONAL = "#6366f1";
@@ -18,7 +34,6 @@ export const NODE_DEFAULT = "#64748b";
 export const NODE_VISITED = "#3b82f6";
 export const NODE_FRONTIER = "#8b5cf6";
 export const NODE_EXPANDED = "#f97316";
-export const EDGE_DEFAULT = "#cbd5e1";
 export const EDGE_VISITED = "#3b82f6";
 export const PATH_HIGHLIGHT = "#ec4899";
 
@@ -43,8 +58,13 @@ function getNormalisedWeight(weight: number): number {
 	return Math.max(0.5, Math.min(1, weight));
 }
 
-/** Create Cytoscape styles based on graph direction */
-export function createStyles(directed: boolean): readonly RelaxedStylesheet[] {
+/** Create Cytoscape styles based on graph direction and colour scheme */
+export function createStyles(
+	directed: boolean,
+	colorScheme: ColorScheme = "light",
+): readonly RelaxedStylesheet[] {
+	const colours = colorScheme === "dark" ? DARK_COLOURS : LIGHT_COLOURS;
+
 	return [
 		{
 			selector: "node",
@@ -52,9 +72,9 @@ export function createStyles(directed: boolean): readonly RelaxedStylesheet[] {
 				backgroundColor: function (ele: NodeSingular): string {
 					return getSeedRoleColour(ele.data("seedRole"));
 				},
-				borderColor: "#1e293b",
+				borderColor: colours.nodeBorder,
 				borderWidth: 2,
-				color: "#1e293b",
+				color: colours.nodeText,
 				label: "data(label)",
 				fontSize: 10,
 				textValign: "bottom",
@@ -108,10 +128,10 @@ export function createStyles(directed: boolean): readonly RelaxedStylesheet[] {
 			style: {
 				curveStyle: directed ? "bezier" : "haystack",
 				width: 2,
-				lineColor: EDGE_DEFAULT,
+				lineColor: colours.edgeDefault,
 				...(directed
 					? {
-							targetArrowColor: EDGE_DEFAULT,
+							targetArrowColor: colours.edgeDefault,
 							targetArrowShape: "triangle",
 							arrowScale: 0.8,
 						}
