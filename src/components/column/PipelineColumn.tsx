@@ -52,7 +52,7 @@ function ColumnGraph({
 			ref={containerRef}
 			className={styles.canvas}
 			data-ready={isReady.toString()}
-			style={{ minHeight: 250, flex: 1 }}
+			style={{ position: "absolute", inset: 0 }}
 		/>
 	);
 }
@@ -84,7 +84,15 @@ export function PipelineColumn({ columnId }: PipelineColumnProps): ReactNode {
 			<Stack gap="sm">
 				<ColumnHeader column={column} />
 
-				<Paper style={{ aspectRatio: 1, position: "relative" }} withBorder>
+				<Paper
+					style={{
+						aspectRatio: 1,
+						position: "relative",
+						width: "100%",
+						overflow: "hidden",
+					}}
+					withBorder
+				>
 					<ColumnGraph
 						columnId={columnId}
 						graph={graph}
