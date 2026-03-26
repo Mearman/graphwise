@@ -249,7 +249,9 @@ function MainContent(): ReactNode {
 				{viewMode === "columns" ? (
 					<Box
 						style={{
-							display: "flex",
+							display: "grid",
+							gridAutoFlow: "column",
+							gridAutoColumns: "minmax(400px, 1fr)",
 							gap: "var(--mantine-spacing-md)",
 							overflowX: "auto",
 							flex: 1,
@@ -261,8 +263,6 @@ function MainContent(): ReactNode {
 							<Box
 								key={column.id}
 								style={{
-									minWidth: 400,
-									flex: "1 0 400px",
 									display: "flex",
 									flexDirection: "column",
 								}}
