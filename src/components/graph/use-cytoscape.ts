@@ -74,7 +74,15 @@ export function useCytoscape(id?: string): UseCytoscapeReturn {
 			registerInstance(id, instance);
 		}
 
+		// Resize observer to handle container size changes
+		const resizeObserver = new ResizeObserver(() => {
+			instance.resize();
+			instance.fit(undefined, 50);
+		});
+		resizeObserver.observe(containerRef.current);
+
 		return () => {
+			resizeObserver.disconnect();
 			// Unregister instance if id provided
 			if (id !== undefined) {
 				unregisterInstance(id);
