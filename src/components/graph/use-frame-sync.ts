@@ -1,11 +1,40 @@
 import { useEffect } from "react";
-import type { Core } from "cytoscape";
+import type { Core, NodeSingular } from "cytoscape";
 import { useAnimationStore } from "../../state/animation-store";
 import { useInteractionStore } from "../../state/interaction-store";
 
 export interface UseFrameSyncOptions {
 	readonly cy: Core | null;
 	readonly algorithmName?: string | undefined;
+}
+
+/** Type guard to check if a value is a string */
+function isString(value: unknown): value is string {
+	return typeof value === "string";
+}
+
+/** Safely convert unknown to string, returning fallback if not a string */
+function asString(value: unknown, fallback: string): string {
+	return isString(value) ? value : fallback;
+}
+
+/** Safely convert unknown to string, returning undefined if not a string */
+function asStringOrUndefined(value: unknown): string | undefined {
+	return isString(value) ? value : undefined;
+}
+
+/** Safely extract string data from a node, returning fallback if not a string */
+function getNodeDataAsString(
+	node: NodeSingular,
+	key: string,
+	fallback: string,
+): string {
+	return asString(node.data(key), fallback);
+}
+
+/** Safely extract original label from node, returning undefined if not a string */
+function getOriginalLabel(node: NodeSingular): string | undefined {
+	return asStringOrUndefined(node.data("originalLabel"));
 }
 
 export function useFrameSync(options: UseFrameSyncOptions): void {
@@ -86,25 +115,27 @@ export function useFrameSync(options: UseFrameSyncOptions): void {
 			cy.nodes().forEach((node) => {
 				const nodeId = node.id();
 				// Store original label if not already stored
-				if (node.data("originalLabel") === undefined) {
+				if (getOriginalLabel(node) === undefined) {
 					node.data(
 						"originalLabel",
-						typeof node.data("label") === "string"
-							? node.data("label")
-							: nodeId,
+						getNodeDataAsString(node, "label", nodeId),
 					);
 				}
 				// Set discovery number if visited
 				const discoveryFrame = visitedNodes.get(nodeId);
 				if (discoveryFrame !== undefined) {
-					node.data("label", String(discoveryFrame));
+					// Combine original label with discovery number
+					const originalLabel = getOriginalLabel(node);
+					const labelBase = originalLabel ?? nodeId;
+					node.data("label", `${labelBase} (${String(discoveryFrame)})`);
 				}
 			});
 		} else {
 			// Restore original labels
 			cy.nodes().forEach((node) => {
-				if (typeof node.data("originalLabel") === "string") {
-					node.data("label", node.data("originalLabel"));
+				const originalLabel = getOriginalLabel(node);
+				if (originalLabel !== undefined) {
+					node.data("label", originalLabel);
 					node.removeData("originalLabel");
 				}
 			});

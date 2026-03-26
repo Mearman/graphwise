@@ -57,8 +57,8 @@ export function createStyles(directed: boolean): readonly RelaxedStylesheet[] {
 				color: "#1e293b",
 				label: "data(label)",
 				fontSize: 10,
-				textValign: "bottom",
-				textMarginY: 4,
+				textValign: "center",
+				textHalign: "center",
 				width: function (ele: NodeSingular): number {
 					const weight = Number(ele.data("weight"));
 					const normalised = getNormalisedWeight(
