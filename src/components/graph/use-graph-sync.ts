@@ -114,9 +114,38 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			const allNodes = cy.nodes();
 			const nodeCount = allNodes.length;
 			const radius = Math.max(150, nodeCount * 25);
-			allNodes.forEach((node, i) => {
+
+			// BFS-order placement: topology-close nodes start close on the circle
+			// so fCoSE only needs small adjustments rather than large migrations.
+			const visited = new Set<string>();
+			const bfsOrder: string[] = [];
+			const startNodeResult = allNodes.max((node) => node.degree(false));
+			const startNodeId = startNodeResult.ele.id();
+			const queue: string[] = [startNodeId];
+			visited.add(startNodeId);
+			while (queue.length > 0) {
+				const current = queue.shift();
+				if (current === undefined) break;
+				bfsOrder.push(current);
+				cy.getElementById(current)
+					.neighborhood("node")
+					.forEach((neighbour) => {
+						const nId = neighbour.id();
+						if (!visited.has(nId)) {
+							visited.add(nId);
+							queue.push(nId);
+						}
+					});
+			}
+			// Include unreachable nodes (disconnected components)
+			allNodes.forEach((node) => {
+				if (!visited.has(node.id())) {
+					bfsOrder.push(node.id());
+				}
+			});
+			bfsOrder.forEach((nodeId, i) => {
 				const angle = (2 * Math.PI * i) / nodeCount;
-				node.position({
+				cy.getElementById(nodeId).position({
 					x: radius * Math.cos(angle),
 					y: radius * Math.sin(angle),
 				});
