@@ -210,16 +210,16 @@ function addAcyclicConnectedEdges(
 			}
 		}
 	} else {
-		// Undirected spanning tree via shuffled chain
+		// Undirected random spanning tree: each node attaches to a random earlier node
 		const indices = [...Array(nodeIds.length).keys()];
 		shuffle(indices, rng);
 		for (let i = 1; i < indices.length; i++) {
-			const srcIdx = indices[i - 1];
-			const tgtIdx = indices[i];
-			const src = srcIdx !== undefined ? nodeIds[srcIdx] : undefined;
-			const tgt = tgtIdx !== undefined ? nodeIds[tgtIdx] : undefined;
-			if (src !== undefined && tgt !== undefined) {
-				graph.addEdge(edgeProps(src, tgt, config, rng));
+			const parentIdx = indices[Math.floor(rng() * i)];
+			const childIdx = indices[i];
+			const parent = parentIdx !== undefined ? nodeIds[parentIdx] : undefined;
+			const child = childIdx !== undefined ? nodeIds[childIdx] : undefined;
+			if (parent !== undefined && child !== undefined) {
+				graph.addEdge(edgeProps(parent, child, config, rng));
 			}
 		}
 	}
@@ -330,12 +330,12 @@ function addAcyclicDisconnectedEdges(
 				}
 			}
 		} else {
-			// Tree within component
+			// Random tree within component: each node attaches to a random earlier node
 			for (let i = 1; i < component.length; i++) {
-				const src = component[i - 1];
-				const tgt = component[i];
-				if (src !== undefined && tgt !== undefined) {
-					graph.addEdge(edgeProps(src, tgt, config, rng));
+				const parent = component[Math.floor(rng() * i)];
+				const child = component[i];
+				if (parent !== undefined && child !== undefined) {
+					graph.addEdge(edgeProps(parent, child, config, rng));
 				}
 			}
 		}
