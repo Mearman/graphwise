@@ -15,6 +15,7 @@ import {
 	Box,
 	Button,
 	SegmentedControl,
+	Divider,
 } from "@mantine/core";
 import {
 	IconZoomIn,
@@ -44,6 +45,7 @@ import { loadFixture, fixtureNames } from "../../engine/fixture-loader";
 import { generateRandomGraph } from "../../engine/random-graph-generator";
 import { GraphClassToggles } from "../graph/GraphClassToggles";
 import { SeedPicker } from "../graph/SeedPicker";
+import { AnimationTimeline } from "../animation/AnimationTimeline";
 
 const RANDOM_FIXTURE = "random" as const;
 
@@ -75,7 +77,6 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	const graphLoadedFromUrl = useGraphStore((state) => state.graphLoadedFromUrl);
 
 	// Column state
-	const columns = useColumnStore((state) => state.columns);
 	const viewMode = useColumnStore((state) => state.viewMode);
 	const addColumn = useColumnStore((state) => state.addColumn);
 	const setViewMode = useColumnStore((state) => state.setViewMode);
@@ -83,6 +84,15 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 
 	// Animation state
 	const animationReset = useAnimationStore((state) => state.reset);
+	const isPlaying = useAnimationStore((state) => state.isPlaying);
+	const syncedFrameIndex = useAnimationStore((state) => state.syncedFrameIndex);
+	const togglePlay = useAnimationStore((state) => state.togglePlay);
+	const setSyncedFrameIndex = useAnimationStore(
+		(state) => state.setSyncedFrameIndex,
+	);
+	const speed = useAnimationStore((state) => state.speed);
+	const setSpeed = useAnimationStore((state) => state.setSpeed);
+	const maxFrameCount = useAnimationStore((state) => state.maxFrameCount());
 
 	// Generation settings
 	const nodeCount = useGenerationStore((state) => state.nodeCount);
@@ -211,192 +221,215 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 		}
 	};
 
+	// Calculate dynamic header height
+	const TIMELINE_ROW_HEIGHT = 150;
+	const headerHeight = maxFrameCount > 0 ? 56 + TIMELINE_ROW_HEIGHT : 56;
+
 	return (
-		<MantineAppShell header={{ height: 56 }} padding="md">
+		<MantineAppShell header={{ height: headerHeight }} padding="md">
 			<MantineAppShell.Header className={styles.header}>
-				<Group h="100%" px="md" gap="xs" wrap="nowrap">
-					<Group gap="sm" style={{ flexShrink: 0 }}>
-						<Title order={3}>Graphwise</Title>
-					</Group>
+				<Stack gap={0} h="100%">
+					<Group h={56} px="md" gap="xs" wrap="nowrap">
+						<Group gap="sm" style={{ flexShrink: 0 }}>
+							<Title order={3}>Graphwise</Title>
+						</Group>
 
-					{/* Controls */}
-					<Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
-						{/* Dataset Selector */}
-						<Select
-							size="xs"
-							placeholder="Dataset"
-							value={selectedFixture}
-							onChange={handleFixtureChange}
-							data={[
-								{ value: RANDOM_FIXTURE, label: "Random Graph" },
-								...fixtureNames().map((name) => ({
-									value: name,
-									label: loadFixture(name).description,
-								})),
-							]}
-							w={220}
-						/>
+						{/* Controls */}
+						<Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
+							{/* Dataset Selector */}
+							<Select
+								size="xs"
+								placeholder="Dataset"
+								value={selectedFixture}
+								onChange={handleFixtureChange}
+								data={[
+									{ value: RANDOM_FIXTURE, label: "Random Graph" },
+									...fixtureNames().map((name) => ({
+										value: name,
+										label: loadFixture(name).description,
+									})),
+								]}
+								w={220}
+							/>
 
-						{/* Generation Controls - only show for Random */}
-						{selectedFixture === RANDOM_FIXTURE && (
-							<Group gap="xs">
-								<Box w={120}>
-									<Slider
+							{/* Generation Controls - only show for Random */}
+							{selectedFixture === RANDOM_FIXTURE && (
+								<Group gap="xs">
+									<Box w={120}>
+										<Slider
+											size="xs"
+											label={(val) => `${String(val)} nodes`}
+											value={nodeCount}
+											onChange={(value) => {
+												setNodeCount(typeof value === "number" ? value : 20);
+											}}
+											min={3}
+											max={100}
+											step={1}
+											marks={[
+												{ value: 3, label: "3" },
+												{ value: 50, label: "50" },
+												{ value: 100, label: "100" },
+											]}
+										/>
+									</Box>
+									<NumberInput
 										size="xs"
-										label={(val) => `${String(val)} nodes`}
-										value={nodeCount}
+										placeholder="Seed"
+										value={seed}
 										onChange={(value) => {
-											setNodeCount(typeof value === "number" ? value : 20);
+											setSeed(typeof value === "number" ? value : 42);
 										}}
-										min={3}
-										max={100}
-										step={1}
-										marks={[
-											{ value: 3, label: "3" },
-											{ value: 50, label: "50" },
-											{ value: 100, label: "100" },
-										]}
+										min={0}
+										max={999999}
+										w={80}
 									/>
-								</Box>
-								<NumberInput
+									<GraphClassToggles />
+								</Group>
+							)}
+
+							{/* Seed Picker Popover */}
+							<Popover position="bottom-start">
+								<Popover.Target>
+									<Button size="xs" variant="light">
+										Seeds ({seeds.length})
+									</Button>
+								</Popover.Target>
+								<Popover.Dropdown>
+									<Box w={300}>
+										<SeedPicker />
+									</Box>
+								</Popover.Dropdown>
+							</Popover>
+
+							{/* View Mode Toggle */}
+							<SegmentedControl
+								size="xs"
+								value={viewMode}
+								onChange={(value) => {
+									const mode = value === "overlay" ? "overlay" : "columns";
+									setViewMode(mode);
+								}}
+								data={[
+									{ label: "Columns", value: "columns" },
+									{ label: "Overlay", value: "overlay" },
+								]}
+							/>
+
+							{/* Add Column Button */}
+							<ActionIcon
+								size="sm"
+								variant="light"
+								title="Add Column"
+								onClick={addColumn}
+							>
+								<IconPlus size={16} />
+							</ActionIcon>
+
+							{/* Run All Button */}
+							<Button size="xs" onClick={handleRunAll}>
+								Run All
+							</Button>
+						</Group>
+
+						{/* Tools */}
+						<Group gap="xs" style={{ flexShrink: 0 }}>
+							<Tooltip label="Zoom In">
+								<ActionIcon
+									onClick={handleZoomIn}
+									size="sm"
+									variant="light"
+									aria-label="Zoom In"
+								>
+									<IconZoomIn size={16} />
+								</ActionIcon>
+							</Tooltip>
+							<Tooltip label="Zoom Out">
+								<ActionIcon
+									onClick={handleZoomOut}
+									size="sm"
+									variant="light"
+									aria-label="Zoom Out"
+								>
+									<IconZoomOut size={16} />
+								</ActionIcon>
+							</Tooltip>
+							<Tooltip label="Fit to View">
+								<ActionIcon
+									onClick={handleFit}
+									size="sm"
+									variant="light"
+									aria-label="Fit to View"
+								>
+									<IconMaximize size={16} />
+								</ActionIcon>
+							</Tooltip>
+							<Tooltip label="Reset Layout">
+								<ActionIcon
+									onClick={handleResetLayout}
+									size="sm"
+									variant="light"
+									aria-label="Reset Layout"
+								>
+									<IconReload size={16} />
+								</ActionIcon>
+							</Tooltip>
+							<Tooltip label={getColorSchemeLabel(colorSchemeMode)}>
+								<ActionIcon
+									onClick={handleCycleColorScheme}
+									size="sm"
+									variant="light"
+									aria-label={getColorSchemeLabel(colorSchemeMode)}
+								>
+									{getColorSchemeIcon(colorSchemeMode)}
+								</ActionIcon>
+							</Tooltip>
+							<Group gap="xs">
+								<Switch
 									size="xs"
-									placeholder="Seed"
-									value={seed}
-									onChange={(value) => {
-										setSeed(typeof value === "number" ? value : 42);
+									label="Zoom"
+									checked={zoomEnabled}
+									onChange={(e) => {
+										setZoomEnabled(e.currentTarget.checked);
 									}}
-									min={0}
-									max={999999}
-									w={80}
 								/>
-								<GraphClassToggles />
+								<Switch
+									size="xs"
+									label="Pan"
+									checked={panEnabled}
+									onChange={(e) => {
+										setPanEnabled(e.currentTarget.checked);
+									}}
+								/>
+								<Switch
+									size="xs"
+									label="Discovery"
+									checked={showDiscoveryNumbers}
+									onChange={(e) => {
+										setShowDiscoveryNumbers(e.currentTarget.checked);
+									}}
+								/>
 							</Group>
-						)}
-
-						{/* Seed Picker Popover */}
-						<Popover position="bottom-start">
-							<Popover.Target>
-								<Button size="xs" variant="light">
-									Seeds ({seeds.length})
-								</Button>
-							</Popover.Target>
-							<Popover.Dropdown>
-								<Box w={300}>
-									<SeedPicker />
-								</Box>
-							</Popover.Dropdown>
-						</Popover>
-
-						{/* View Mode Toggle */}
-						<SegmentedControl
-							size="xs"
-							value={viewMode}
-							onChange={(value) => {
-								const mode = value === "overlay" ? "overlay" : "columns";
-								setViewMode(mode);
-							}}
-							data={[
-								{ label: "Columns", value: "columns" },
-								{ label: "Overlay", value: "overlay" },
-							]}
-						/>
-
-						{/* Add Column Button */}
-						<ActionIcon
-							size="sm"
-							variant="light"
-							title="Add Column"
-							onClick={addColumn}
-						>
-							<IconPlus size={16} />
-						</ActionIcon>
-
-						{/* Run All Button */}
-						<Button size="xs" onClick={handleRunAll}>
-							Run All
-						</Button>
-					</Group>
-
-					{/* Tools */}
-					<Group gap="xs" style={{ flexShrink: 0 }}>
-						<Tooltip label="Zoom In">
-							<ActionIcon
-								onClick={handleZoomIn}
-								size="sm"
-								variant="light"
-								aria-label="Zoom In"
-							>
-								<IconZoomIn size={16} />
-							</ActionIcon>
-						</Tooltip>
-						<Tooltip label="Zoom Out">
-							<ActionIcon
-								onClick={handleZoomOut}
-								size="sm"
-								variant="light"
-								aria-label="Zoom Out"
-							>
-								<IconZoomOut size={16} />
-							</ActionIcon>
-						</Tooltip>
-						<Tooltip label="Fit to View">
-							<ActionIcon
-								onClick={handleFit}
-								size="sm"
-								variant="light"
-								aria-label="Fit to View"
-							>
-								<IconMaximize size={16} />
-							</ActionIcon>
-						</Tooltip>
-						<Tooltip label="Reset Layout">
-							<ActionIcon
-								onClick={handleResetLayout}
-								size="sm"
-								variant="light"
-								aria-label="Reset Layout"
-							>
-								<IconReload size={16} />
-							</ActionIcon>
-						</Tooltip>
-						<Tooltip label={getColorSchemeLabel(colorSchemeMode)}>
-							<ActionIcon
-								onClick={handleCycleColorScheme}
-								size="sm"
-								variant="light"
-								aria-label={getColorSchemeLabel(colorSchemeMode)}
-							>
-								{getColorSchemeIcon(colorSchemeMode)}
-							</ActionIcon>
-						</Tooltip>
-						<Group gap="xs">
-							<Switch
-								size="xs"
-								label="Zoom"
-								checked={zoomEnabled}
-								onChange={(e) => {
-									setZoomEnabled(e.currentTarget.checked);
-								}}
-							/>
-							<Switch
-								size="xs"
-								label="Pan"
-								checked={panEnabled}
-								onChange={(e) => {
-									setPanEnabled(e.currentTarget.checked);
-								}}
-							/>
-							<Switch
-								size="xs"
-								label="Discovery"
-								checked={showDiscoveryNumbers}
-								onChange={(e) => {
-									setShowDiscoveryNumbers(e.currentTarget.checked);
-								}}
-							/>
 						</Group>
 					</Group>
-				</Group>
+					{maxFrameCount > 0 && (
+						<>
+							<Divider />
+							<Box px="md" py="xs" style={{ flex: 1, minHeight: 0 }}>
+								<AnimationTimeline
+									totalFrames={maxFrameCount}
+									currentFrameIndex={syncedFrameIndex}
+									isPlaying={isPlaying}
+									onPlay={togglePlay}
+									onPause={togglePlay}
+									onSeek={setSyncedFrameIndex}
+									speed={speed}
+									onSpeedChange={setSpeed}
+								/>
+							</Box>
+						</>
+					)}
+				</Stack>
 			</MantineAppShell.Header>
 			<MantineAppShell.Main style={{ minHeight: "100vh" }}>
 				{children}
