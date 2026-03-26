@@ -1,14 +1,20 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useCallback } from "react";
 import {
 	AppShell as MantineAppShell,
 	Group,
 	Title,
-	Text,
 	Switch,
 	Stack,
 	ActionIcon,
 	Tooltip,
 	useMantineColorScheme,
+	Select,
+	Slider,
+	NumberInput,
+	Popover,
+	Box,
+	Button,
+	SegmentedControl,
 } from "@mantine/core";
 import {
 	IconZoomIn,
@@ -18,6 +24,7 @@ import {
 	IconSun,
 	IconMoon,
 	IconDeviceDesktop,
+	IconPlus,
 } from "@tabler/icons-react";
 import * as styles from "./AppShell.css";
 import { useInteractionStore } from "../../state/interaction-store";
@@ -27,6 +34,18 @@ import {
 	useColorSchemeStore,
 	type ColorSchemeMode,
 } from "../../state/color-scheme-store";
+import { useGraphStore } from "../../state/graph-store";
+import { useAnimationStore } from "../../state/animation-store";
+import { useColumnStore } from "../../state/column-store";
+import { useGenerationStore } from "../../state/generation-store";
+import { useAppStore } from "../../state/app-store";
+import { runAllColumns } from "../../engine/column-runner";
+import { loadFixture, fixtureNames } from "../../engine/fixture-loader";
+import { generateRandomGraph } from "../../engine/random-graph-generator";
+import { GraphClassToggles } from "../graph/GraphClassToggles";
+import { SeedPicker } from "../graph/SeedPicker";
+
+const RANDOM_FIXTURE = "random" as const;
 
 interface AppShellProps {
 	readonly children: ReactNode;
@@ -48,6 +67,33 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	const colorSchemeMode = useColorSchemeStore((state) => state.mode);
 	const cycleColorScheme = useColorSchemeStore((state) => state.cycleMode);
 	const { setColorScheme } = useMantineColorScheme();
+
+	// Graph state
+	const seeds = useGraphStore((state) => state.seeds);
+	const setGraph = useGraphStore((state) => state.setGraph);
+	const setSeeds = useGraphStore((state) => state.setSeeds);
+	const graphLoadedFromUrl = useGraphStore((state) => state.graphLoadedFromUrl);
+
+	// Column state
+	const columns = useColumnStore((state) => state.columns);
+	const viewMode = useColumnStore((state) => state.viewMode);
+	const addColumn = useColumnStore((state) => state.addColumn);
+	const setViewMode = useColumnStore((state) => state.setViewMode);
+	const clearResults = useColumnStore((state) => state.clearResults);
+
+	// Animation state
+	const animationReset = useAnimationStore((state) => state.reset);
+
+	// Generation settings
+	const nodeCount = useGenerationStore((state) => state.nodeCount);
+	const seed = useGenerationStore((state) => state.seed);
+	const graphClass = useGenerationStore((state) => state.graphClass);
+	const setNodeCount = useGenerationStore((state) => state.setNodeCount);
+	const setSeed = useGenerationStore((state) => state.setSeed);
+
+	// App state
+	const selectedFixture = useAppStore((state) => state.selectedFixture);
+	const setSelectedFixture = useAppStore((state) => state.setSelectedFixture);
 
 	// Sync Zustand store to Mantine's color scheme
 	const handleCycleColorScheme = (): void => {
@@ -107,17 +153,172 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 		}
 	};
 
+	// Load initial fixture on mount (only if not loaded from URL)
+	useEffect(() => {
+		if (graphLoadedFromUrl) return;
+
+		const fixture = loadFixture("three-community");
+		setGraph(fixture.graph, fixture.directed);
+		setSeeds(fixture.seeds);
+	}, [graphLoadedFromUrl, setGraph, setSeeds]);
+
+	// Regenerate random graph when settings change
+	const regenerateRandomGraph = useCallback(() => {
+		const generated = generateRandomGraph(nodeCount, seed, graphClass);
+		setGraph(generated.graph, graphClass.isDirected);
+		setSeeds(generated.seeds);
+		animationReset();
+		clearResults();
+	}, [
+		nodeCount,
+		seed,
+		graphClass,
+		setGraph,
+		setSeeds,
+		animationReset,
+		clearResults,
+	]);
+
+	// Regenerate when on random fixture and settings change
+	useEffect(() => {
+		if (selectedFixture === RANDOM_FIXTURE) {
+			regenerateRandomGraph();
+		}
+	}, [selectedFixture, nodeCount, seed, graphClass, regenerateRandomGraph]);
+
+	const handleRunAll = (): void => {
+		runAllColumns();
+	};
+
+	const handleFixtureChange = (name: string | null): void => {
+		if (name === null) return;
+		if (name === RANDOM_FIXTURE) {
+			setSelectedFixture(RANDOM_FIXTURE);
+			regenerateRandomGraph();
+			return;
+		}
+		const fixtureNames_ = fixtureNames();
+		for (const fixtureName of fixtureNames_) {
+			if (fixtureName === name) {
+				const fixture = loadFixture(fixtureName);
+				setGraph(fixture.graph, fixture.directed);
+				setSeeds(fixture.seeds);
+				animationReset();
+				clearResults();
+				setSelectedFixture(name);
+				return;
+			}
+		}
+	};
+
 	return (
 		<MantineAppShell header={{ height: 56 }} padding="md">
 			<MantineAppShell.Header className={styles.header}>
-				<Group h="100%" px="md" justify="space-between">
-					<Group gap="sm">
+				<Group h="100%" px="md" gap="xs" wrap="nowrap">
+					<Group gap="sm" style={{ flexShrink: 0 }}>
 						<Title order={3}>Graphwise</Title>
-						<Text size="sm" c="dimmed">
-							Interactive Algorithm Visualisation
-						</Text>
 					</Group>
-					<Group gap="xs">
+
+					{/* Controls */}
+					<Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
+						{/* Dataset Selector */}
+						<Select
+							size="xs"
+							placeholder="Dataset"
+							value={selectedFixture}
+							onChange={handleFixtureChange}
+							data={[
+								{ value: RANDOM_FIXTURE, label: "Random Graph" },
+								...fixtureNames().map((name) => ({
+									value: name,
+									label: loadFixture(name).description,
+								})),
+							]}
+							w={220}
+						/>
+
+						{/* Generation Controls - only show for Random */}
+						{selectedFixture === RANDOM_FIXTURE && (
+							<Group gap="xs">
+								<Box w={120}>
+									<Slider
+										size="xs"
+										label={(val) => `${String(val)} nodes`}
+										value={nodeCount}
+										onChange={(value) => {
+											setNodeCount(typeof value === "number" ? value : 20);
+										}}
+										min={3}
+										max={100}
+										step={1}
+										marks={[
+											{ value: 3, label: "3" },
+											{ value: 50, label: "50" },
+											{ value: 100, label: "100" },
+										]}
+									/>
+								</Box>
+								<NumberInput
+									size="xs"
+									placeholder="Seed"
+									value={seed}
+									onChange={(value) => {
+										setSeed(typeof value === "number" ? value : 42);
+									}}
+									min={0}
+									max={999999}
+									w={80}
+								/>
+								<GraphClassToggles />
+							</Group>
+						)}
+
+						{/* Seed Picker Popover */}
+						<Popover position="bottom-start">
+							<Popover.Target>
+								<Button size="xs" variant="light">
+									Seeds ({seeds.length})
+								</Button>
+							</Popover.Target>
+							<Popover.Dropdown>
+								<Box w={300}>
+									<SeedPicker />
+								</Box>
+							</Popover.Dropdown>
+						</Popover>
+
+						{/* View Mode Toggle */}
+						<SegmentedControl
+							size="xs"
+							value={viewMode}
+							onChange={(value) => {
+								const mode = value === "overlay" ? "overlay" : "columns";
+								setViewMode(mode);
+							}}
+							data={[
+								{ label: "Columns", value: "columns" },
+								{ label: "Overlay", value: "overlay" },
+							]}
+						/>
+
+						{/* Add Column Button */}
+						<ActionIcon
+							size="sm"
+							variant="light"
+							title="Add Column"
+							onClick={addColumn}
+						>
+							<IconPlus size={16} />
+						</ActionIcon>
+
+						{/* Run All Button */}
+						<Button size="xs" onClick={handleRunAll}>
+							Run All
+						</Button>
+					</Group>
+
+					{/* Tools */}
+					<Group gap="xs" style={{ flexShrink: 0 }}>
 						<Tooltip label="Zoom In">
 							<ActionIcon
 								onClick={handleZoomIn}
