@@ -64,13 +64,12 @@ export function createStyles(
 	colorScheme: ColorScheme = "light",
 ): readonly RelaxedStylesheet[] {
 	const colours = colorScheme === "dark" ? DARK_COLOURS : LIGHT_COLOURS;
-	const canvasBg = colorScheme === "dark" ? "#1e293b" : "#ffffff";
 
 	return [
 		{
 			selector: "core",
 			style: {
-				"background-color": canvasBg,
+				"background-color": "transparent",
 			},
 		},
 		{
