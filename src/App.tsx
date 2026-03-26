@@ -251,7 +251,7 @@ function MainContent(): ReactNode {
 						style={{
 							display: "grid",
 							gridAutoFlow: "column",
-							gridAutoColumns: "minmax(400px, 1fr)",
+							gridAutoColumns: "400px",
 							gap: "var(--mantine-spacing-md)",
 							overflowX: "auto",
 							flex: 1,
