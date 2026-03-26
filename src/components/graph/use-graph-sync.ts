@@ -127,13 +127,15 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 				animate: true,
 				animationDuration: 400,
 				fit: true,
-				padding: 50,
-				nodeRepulsion: 6000,
-				idealEdgeLength: 80,
-				gravity: 0.25,
+				padding: 60,
+				// Include label bounding boxes so fCoSE avoids label collisions
+				nodeDimensionsIncludeLabels: true,
+				nodeRepulsion: 45000,
+				idealEdgeLength: 120,
+				gravity: 0.1,
 				gravityRange: 3.8,
 				numIter: 2500,
-				nodeSeparation: 75,
+				nodeSeparation: 120,
 			};
 			const layout = cy.layout(fcoseOptions);
 
