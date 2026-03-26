@@ -10,6 +10,7 @@ import { useAnimationStore } from "../../state/animation-store";
 import { useColumnStore } from "../../state/column-store";
 import { useAppStore } from "../../state/app-store";
 import { useGenerationStore } from "../../state/generation-store";
+import { encodeGraphClass, decodeGraphClass } from "../../engine/graph-class";
 import { useInteractionStore } from "../../state/interaction-store";
 import {
 	expansionAlgorithmNames,
@@ -73,8 +74,10 @@ export function useUrlSync(): void {
 
 	const nodeCount = useGenerationStore((state) => state.nodeCount);
 	const seed = useGenerationStore((state) => state.seed);
+	const graphClass = useGenerationStore((state) => state.graphClass);
 	const setNodeCount = useGenerationStore((state) => state.setNodeCount);
 	const setSeed = useGenerationStore((state) => state.setSeed);
+	const setGraphClass = useGenerationStore((state) => state.setGraphClass);
 
 	const zoomEnabled = useInteractionStore((state) => state.zoomEnabled);
 	const panEnabled = useInteractionStore((state) => state.panEnabled);
@@ -216,6 +219,9 @@ export function useUrlSync(): void {
 		if (state.gs !== undefined) {
 			setSeed(state.gs);
 		}
+		if (state.gc !== undefined) {
+			setGraphClass(decodeGraphClass(state.gc));
+		}
 		if (state.ze !== undefined) {
 			setZoomEnabled(state.ze);
 		}
@@ -235,6 +241,7 @@ export function useUrlSync(): void {
 		setSelectedFixture,
 		setNodeCount,
 		setSeed,
+		setGraphClass,
 		setZoomEnabled,
 		setPanEnabled,
 		setSpeed,
@@ -295,6 +302,7 @@ export function useUrlSync(): void {
 				fx: selectedFixture,
 				nc: nodeCount,
 				gs: seed,
+				gc: encodeGraphClass(graphClass),
 				ze: zoomEnabled,
 				pe: panEnabled,
 				sp: speed,
@@ -318,6 +326,7 @@ export function useUrlSync(): void {
 		selectedFixture,
 		nodeCount,
 		seed,
+		graphClass,
 		zoomEnabled,
 		panEnabled,
 		speed,

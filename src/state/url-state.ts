@@ -63,6 +63,7 @@ const SerialisedStateV2 = defineSchema(
 		fx: z.string().optional().describe("Selected fixture name"),
 		nc: z.number().optional().describe("Node count for random graphs"),
 		gs: z.number().optional().describe("Generation seed for random graphs"),
+		gc: z.number().optional().describe("Graph class bitmask"),
 		ze: z.boolean().optional().describe("Zoom enabled"),
 		pe: z.boolean().optional().describe("Pan enabled"),
 		sp: z.number().optional().describe("Playback speed"),
