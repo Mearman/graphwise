@@ -68,16 +68,11 @@ export function runWithFrameCapture<N extends NodeData, E extends EdgeData>(
 		const frameNodes = nodesArray.slice(0, endIdx);
 
 		const visitedNodes = new Map<NodeId, number>();
-		for (const nodeId of frameNodes) {
-			// Determine which frontier visited this node
-			let frontierIdx = 0;
-			for (let f = 0; f < visitedPerFrontier.length; f++) {
-				if (visitedPerFrontier[f]?.has(nodeId) === true) {
-					frontierIdx = f;
-					break;
-				}
-			}
-			visitedNodes.set(nodeId, frontierIdx);
+		for (let idx = 0; idx < frameNodes.length; idx++) {
+			const nodeId = frameNodes[idx];
+			if (nodeId === undefined) continue;
+			// Discovery order is 1-indexed (1st discovered = 1, 2nd = 2, etc.)
+			visitedNodes.set(nodeId, idx + 1);
 		}
 
 		const frontierSizes = visitedPerFrontier.map((set) => {
