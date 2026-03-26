@@ -22,6 +22,18 @@ import { useLayoutStore } from "../../state/layout-store";
 import type { NodePosition } from "../../state/layout-store";
 import { useInteractionStore } from "../../state/interaction-store";
 
+/** Mulberry32 PRNG — fast, deterministic 32-bit seeded RNG. */
+function mulberry32(seed: number): () => number {
+	let state = seed >>> 0;
+	return () => {
+		state = (state + 0x6d2b9f6d) >>> 0;
+		let t = state;
+		t = Math.imul(t ^ (t >>> 15), t | 1) >>> 0;
+		t ^= (t + Math.imul(t ^ (t >>> 7), t | 61)) >>> 0;
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	};
+}
+
 function isNode(target: unknown): target is NodeSingular {
 	return (
 		typeof target === "object" &&
@@ -107,60 +119,22 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 				padding: 50,
 			}).run();
 		} else {
-			// Positions are stale or missing — pre-position nodes then run fCoSE.
-			// randomize: false means fCoSE starts from existing positions rather than
-			// its own spectral stage, so we must set deterministic initial positions first.
-			const allNodes = cy.nodes();
-			const nodeCount = allNodes.length;
-			const radius = Math.max(80, nodeCount * 12);
-
-			// BFS-order placement: topology-close nodes start close on the circle
-			// so fCoSE only needs small adjustments rather than large migrations.
-			const visited = new Set<string>();
-			const bfsOrder: string[] = [];
-			const startNodeResult = allNodes.max((node) => node.degree(false));
-			const startNodeId = startNodeResult.ele.id();
-			const queue: string[] = [startNodeId];
-			visited.add(startNodeId);
-			while (queue.length > 0) {
-				const current = queue.shift();
-				if (current === undefined) break;
-				bfsOrder.push(current);
-				cy.getElementById(current)
-					.neighborhood("node")
-					.forEach((neighbour) => {
-						const nId = neighbour.id();
-						if (!visited.has(nId)) {
-							visited.add(nId);
-							queue.push(nId);
-						}
-					});
-			}
-			// Include unreachable nodes (disconnected components)
-			allNodes.forEach((node) => {
-				if (!visited.has(node.id())) {
-					bfsOrder.push(node.id());
-				}
-			});
-			bfsOrder.forEach((nodeId, i) => {
-				const angle = (2 * Math.PI * i) / nodeCount;
-				cy.getElementById(nodeId).position({
-					x: radius * Math.cos(angle),
-					y: radius * Math.sin(angle),
-				});
-			});
+			// Positions are stale or missing — run fCoSE with spectral initialisation.
+			// fCoSE's spectral stage (randomize: true) uses Math.random() internally
+			// with no seed API. Patch Math.random with a seeded PRNG for the duration
+			// of the layout so the same graphVersion always produces the same layout.
+			const origRandom = Math.random;
+			Math.random = mulberry32(graphVersion);
 
 			const fcoseOptions: FcoseLayoutOptions = {
 				name: "fcose",
 				quality: "proof",
-				randomize: false,
+				randomize: true,
 				animate: true,
 				animationDuration: 500,
 				fit: true,
 				padding: 60,
 				nodeDimensionsIncludeLabels: true,
-				// Edge springs dominate repulsion for topology-aware clustering.
-				// Short ideal length + strong elasticity keeps edges compact.
 				nodeRepulsion: 4500,
 				idealEdgeLength: 50,
 				edgeElasticity: 0.65,
@@ -172,6 +146,7 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			const layout = cy.layout(fcoseOptions);
 
 			layout.one("layoutstop", () => {
+				Math.random = origRandom;
 				const newPositions = new Map<string, NodePosition>();
 				cy.nodes().forEach((node) => {
 					const nodeId = node.id();
