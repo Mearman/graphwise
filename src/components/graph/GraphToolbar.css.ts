@@ -2,8 +2,8 @@ import { style } from "@vanilla-extract/css";
 
 export const toolbar = style({
 	position: "relative",
-	backgroundColor: "white",
+	backgroundColor: "var(--mantine-color-body)",
 	borderRadius: 8,
 	padding: 4,
-	boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+	boxShadow: "var(--mantine-shadow-sm)",
 });

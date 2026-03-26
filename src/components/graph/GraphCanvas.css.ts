@@ -5,7 +5,7 @@ export const canvas = style({
 	width: "100%",
 	height: "100%",
 	minHeight: 200,
-	backgroundColor: "#f8fafc",
+	backgroundColor: "var(--mantine-color-gray-1)",
 	borderRadius: 8,
 	selectors: {
 		'&[data-ready="true"]': {
