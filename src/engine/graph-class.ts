@@ -193,3 +193,39 @@ export function getDisabledReason(
 			return undefined;
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Bitmask encoding for URL serialisation
+// Bit layout is stable — do not reorder after release.
+// ---------------------------------------------------------------------------
+
+// bit 0: isDirected, 1: isWeighted, 2: isCyclic, 3: isConnected,
+// 4: isHeterogeneous, 5: isMultigraph, 6: hasSelfLoops, 7: isComplete
+
+/** Encode a GraphClassConfig as a compact integer bitmask for URL storage. */
+export function encodeGraphClass(config: GraphClassConfig): number {
+	return (
+		(config.isDirected ? 1 : 0) |
+		(config.isWeighted ? 2 : 0) |
+		(config.isCyclic ? 4 : 0) |
+		(config.isConnected ? 8 : 0) |
+		(config.isHeterogeneous ? 16 : 0) |
+		(config.isMultigraph ? 32 : 0) |
+		(config.hasSelfLoops ? 64 : 0) |
+		(config.isComplete ? 128 : 0)
+	);
+}
+
+/** Decode a bitmask integer back to a GraphClassConfig. */
+export function decodeGraphClass(bits: number): GraphClassConfig {
+	return {
+		isDirected: Boolean(bits & 1),
+		isWeighted: Boolean(bits & 2),
+		isCyclic: Boolean(bits & 4),
+		isConnected: Boolean(bits & 8),
+		isHeterogeneous: Boolean(bits & 16),
+		isMultigraph: Boolean(bits & 32),
+		hasSelfLoops: Boolean(bits & 64),
+		isComplete: Boolean(bits & 128),
+	};
+}
