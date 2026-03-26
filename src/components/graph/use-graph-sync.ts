@@ -3,6 +3,7 @@ import type { Core, NodeSingular, ShapedLayoutOptions } from "cytoscape";
 
 /** fCoSE layout options (cytoscape-fcose has no bundled types). */
 interface FcoseLayoutOptions extends ShapedLayoutOptions {
+	readonly quality?: string;
 	readonly randomize?: boolean;
 	readonly nodeRepulsion?: number;
 	readonly idealEdgeLength?: number;
@@ -113,7 +114,7 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			// for a given graph.
 			const allNodes = cy.nodes();
 			const nodeCount = allNodes.length;
-			const radius = Math.max(150, nodeCount * 25);
+			const radius = Math.max(80, nodeCount * 12);
 
 			// BFS-order placement: topology-close nodes start close on the circle
 			// so fCoSE only needs small adjustments rather than large migrations.
@@ -153,21 +154,22 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 
 			const fcoseOptions: FcoseLayoutOptions = {
 				name: "fcose",
+				quality: "proof",
 				randomize: false,
 				animate: true,
 				animationDuration: 500,
 				fit: true,
 				padding: 60,
 				nodeDimensionsIncludeLabels: true,
-				// Repulsion lower than before so edge springs can overcome it
-				nodeRepulsion: 150000,
-				idealEdgeLength: 80,
-				edgeElasticity: 0.1,
-				gravity: 0.02,
+				// Edge springs dominate repulsion for topology-aware clustering.
+				// Short ideal length + strong elasticity keeps edges compact.
+				nodeRepulsion: 4500,
+				idealEdgeLength: 50,
+				edgeElasticity: 0.65,
+				gravity: 0.4,
 				gravityRange: 3.8,
-				// More iterations → better convergence on long edges
-				numIter: 8000,
-				nodeSeparation: 150,
+				numIter: 3000,
+				nodeSeparation: 75,
 			};
 			const layout = cy.layout(fcoseOptions);
 
