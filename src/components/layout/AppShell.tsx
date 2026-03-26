@@ -52,14 +52,9 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	// Sync Zustand store to Mantine's color scheme
 	const handleCycleColorScheme = (): void => {
 		cycleColorScheme();
-		// Map Zustand mode to Mantine color scheme
-		const nextMode: ColorSchemeMode =
-			colorSchemeMode === "system"
-				? "dark"
-				: colorSchemeMode === "dark"
-					? "light"
-					: "system";
-		const mantineScheme = nextMode === "system" ? "auto" : nextMode;
+		// Read the updated mode directly from store (avoids stale closure)
+		const currentMode = useColorSchemeStore.getState().mode;
+		const mantineScheme = currentMode === "system" ? "auto" : currentMode;
 		setColorScheme(mantineScheme);
 	};
 
