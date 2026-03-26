@@ -8,7 +8,7 @@ import {
 	Tooltip,
 	Stack,
 } from "@mantine/core";
-import { IconX } from "@tabler/icons-react";
+import { IconX, IconCopy } from "@tabler/icons-react";
 import {
 	expansionAlgorithmNames,
 	getAlgorithm,
@@ -61,6 +61,7 @@ function safeCastRankingAlgorithm(
 export function ColumnHeader({ column }: ColumnHeaderProps): ReactNode {
 	const updateColumn = useColumnStore((state) => state.updateColumn);
 	const removeColumn = useColumnStore((state) => state.removeColumn);
+	const duplicateColumn = useColumnStore((state) => state.duplicateColumn);
 	const columns = useColumnStore((state) => state.columns);
 
 	const algorithmInfo =
@@ -124,6 +125,10 @@ export function ColumnHeader({ column }: ColumnHeaderProps): ReactNode {
 		removeColumn(column.id);
 	}, [column.id, removeColumn]);
 
+	const handleDuplicate = useCallback(() => {
+		duplicateColumn(column.id);
+	}, [column.id, duplicateColumn]);
+
 	return (
 		<Stack gap="xs">
 			<Group justify="space-between" wrap="nowrap">
@@ -147,19 +152,31 @@ export function ColumnHeader({ column }: ColumnHeaderProps): ReactNode {
 						</Text>
 					) : null}
 				</Group>
-				<Tooltip
-					label={canRemove ? "Remove column" : "Cannot remove last column"}
-				>
-					<ActionIcon
-						size="xs"
-						variant="subtle"
-						color="gray"
-						disabled={!canRemove}
-						onClick={handleRemove}
+				<Group gap="xs">
+					<Tooltip label="Duplicate column">
+						<ActionIcon
+							size="xs"
+							variant="subtle"
+							color="gray"
+							onClick={handleDuplicate}
+						>
+							<IconCopy size={14} />
+						</ActionIcon>
+					</Tooltip>
+					<Tooltip
+						label={canRemove ? "Remove column" : "Cannot remove last column"}
 					>
-						<IconX size={14} />
-					</ActionIcon>
-				</Tooltip>
+						<ActionIcon
+							size="xs"
+							variant="subtle"
+							color="gray"
+							disabled={!canRemove}
+							onClick={handleRemove}
+						>
+							<IconX size={14} />
+						</ActionIcon>
+					</Tooltip>
+				</Group>
 			</Group>
 
 			<Select

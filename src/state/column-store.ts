@@ -24,6 +24,7 @@ interface ColumnState {
 	readonly viewMode: ViewMode;
 
 	readonly addColumn: () => void;
+	readonly duplicateColumn: (id: string) => void;
 	readonly removeColumn: (id: string) => void;
 	readonly setColumns: (columns: readonly PipelineColumn[]) => void;
 	readonly updateColumn: (
@@ -70,6 +71,29 @@ export const useColumnStore = create<ColumnState>()((set, get) => ({
 		set((state) => ({
 			columns: [...state.columns, createDefaultColumn()],
 		}));
+	},
+
+	duplicateColumn: (id) => {
+		const { columns } = get();
+		const sourceIndex = columns.findIndex((col) => col.id === id);
+		if (sourceIndex === -1) return;
+
+		const source = columns[sourceIndex];
+		if (source === undefined) return;
+
+		const duplicated: PipelineColumn = {
+			id: crypto.randomUUID(),
+			expansionAlgorithm: source.expansionAlgorithm,
+			miVariant: source.miVariant,
+			rankingAlgorithm: source.rankingAlgorithm,
+			expansionResult: null,
+			rankingResult: null,
+			isRunning: false,
+		};
+
+		const newColumns = [...columns];
+		newColumns.splice(sourceIndex + 1, 0, duplicated);
+		set({ columns: newColumns });
 	},
 
 	removeColumn: (id) => {
