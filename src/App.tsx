@@ -32,6 +32,7 @@ import { useColorSchemeStore } from "./state/color-scheme-store";
 import { runAllColumns } from "./engine/column-runner";
 import { loadFixture, fixtureNames } from "./engine/fixture-loader";
 import { generateRandomGraph } from "./engine/random-graph-generator";
+import { GraphClassToggles } from "./components/graph/GraphClassToggles";
 
 import "@mantine/core/styles.css";
 
@@ -61,6 +62,7 @@ function MainContent(): ReactNode {
 	// Generation settings
 	const nodeCount = useGenerationStore((state) => state.nodeCount);
 	const seed = useGenerationStore((state) => state.seed);
+	const graphClass = useGenerationStore((state) => state.graphClass);
 	const setNodeCount = useGenerationStore((state) => state.setNodeCount);
 	const setSeed = useGenerationStore((state) => state.setSeed);
 
@@ -80,19 +82,27 @@ function MainContent(): ReactNode {
 
 	// Regenerate random graph when settings change
 	const regenerateRandomGraph = useCallback(() => {
-		const generated = generateRandomGraph(nodeCount, seed);
-		setGraph(generated.graph, false);
+		const generated = generateRandomGraph(nodeCount, seed, graphClass);
+		setGraph(generated.graph, graphClass.isDirected);
 		setSeeds(generated.seeds);
 		animationReset();
 		clearResults();
-	}, [nodeCount, seed, setGraph, setSeeds, animationReset, clearResults]);
+	}, [
+		nodeCount,
+		seed,
+		graphClass,
+		setGraph,
+		setSeeds,
+		animationReset,
+		clearResults,
+	]);
 
 	// Regenerate when on random fixture and settings change
 	useEffect(() => {
 		if (selectedFixture === RANDOM_FIXTURE) {
 			regenerateRandomGraph();
 		}
-	}, [selectedFixture, nodeCount, seed, regenerateRandomGraph]);
+	}, [selectedFixture, nodeCount, seed, graphClass, regenerateRandomGraph]);
 
 	const handleRunAll = (): void => {
 		runAllColumns();
@@ -155,11 +165,11 @@ function MainContent(): ReactNode {
 										onChange={(value) => {
 											setNodeCount(typeof value === "number" ? value : 20);
 										}}
-										min={5}
+										min={3}
 										max={100}
-										step={5}
+										step={1}
 										marks={[
-											{ value: 5, label: "5" },
+											{ value: 3, label: "3" },
 											{ value: 50, label: "50" },
 											{ value: 100, label: "100" },
 										]}
@@ -176,6 +186,7 @@ function MainContent(): ReactNode {
 									max={999999}
 									w={80}
 								/>
+								<GraphClassToggles />
 							</Group>
 						)}
 
