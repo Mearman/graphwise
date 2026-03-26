@@ -68,9 +68,22 @@ export const useColumnStore = create<ColumnState>()((set, get) => ({
 	viewMode: "columns",
 
 	addColumn: () => {
-		set((state) => ({
-			columns: [...state.columns, createDefaultColumn()],
-		}));
+		set((state) => {
+			const lastColumn = state.columns[state.columns.length - 1];
+			if (lastColumn === undefined) {
+				return { columns: [...state.columns, createDefaultColumn()] };
+			}
+			const newColumn: PipelineColumn = {
+				id: crypto.randomUUID(),
+				expansionAlgorithm: lastColumn.expansionAlgorithm,
+				miVariant: lastColumn.miVariant,
+				rankingAlgorithm: lastColumn.rankingAlgorithm,
+				expansionResult: null,
+				rankingResult: null,
+				isRunning: false,
+			};
+			return { columns: [...state.columns, newColumn] };
+		});
 	},
 
 	duplicateColumn: (id) => {
