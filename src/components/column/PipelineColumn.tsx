@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useRef } from "react";
 import { Paper, Stack, Box } from "@mantine/core";
 import type { Core } from "cytoscape";
 import type { AdjacencyMapGraph } from "graphwise/graph";
@@ -11,7 +11,9 @@ import { useColumnStore } from "../../state/column-store";
 import { useFrameSync } from "../graph/use-frame-sync";
 import { useGraphSync } from "../graph/use-graph-sync";
 import { useCytoscape } from "../graph/use-cytoscape";
+import { useDiscoveryOverlay } from "../graph/use-discovery-overlay";
 import * as styles from "../graph/GraphCanvas.css";
+import * as overlayStyles from "../graph/discovery-overlay.css";
 
 interface PipelineColumnProps {
 	readonly columnId: string;
@@ -37,6 +39,7 @@ function ColumnGraph({
 	const column = useColumnStore((state) =>
 		state.columns.find((c) => c.id === columnId),
 	);
+	const overlayRef = useRef<HTMLDivElement | null>(null);
 
 	// Sync graph to this column's Cytoscape instance
 	useGraphSync({ cy, graph, seeds });
@@ -47,13 +50,18 @@ function ColumnGraph({
 		algorithmName: column?.expansionAlgorithm ?? undefined,
 	});
 
+	// Overlay discovery numbers at node centres
+	useDiscoveryOverlay({
+		cy,
+		overlayRef,
+		algorithmName: column?.expansionAlgorithm ?? undefined,
+	});
+
 	return (
-		<Box
-			ref={containerRef}
-			className={styles.canvas}
-			data-ready={isReady.toString()}
-			style={{ position: "absolute", inset: 0 }}
-		/>
+		<Box className={styles.canvas} data-ready={isReady.toString()}>
+			<Box ref={containerRef} style={{ position: "absolute", inset: 0 }} />
+			<Box ref={overlayRef} className={overlayStyles.overlayContainer} />
+		</Box>
 	);
 }
 
