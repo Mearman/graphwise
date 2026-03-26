@@ -6,6 +6,7 @@ interface FcoseLayoutOptions extends ShapedLayoutOptions {
 	readonly randomize?: boolean;
 	readonly nodeRepulsion?: number;
 	readonly idealEdgeLength?: number;
+	readonly edgeElasticity?: number;
 	readonly gravity?: number;
 	readonly gravityRange?: number;
 	readonly numIter?: number;
@@ -129,12 +130,16 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 				fit: true,
 				padding: 60,
 				nodeDimensionsIncludeLabels: true,
+				// High repulsion keeps non-adjacent nodes apart (reduces crossings)
 				nodeRepulsion: 600000,
-				idealEdgeLength: 180,
+				// Short ideal edge length + low elasticity divisor = strong springs
+				// that pull connected nodes close, reducing both length and crossings
+				idealEdgeLength: 80,
+				edgeElasticity: 0.1,
 				gravity: 0.02,
 				gravityRange: 3.8,
 				numIter: 5000,
-				nodeSeparation: 200,
+				nodeSeparation: 150,
 			};
 			const layout = cy.layout(fcoseOptions);
 
