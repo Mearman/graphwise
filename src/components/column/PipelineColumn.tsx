@@ -12,6 +12,7 @@ import { useFrameSync } from "../graph/use-frame-sync";
 import { useGraphSync } from "../graph/use-graph-sync";
 import { useCytoscape } from "../graph/use-cytoscape";
 import { useDiscoveryOverlay } from "../graph/use-discovery-overlay";
+import { useCytoscapeTheme } from "../graph/use-cytoscape-theme";
 import * as styles from "../graph/GraphCanvas.css";
 import * as overlayStyles from "../graph/discovery-overlay.css";
 
@@ -26,6 +27,7 @@ interface ColumnGraphProps {
 	readonly cy: Core | null;
 	readonly containerRef: React.RefObject<HTMLDivElement | null>;
 	readonly isReady: boolean;
+	readonly directed: boolean;
 }
 
 function ColumnGraph({
@@ -35,6 +37,7 @@ function ColumnGraph({
 	cy,
 	containerRef,
 	isReady,
+	directed,
 }: ColumnGraphProps): ReactNode {
 	const column = useColumnStore((state) =>
 		state.columns.find((c) => c.id === columnId),
@@ -57,6 +60,9 @@ function ColumnGraph({
 		algorithmName: column?.expansionAlgorithm ?? undefined,
 	});
 
+	// Apply theme-aware styles
+	useCytoscapeTheme({ cy, directed });
+
 	return (
 		<Box className={styles.canvas} data-ready={isReady.toString()}>
 			<Box ref={containerRef} style={{ position: "absolute", inset: 0 }} />
@@ -68,6 +74,7 @@ function ColumnGraph({
 export function PipelineColumn({ columnId }: PipelineColumnProps): ReactNode {
 	const graph = useGraphStore((state) => state.graph);
 	const seeds = useGraphStore((state) => state.seeds);
+	const directed = useGraphStore((state) => state.directed);
 	const column = useColumnStore((state) =>
 		state.columns.find((c) => c.id === columnId),
 	);
@@ -108,6 +115,7 @@ export function PipelineColumn({ columnId }: PipelineColumnProps): ReactNode {
 						cy={cy}
 						containerRef={containerRef}
 						isReady={isReady}
+						directed={directed}
 					/>
 				</Paper>
 

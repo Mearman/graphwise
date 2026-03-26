@@ -3,6 +3,7 @@ import { Box } from "@mantine/core";
 import type { Core } from "cytoscape";
 import { useCytoscape } from "../graph/use-cytoscape";
 import { useGraphSync } from "../graph/use-graph-sync";
+import { useCytoscapeTheme } from "../graph/use-cytoscape-theme";
 import { useGraphStore } from "../../state/graph-store";
 import { useAnimationStore } from "../../state/animation-store";
 import { useColumnStore } from "../../state/column-store";
@@ -87,6 +88,7 @@ function applyOverlayStyles(
 export function OverlayCanvas(): ReactNode {
 	const graph = useGraphStore((state) => state.graph);
 	const seeds = useGraphStore((state) => state.seeds);
+	const directed = useGraphStore((state) => state.directed);
 	const columns = useColumnStore((state) => state.columns);
 	const syncedFrameIndex = useAnimationStore((state) => state.syncedFrameIndex);
 	const animationStore = useAnimationStore((state) => state);
@@ -95,6 +97,9 @@ export function OverlayCanvas(): ReactNode {
 
 	// Sync base graph
 	useGraphSync({ cy, graph, seeds });
+
+	// Apply theme-aware styles
+	useCytoscapeTheme({ cy, directed });
 
 	// Merge and apply algorithm frames
 	useEffect(() => {
