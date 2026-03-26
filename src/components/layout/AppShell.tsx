@@ -27,8 +27,14 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps): ReactNode {
 	const zoomEnabled = useInteractionStore((state) => state.zoomEnabled);
 	const panEnabled = useInteractionStore((state) => state.panEnabled);
+	const showDiscoveryNumbers = useInteractionStore(
+		(state) => state.showDiscoveryNumbers,
+	);
 	const setZoomEnabled = useInteractionStore((state) => state.setZoomEnabled);
 	const setPanEnabled = useInteractionStore((state) => state.setPanEnabled);
+	const setShowDiscoveryNumbers = useInteractionStore(
+		(state) => state.setShowDiscoveryNumbers,
+	);
 	const instances = useCytoscapeInstancesStore((state) => state.instances);
 	const resetLayout = useLayoutStore((state) => state.reset);
 
@@ -125,6 +131,14 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 								checked={panEnabled}
 								onChange={(e) => {
 									setPanEnabled(e.currentTarget.checked);
+								}}
+							/>
+							<Switch
+								size="xs"
+								label="Discovery"
+								checked={showDiscoveryNumbers}
+								onChange={(e) => {
+									setShowDiscoveryNumbers(e.currentTarget.checked);
 								}}
 							/>
 						</Stack>

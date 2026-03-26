@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { Core } from "cytoscape";
 import { useAnimationStore } from "../../state/animation-store";
+import { useInteractionStore } from "../../state/interaction-store";
 
 export interface UseFrameSyncOptions {
 	readonly cy: Core | null;
@@ -9,6 +10,9 @@ export interface UseFrameSyncOptions {
 
 export function useFrameSync(options: UseFrameSyncOptions): void {
 	const { cy, algorithmName } = options;
+	const showDiscoveryNumbers = useInteractionStore(
+		(state) => state.showDiscoveryNumbers,
+	);
 
 	const currentFrame = useAnimationStore((state) => {
 		if (algorithmName !== undefined && algorithmName !== "") {
@@ -75,5 +79,35 @@ export function useFrameSync(options: UseFrameSyncOptions): void {
 				}
 			}
 		}
-	}, [cy, currentFrame, algorithmName]);
+
+		// Handle discovery number labels
+		if (showDiscoveryNumbers) {
+			// Store original labels and set discovery numbers
+			cy.nodes().forEach((node) => {
+				const nodeId = node.id();
+				// Store original label if not already stored
+				if (node.data("originalLabel") === undefined) {
+					node.data(
+						"originalLabel",
+						typeof node.data("label") === "string"
+							? node.data("label")
+							: nodeId,
+					);
+				}
+				// Set discovery number if visited
+				const discoveryFrame = visitedNodes.get(nodeId);
+				if (discoveryFrame !== undefined) {
+					node.data("label", String(discoveryFrame));
+				}
+			});
+		} else {
+			// Restore original labels
+			cy.nodes().forEach((node) => {
+				if (typeof node.data("originalLabel") === "string") {
+					node.data("label", node.data("originalLabel"));
+					node.removeData("originalLabel");
+				}
+			});
+		}
+	}, [cy, currentFrame, algorithmName, showDiscoveryNumbers]);
 }
