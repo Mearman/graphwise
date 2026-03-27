@@ -22,13 +22,15 @@ function PathCard({
 	readonly rank: number;
 }): ReactNode {
 	return (
-		<Group justify="space-between">
-			<Badge size="lg" variant="light">
+		<Group wrap="nowrap" style={{ minWidth: 0 }}>
+			<Badge size="lg" variant="light" style={{ flexShrink: 0 }}>
 				#{rank}
 			</Badge>
-			<Text size="xs" truncate>
-				{path.nodes.join(" → ")}
-			</Text>
+			<Box style={{ overflow: "auto hidden", minWidth: 0, flex: 1 }}>
+				<Text size="xs" style={{ whiteSpace: "nowrap" }}>
+					{path.nodes.join(" → ")}
+				</Text>
+			</Box>
 		</Group>
 	);
 }
