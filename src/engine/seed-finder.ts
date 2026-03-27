@@ -60,8 +60,8 @@ export function findValidSeeds(
 
 		if (targetId !== null) {
 			return [
-				{ id: sourceId, role: "source" },
-				{ id: targetId, role: "target" },
+				{ id: sourceId, role: "bidirectional" },
+				{ id: targetId, role: "bidirectional" },
 			];
 		}
 	}
