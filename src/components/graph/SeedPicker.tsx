@@ -91,7 +91,7 @@ export function SeedPicker(_props: SeedPickerProps): React.ReactElement {
 					/>
 					<Select
 						size="xs"
-						value={seed.role ?? null}
+						value={seed.role ?? "bidirectional"}
 						data={roleOptions}
 						onChange={(value) => {
 							if (value !== null && value.length > 0 && isSeedRole(value)) {
