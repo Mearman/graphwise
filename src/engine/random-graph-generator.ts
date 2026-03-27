@@ -425,7 +425,10 @@ function partitionIntoComponents(
 	return components;
 }
 
-/** Add random edges based on density, skipping existing edges. */
+/** Add random edges based on density, skipping existing edges.
+ *  Scales density inversely with node count so extra edge count grows
+ *  ~linearly (not quadratically) for large graphs.
+ */
 function addRandomEdges(
 	graph: AdjacencyMapGraph,
 	nodeIds: string[],
@@ -433,9 +436,11 @@ function addRandomEdges(
 	density: number,
 	rng: () => number,
 ): void {
-	for (let i = 0; i < nodeIds.length; i++) {
-		for (let j = i + 1; j < nodeIds.length; j++) {
-			if (rng() < density) {
+	const n = nodeIds.length;
+	const scaledDensity = n <= 20 ? density : density * (20 / n);
+	for (let i = 0; i < n; i++) {
+		for (let j = i + 1; j < n; j++) {
+			if (rng() < scaledDensity) {
 				const src = nodeIds[i];
 				const tgt = nodeIds[j];
 				if (src !== undefined && tgt !== undefined) {
