@@ -24,6 +24,8 @@ import {
 	frontierBalanced,
 	randomPriority,
 	dfsPriority,
+	kHop,
+	randomWalk,
 } from "graphwise/expansion";
 import type { MIFunction, MIVariantName } from "graphwise/ranking/mi";
 import {
@@ -74,7 +76,9 @@ export type ExpansionAlgorithmName =
 	| "standard-bfs"
 	| "frontier-balanced"
 	| "random-priority"
-	| "dfs-priority";
+	| "dfs-priority"
+	| "k-hop"
+	| "random-walk";
 
 export type RankingAlgorithmName =
 	| "parse"
@@ -307,6 +311,20 @@ const EXPANSION_ALGORITHMS: readonly AlgorithmInfo[] = [
 		description: "Depth-first style prioritisation",
 		category: "baseline",
 		run: dfsPriority,
+	},
+	{
+		name: "k-hop",
+		label: "K-Hop",
+		description: "Fixed-depth BFS limited to k hops from each seed",
+		category: "baseline",
+		run: kHop,
+	},
+	{
+		name: "random-walk",
+		label: "Random Walk",
+		description: "Random-walk-with-restart expansion from seed nodes",
+		category: "baseline",
+		run: randomWalk,
 	},
 ];
 
