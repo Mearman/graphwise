@@ -181,6 +181,7 @@ export function ColumnHeader({ column }: ColumnHeaderProps): ReactNode {
 
 			<Select
 				size="xs"
+				label="Expansion"
 				placeholder="Select expansion algorithm"
 				data={expansionOptions}
 				value={column.expansionAlgorithm}
@@ -191,14 +192,14 @@ export function ColumnHeader({ column }: ColumnHeaderProps): ReactNode {
 			<Group grow>
 				<Select
 					size="xs"
-					placeholder="MI variant"
+					label="MI variant"
 					data={miOptions}
 					value={column.miVariant}
 					onChange={handleMIChange}
 				/>
 				<Select
 					size="xs"
-					placeholder="Ranking"
+					label="Ranking"
 					data={rankingOptions}
 					value={column.rankingAlgorithm}
 					onChange={handleRankingChange}
