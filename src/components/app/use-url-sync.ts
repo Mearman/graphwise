@@ -75,9 +75,13 @@ export function useUrlSync(): void {
 	const nodeCount = useGenerationStore((state) => state.nodeCount);
 	const seed = useGenerationStore((state) => state.seed);
 	const graphClass = useGenerationStore((state) => state.graphClass);
+	const maxIterations = useGenerationStore((state) => state.maxIterations);
 	const setNodeCount = useGenerationStore((state) => state.setNodeCount);
 	const setSeed = useGenerationStore((state) => state.setSeed);
 	const setGraphClass = useGenerationStore((state) => state.setGraphClass);
+	const setMaxIterations = useGenerationStore(
+		(state) => state.setMaxIterations,
+	);
 
 	const zoomEnabled = useInteractionStore((state) => state.zoomEnabled);
 	const panEnabled = useInteractionStore((state) => state.panEnabled);
@@ -236,6 +240,9 @@ export function useUrlSync(): void {
 		if (state.sp !== undefined) {
 			setSpeed(state.sp);
 		}
+		if (state.ml !== undefined) {
+			setMaxIterations(state.ml);
+		}
 
 		isInitialLoad.current = false;
 	}, [
@@ -250,6 +257,7 @@ export function useUrlSync(): void {
 		setZoomEnabled,
 		setPanEnabled,
 		setSpeed,
+		setMaxIterations,
 	]);
 
 	// Update URL when state changes (debounced)
@@ -311,6 +319,7 @@ export function useUrlSync(): void {
 				ze: zoomEnabled,
 				pe: panEnabled,
 				sp: speed,
+				ml: maxIterations > 0 ? maxIterations : undefined,
 			};
 
 			updateHash(serialisedState);
@@ -335,5 +344,6 @@ export function useUrlSync(): void {
 		zoomEnabled,
 		panEnabled,
 		speed,
+		maxIterations,
 	]);
 }

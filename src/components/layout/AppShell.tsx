@@ -109,8 +109,12 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	const nodeCount = useGenerationStore((state) => state.nodeCount);
 	const seed = useGenerationStore((state) => state.seed);
 	const graphClass = useGenerationStore((state) => state.graphClass);
+	const maxIterations = useGenerationStore((state) => state.maxIterations);
 	const setNodeCount = useGenerationStore((state) => state.setNodeCount);
 	const setSeed = useGenerationStore((state) => state.setSeed);
+	const setMaxIterations = useGenerationStore(
+		(state) => state.setMaxIterations,
+	);
 
 	// Debounce nodeCount updates — pendingSlider is non-null only while the user
 	// is actively dragging. When null, the slider falls back to the store value
@@ -360,6 +364,22 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 							>
 								<IconPlus size={16} />
 							</ActionIcon>
+
+							{/* Iteration Limit */}
+							<NumberInput
+								size="xs"
+								label="Iter limit"
+								placeholder="0"
+								value={maxIterations}
+								onChange={(value) => {
+									setMaxIterations(
+										typeof value === "number" ? value : 0,
+									);
+								}}
+								min={0}
+								step={100}
+								w={90}
+							/>
 
 							{/* Run All Button */}
 							<Button size="xs" onClick={handleRunAll}>

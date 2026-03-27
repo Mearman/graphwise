@@ -54,6 +54,7 @@ const SerialisedState = defineSchema(
 		ze: z.boolean().optional().describe("Zoom enabled"),
 		pe: z.boolean().optional().describe("Pan enabled"),
 		sp: z.number().optional().describe("Playback speed"),
+		ml: z.number().optional().describe("Max iterations (0 = unlimited)"),
 	}),
 );
 
