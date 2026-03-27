@@ -80,7 +80,6 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	const seeds = useGraphStore((state) => state.seeds);
 	const setGraph = useGraphStore((state) => state.setGraph);
 	const setSeeds = useGraphStore((state) => state.setSeeds);
-	const graphLoadedFromUrl = useGraphStore((state) => state.graphLoadedFromUrl);
 
 	// Column state
 	const viewMode = useColumnStore((state) => state.viewMode);
@@ -169,14 +168,17 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 		}
 	};
 
-	// Load initial fixture on mount (only if not loaded from URL)
+	// Load initial fixture on mount (only if not loaded from URL).
+	// Reads graphLoadedFromUrl from Zustand directly — not from the React closure —
+	// so it sees the synchronous update made by useUrlSync's load effect which runs
+	// first (child effects before parent effects).
 	useEffect(() => {
-		if (graphLoadedFromUrl) return;
+		if (useGraphStore.getState().graphLoadedFromUrl) return;
 
 		const fixture = loadFixture("three-community");
 		setGraph(fixture.graph, fixture.directed);
 		setSeeds(fixture.seeds);
-	}, [graphLoadedFromUrl, setGraph, setSeeds]);
+	}, [setGraph, setSeeds]);
 
 	// Regenerate random graph when settings change
 	const regenerateRandomGraph = useCallback(() => {

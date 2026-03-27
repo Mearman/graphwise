@@ -3,7 +3,6 @@ import {
 	deserialiseFromHash,
 	updateHash,
 	type SerialisedState,
-	type SerialisedStateV2Type,
 } from "../../state/url-state";
 import { useGraphStore } from "../../state/graph-store";
 import { useAnimationStore } from "../../state/animation-store";
@@ -90,7 +89,7 @@ export function useUrlSync(): void {
 
 	// Load from URL on mount
 	useEffect(() => {
-		const state: SerialisedStateV2Type | null = deserialiseFromHash();
+		const state: SerialisedState | null = deserialiseFromHash();
 		if (state === null) {
 			// No URL data, allow save effect to run
 			isInitialLoad.current = false;
@@ -263,8 +262,8 @@ export function useUrlSync(): void {
 
 		updateTimeoutRef.current = setTimeout(() => {
 			// Extract node and edge data from graph
-			const nodes: SerialisedState["g"]["n"] = [];
-			const edges: SerialisedState["g"]["e"] = [];
+			const nodes = [];
+			const edges = [];
 
 			for (const nodeId of graph.nodeIds()) {
 				const data = graph.getNode(nodeId);
