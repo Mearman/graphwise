@@ -165,12 +165,7 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	};
 
 	const handleResetLayout = (): void => {
-		// Reset shared layout state so all columns re-run CoSE
 		resetLayout();
-		// Run CoSE layout on all instances
-		for (const cy of instances.values()) {
-			cy.layout({ name: "cose", animate: true }).run();
-		}
 	};
 
 	const getColorSchemeIcon = (mode: ColorSchemeMode): ReactNode => {
