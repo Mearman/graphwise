@@ -212,7 +212,6 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 		const generated = generateRandomGraph(nodeCount, seed, graphClass);
 		setGraph(generated.graph, graphClass.isDirected);
 		setSeeds(generated.seeds);
-		resetLayout();
 		animationReset();
 		clearResults();
 	}, [
@@ -221,7 +220,6 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 		graphClass,
 		setGraph,
 		setSeeds,
-		resetLayout,
 		animationReset,
 		clearResults,
 	]);
