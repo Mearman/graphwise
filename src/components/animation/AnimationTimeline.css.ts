@@ -57,12 +57,6 @@ export const progressIndicator = style({
 	},
 });
 
-export const speedControl = style({
-	display: "flex",
-	alignItems: "center",
-	gap: space.xs,
-});
-
-export const speedSlider = style({
-	flex: 1,
+export const speedSelect = style({
+	minWidth: "80px",
 });

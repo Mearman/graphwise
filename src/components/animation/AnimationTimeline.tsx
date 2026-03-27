@@ -1,13 +1,12 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
 import {
 	Box,
-	Stack,
 	Group,
 	Button,
 	Text,
-	Slider,
 	Tooltip,
 	ActionIcon,
+	Select,
 } from "@mantine/core";
 import {
 	IconPlayerPlay,
@@ -121,7 +120,7 @@ export function AnimationTimeline({
 
 	return (
 		<Box className={styles.container} style={{ opacity: disabled ? 0.4 : 1 }}>
-			{/* Controls group: left side, spans both rows */}
+			{/* Controls group: left side */}
 			<Group gap="xs" className={styles.controls}>
 				<Tooltip label="Skip to Start">
 					<ActionIcon
@@ -185,79 +184,83 @@ export function AnimationTimeline({
 				</Tooltip>
 			</Group>
 
-			{/* Right section: progress bar and speed slider stacked */}
-			<Stack gap={4} className={styles.rightSection}>
-				{/* Row 1: progress bar + frame label */}
-				<Group gap="xs" align="center">
+			{/* Right section: progress bar, frame label, and speed dropdown */}
+			<Group
+				gap="xs"
+				className={styles.rightSection}
+				align="center"
+				style={{ flex: 1, minWidth: 0 }}
+			>
+				<div
+					className={styles.progressTrack}
+					onClick={disabled ? undefined : handleSeek}
+					style={{
+						cursor: disabled ? "default" : "pointer",
+						flex: 1,
+						minWidth: 0,
+					}}
+				>
 					<div
-						className={styles.progressTrack}
-						onClick={disabled ? undefined : handleSeek}
-						style={{ cursor: disabled ? "default" : "pointer" }}
-					>
-						<div
-							className={styles.progressFill}
-							style={{ width: `${String(progress)}%` }}
-						/>
-						{!disabled && (
-							<div
-								className={styles.progressIndicator}
-								style={{ left: `${String(progress)}%` }}
-								onMouseDown={(e) => {
-									e.preventDefault();
-									const track = e.currentTarget.parentElement;
-									if (track === null) return;
-
-									const handleMouseMove = (moveEvent: MouseEvent): void => {
-										const rect = track.getBoundingClientRect();
-										const x = moveEvent.clientX - rect.left;
-										const percentage = Math.max(
-											0,
-											Math.min(100, (x / rect.width) * 100),
-										);
-										const targetFrame = Math.round(
-											(percentage / 100) * (totalFrames - 1),
-										);
-										onSeek(targetFrame);
-									};
-
-									const handleMouseUp = (): void => {
-										document.removeEventListener("mousemove", handleMouseMove);
-										document.removeEventListener("mouseup", handleMouseUp);
-									};
-
-									document.addEventListener("mousemove", handleMouseMove);
-									document.addEventListener("mouseup", handleMouseUp);
-								}}
-							/>
-						)}
-					</div>
-					<Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
-						{disabled ? "—" : formatFrame(currentFrameIndex)}
-					</Text>
-				</Group>
-
-				{/* Row 2: speed control */}
-				<Group gap="xs" className={styles.speedControl}>
-					<Text size="xs" c="dimmed">
-						Speed:
-					</Text>
-					<Slider
-						className={styles.speedSlider}
-						value={localSpeed}
-						onChange={handleSpeedChange}
-						min={0.5}
-						max={4}
-						step={0.5}
-						disabled={disabled}
-						marks={[
-							{ value: 0.5, label: "0.5x" },
-							{ value: 1, label: "1x" },
-							{ value: 2, label: "2x" },
-							{ value: 4, label: "4x" },
-						]}
+						className={styles.progressFill}
+						style={{ width: `${String(progress)}%` }}
 					/>
-				</Group>
-			</Stack>
+					{!disabled && (
+						<div
+							className={styles.progressIndicator}
+							style={{ left: `${String(progress)}%` }}
+							onMouseDown={(e) => {
+								e.preventDefault();
+								const track = e.currentTarget.parentElement;
+								if (track === null) return;
+
+								const handleMouseMove = (moveEvent: MouseEvent): void => {
+									const rect = track.getBoundingClientRect();
+									const x = moveEvent.clientX - rect.left;
+									const percentage = Math.max(
+										0,
+										Math.min(100, (x / rect.width) * 100),
+									);
+									const targetFrame = Math.round(
+										(percentage / 100) * (totalFrames - 1),
+									);
+									onSeek(targetFrame);
+								};
+
+								const handleMouseUp = (): void => {
+									document.removeEventListener("mousemove", handleMouseMove);
+									document.removeEventListener("mouseup", handleMouseUp);
+								};
+
+								document.addEventListener("mousemove", handleMouseMove);
+								document.addEventListener("mouseup", handleMouseUp);
+							}}
+						/>
+					)}
+				</div>
+				<Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
+					{disabled ? "—" : formatFrame(currentFrameIndex)}
+				</Text>
+				<Select
+					size="xs"
+					value={String(localSpeed)}
+					onChange={(value) => {
+						if (value !== null) {
+							const speed = parseFloat(value);
+							handleSpeedChange(speed);
+						}
+					}}
+					disabled={disabled}
+					data={[
+						{ value: "0.5", label: "0.5x" },
+						{ value: "1", label: "1x" },
+						{ value: "2", label: "2x" },
+						{ value: "4", label: "4x" },
+					]}
+					className={styles.speedSelect}
+					aria-label="Playback speed"
+					searchable={false}
+				/>
+			</Group>
 		</Box>
 	);
 }
