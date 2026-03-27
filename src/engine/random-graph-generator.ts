@@ -1,6 +1,7 @@
 import { AdjacencyMapGraph } from "graphwise/graph";
 import type { Seed } from "graphwise/expansion";
 import type { GraphClassConfig } from "./graph-class";
+import { seedsAreValid, findValidSeeds } from "./seed-finder";
 
 export interface GeneratedGraph {
 	readonly graph: AdjacencyMapGraph;
@@ -134,17 +135,16 @@ export function generateRandomGraph(
 		addParallelEdges(graph, nodeIds, config, rng);
 	}
 
-	// Select seed nodes
-	const sourceSeed = nodeIds[0] ?? "node_0";
-	const targetSeed = nodeIds[n - 1] ?? "node_0";
+	// Select seed nodes — default to first/last, but auto-find if disconnected
+	const defaultSeeds: readonly Seed[] = [
+		{ id: nodeIds[0] ?? "node_0", role: "source" },
+		{ id: nodeIds[n - 1] ?? "node_0", role: "target" },
+	];
+	const seeds = seedsAreValid(graph, defaultSeeds)
+		? defaultSeeds
+		: (findValidSeeds(graph) ?? defaultSeeds);
 
-	return {
-		graph,
-		seeds: [
-			{ id: sourceSeed, role: "source" },
-			{ id: targetSeed, role: "target" },
-		],
-	};
+	return { graph, seeds };
 }
 
 // ---------------------------------------------------------------------------

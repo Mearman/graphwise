@@ -21,6 +21,7 @@ import {
 import type { MIVariantName } from "graphwise/ranking/mi";
 import { AdjacencyMapGraph } from "graphwise/graph";
 import type { Seed, SeedRole } from "graphwise/expansion";
+import { seedsAreValid, findValidSeeds } from "../../engine/seed-finder";
 
 /** Debounce duration for URL updates (ms) */
 const DEBOUNCE_MS = 300;
@@ -144,14 +145,19 @@ export function useUrlSync(): void {
 
 		setGraph(newGraph, state.g.d);
 
-		// Restore seeds
+		// Restore seeds, falling back to auto-found seeds if no path exists
 		const restoredSeeds: Seed[] = state.s.map((s): Seed => {
 			if (s.r !== undefined && isSeedRole(s.r)) {
 				return { id: s.i, role: s.r };
 			}
 			return { id: s.i };
 		});
-		setSeeds(restoredSeeds);
+		if (!seedsAreValid(newGraph, restoredSeeds)) {
+			const validSeeds = findValidSeeds(newGraph);
+			setSeeds(validSeeds ?? restoredSeeds);
+		} else {
+			setSeeds(restoredSeeds);
+		}
 
 		// Restore columns with all settings
 		if (state.c.length > 0) {
