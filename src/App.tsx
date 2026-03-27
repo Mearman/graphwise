@@ -46,6 +46,7 @@ function MainContent(): ReactNode {
 								flexDirection: "column",
 								flex: "1 0 calc(0.75 * min(100vw, 100vh) / 2)",
 								maxWidth: "calc(0.75 * min(100vw, 100vh))",
+								minWidth: 0,
 							}}
 						>
 							<PipelineColumn columnId={column.id} />
