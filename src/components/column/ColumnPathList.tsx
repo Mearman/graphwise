@@ -121,9 +121,9 @@ export function ColumnPathList({ paths, cy }: ColumnPathListProps): ReactNode {
 	return (
 		<Stack gap="xs">
 			<Text size="xs" fw={500}>
-				Top {Math.min(paths.length, 10)} of {paths.length} paths
+				{paths.length} {paths.length === 1 ? "path" : "paths"}
 			</Text>
-			{paths.slice(0, 10).map((path, idx) => (
+			{paths.map((path, idx) => (
 				<PathItem
 					key={idx}
 					path={path}
