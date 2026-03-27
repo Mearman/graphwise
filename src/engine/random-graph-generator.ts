@@ -137,8 +137,8 @@ export function generateRandomGraph(
 
 	// Select seed nodes — default to first/last, but auto-find if disconnected
 	const defaultSeeds: readonly Seed[] = [
-		{ id: nodeIds[0] ?? "node_0", role: "source" },
-		{ id: nodeIds[n - 1] ?? "node_0", role: "target" },
+		{ id: nodeIds[0] ?? "node_0", role: "bidirectional" },
+		{ id: nodeIds[n - 1] ?? "node_0", role: "bidirectional" },
 	];
 	const seeds = seedsAreValid(graph, defaultSeeds)
 		? defaultSeeds

@@ -42,8 +42,8 @@ function createLinearChain(): DemoFixture {
 		directed: false,
 		graph,
 		seeds: [
-			{ id: "A", role: "source" },
-			{ id: "E", role: "target" },
+			{ id: "A", role: "bidirectional" },
+			{ id: "E", role: "bidirectional" },
 		],
 	};
 }
@@ -106,8 +106,8 @@ function createSocialHub(): DemoFixture {
 		directed: false,
 		graph,
 		seeds: [
-			{ id: "bob", role: "source" },
-			{ id: "kate", role: "target" },
+			{ id: "bob", role: "bidirectional" },
+			{ id: "kate", role: "bidirectional" },
 		],
 	};
 }
@@ -183,8 +183,8 @@ function createTwoDepartment(): DemoFixture {
 		directed: false,
 		graph,
 		seeds: [
-			{ id: "alice", role: "source" },
-			{ id: "jack", role: "target" },
+			{ id: "alice", role: "bidirectional" },
+			{ id: "jack", role: "bidirectional" },
 		],
 	};
 }
@@ -297,8 +297,8 @@ function createCityVillage(): DemoFixture {
 		directed: false,
 		graph,
 		seeds: [
-			{ id: "nightclub", role: "source" },
-			{ id: "shop", role: "target" },
+			{ id: "nightclub", role: "bidirectional" },
+			{ id: "shop", role: "bidirectional" },
 		],
 	};
 }
@@ -451,8 +451,8 @@ function createCitySuburbanVillage(): DemoFixture {
 		directed: false,
 		graph,
 		seeds: [
-			{ id: "nightclub", role: "source" },
-			{ id: "shop", role: "target" },
+			{ id: "nightclub", role: "bidirectional" },
+			{ id: "shop", role: "bidirectional" },
 		],
 	};
 }
@@ -669,8 +669,8 @@ function createThreeCommunity(): DemoFixture {
 		directed: false,
 		graph,
 		seeds: [
-			{ id: "bob", role: "source" },
-			{ id: "mia", role: "target" },
+			{ id: "bob", role: "bidirectional" },
+			{ id: "mia", role: "bidirectional" },
 		],
 	};
 }
@@ -732,8 +732,8 @@ function createTypedEntity(): DemoFixture {
 		directed: true,
 		graph,
 		seeds: [
-			{ id: "a", role: "source" },
-			{ id: "l", role: "target" },
+			{ id: "a", role: "bidirectional" },
+			{ id: "l", role: "bidirectional" },
 		],
 	};
 }
@@ -885,8 +885,8 @@ function createQualityVsPopularity(): DemoFixture {
 		directed: false,
 		graph,
 		seeds: [
-			{ id: "source", role: "source" },
-			{ id: "target", role: "target" },
+			{ id: "source", role: "bidirectional" },
+			{ id: "target", role: "bidirectional" },
 		],
 	};
 }
