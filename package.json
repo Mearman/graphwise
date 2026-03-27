@@ -21,14 +21,14 @@
   "dependencies": {
     "@mantine/core": "^8.3.18",
     "@mantine/hooks": "^8.3.18",
-    "@tabler/icons-react": "3.40.0",
+    "@tabler/icons-react": "3.41.0",
     "cytoscape": "^3.33.1",
     "cytoscape-fcose": "2.2.0",
     "d3-scale": "^4.0.2",
     "d3-selection": "^3.0.0",
     "d3-shape": "^3.2.0",
-    "graphwise": "^1.8.1",
-    "katex": "^0.16.42",
+    "graphwise": "^1.10.0",
+    "katex": "^0.16.43",
     "pako": "^2.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -68,8 +68,8 @@
     "turbo": "^2.8.20",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.57.2",
-    "vite": "^8.0.2",
-    "vitest": "^4.1.1"
+    "vite": "^8.0.3",
+    "vitest": "^4.1.2"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
