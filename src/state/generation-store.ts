@@ -7,11 +7,13 @@ interface GenerationState {
 	readonly nodeCount: number;
 	readonly seed: number;
 	readonly graphClass: GraphClassConfig;
+	readonly maxIterations: number;
 	readonly setNodeCount: (count: number) => void;
 	readonly setSeed: (seed: number) => void;
 	readonly setGraphClassToggle: (key: GraphClassKey, value: boolean) => void;
 	/** Bulk-set the graph class without constraint cascading (for URL restore). */
 	readonly setGraphClass: (config: GraphClassConfig) => void;
+	readonly setMaxIterations: (maxIterations: number) => void;
 }
 
 export const useGenerationStore = create<GenerationState>()(
@@ -20,6 +22,7 @@ export const useGenerationStore = create<GenerationState>()(
 			nodeCount: 20,
 			seed: 42,
 			graphClass: DEFAULT_GRAPH_CLASS,
+			maxIterations: 0,
 			setNodeCount: (count) => {
 				set({ nodeCount: count });
 			},
@@ -35,19 +38,29 @@ export const useGenerationStore = create<GenerationState>()(
 			setGraphClass: (config) => {
 				set({ graphClass: config });
 			},
+			setMaxIterations: (maxIterations) => {
+				set({ maxIterations });
+			},
 		}),
 		{
 			name: "graphwise-generation",
-			version: 1,
-			migrate: (persisted) => {
-				if (
-					typeof persisted === "object" &&
-					persisted !== null &&
-					!("graphClass" in persisted)
-				) {
-					return { ...persisted, graphClass: DEFAULT_GRAPH_CLASS };
+			version: 2,
+			migrate: (persisted, version) => {
+				let state =
+					typeof persisted === "object" && persisted !== null
+						? { ...persisted }
+						: {};
+				if (version < 1) {
+					if (!("graphClass" in state)) {
+						state = { ...state, graphClass: DEFAULT_GRAPH_CLASS };
+					}
 				}
-				return persisted;
+				if (version < 2) {
+					if (!("maxIterations" in state)) {
+						state = { ...state, maxIterations: 0 };
+					}
+				}
+				return state;
 			},
 		},
 	),

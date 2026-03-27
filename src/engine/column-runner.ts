@@ -1,6 +1,7 @@
 import { useColumnStore } from "../state/column-store";
 import { useAnimationStore } from "../state/animation-store";
 import { useGraphStore } from "../state/graph-store";
+import { useGenerationStore } from "../state/generation-store";
 import { getAlgorithm } from "./algorithm-registry";
 import { runWithFrameCapture } from "./animation-runner";
 import { runRanking } from "./ranking-runner";
@@ -22,6 +23,10 @@ export function runAllColumns(): void {
 		console.warn("Cannot run: graph not loaded or insufficient seeds");
 		return;
 	}
+
+	const { maxIterations } = useGenerationStore.getState();
+	const expansionConfig =
+		maxIterations > 0 ? { maxIterations } : undefined;
 
 	const columns = useColumnStore.getState().columns;
 	const setExpansionResult = useColumnStore.getState().setExpansionResult;
@@ -49,7 +54,12 @@ export function runAllColumns(): void {
 				}
 
 				// Run expansion with frame capture
-				const animResult = runWithFrameCapture(graph, seeds, info.run);
+				const animResult = runWithFrameCapture(
+					graph,
+					seeds,
+					info.run,
+					expansionConfig,
+				);
 
 				// Store animation frames for this algorithm
 				loadResult(animResult, column.expansionAlgorithm);
