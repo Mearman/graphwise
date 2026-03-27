@@ -90,10 +90,12 @@ export function AnimationTimeline({
 			const rect = event.currentTarget.getBoundingClientRect();
 			const x = event.clientX - rect.left;
 			const percentage = x / rect.width;
-			const targetFrame = Math.round(percentage * (totalFrames - 1));
+			const frameCount =
+				frameDisplayMode === "relative" ? maxFrameCount : totalFrames;
+			const targetFrame = Math.round(percentage * (frameCount - 1));
 			onSeek(Math.max(0, Math.min(targetFrame, totalFrames - 1)));
 		},
-		[totalFrames, onSeek],
+		[totalFrames, maxFrameCount, frameDisplayMode, onSeek],
 	);
 
 	const handleFrameSeek = useCallback(
@@ -231,8 +233,12 @@ export function AnimationTimeline({
 										0,
 										Math.min(100, (x / rect.width) * 100),
 									);
+									const frameCount =
+										frameDisplayMode === "relative"
+											? maxFrameCount
+											: totalFrames;
 									const targetFrame = Math.round(
-										(percentage / 100) * (totalFrames - 1),
+										(percentage / 100) * (frameCount - 1),
 									);
 									onSeek(targetFrame);
 								};
