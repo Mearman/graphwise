@@ -72,13 +72,15 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 	// Track when user is actively interacting (dragging) to pause viewport sync
 	const isInteractingRef = useRef(false);
 
-	// Effect 1: Element sync — add/remove nodes and edges when graph changes
+	// Effect 1: Element sync — rebuild elements when graph structure changes.
+	// Seeds are excluded here and applied separately by Effect 1b so that seed
+	// changes do not trigger a full remove/re-add (which resets node positions).
 	useEffect(() => {
 		if (!cy || !graph) {
 			return;
 		}
 
-		const elements = graphToCytoscapeElements(graph, seeds);
+		const elements = graphToCytoscapeElements(graph, []);
 
 		cy.elements().remove();
 		cy.add([...elements.nodes]);
@@ -86,7 +88,25 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 
 		// Apply styles - cytoscape expects mutable array, so spread readonly result
 		cy.style([...createStyles(graph.directed), ...(extraStyles ?? [])]);
-	}, [cy, graph, seeds, extraStyles]);
+	}, [cy, graph, extraStyles]);
+
+	// Effect 1b: Seed role sync — update seedRole data on existing nodes without
+	// rebuilding the element list (which would reset node positions).
+	useEffect(() => {
+		if (!cy || !graph) {
+			return;
+		}
+
+		const seedMap = new Map<string, string>();
+		for (const seed of seeds) {
+			seedMap.set(seed.id, seed.role ?? "bidirectional");
+		}
+
+		cy.nodes().forEach((node) => {
+			const role = seedMap.get(node.id()) ?? undefined;
+			node.data("seedRole", role);
+		});
+	}, [cy, graph, seeds]);
 
 	// Effect 2: Layout sync — apply shared positions or run CoSE
 	useEffect(() => {
