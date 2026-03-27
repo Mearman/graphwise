@@ -23,7 +23,7 @@ function MainContent(): ReactNode {
 	return (
 		<Stack
 			gap="md"
-			style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
+			style={{ flex: 1, minHeight: 0 }}
 			pt="md"
 		>
 			{/* Content: Columns or Overlay */}
@@ -35,7 +35,7 @@ function MainContent(): ReactNode {
 						gap: "var(--mantine-spacing-md)",
 						flex: 1,
 						minHeight: 0,
-						overflowX: "auto",
+						overflow: "hidden auto",
 					}}
 				>
 					{columns.map((column) => (
