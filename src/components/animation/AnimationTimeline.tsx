@@ -35,6 +35,10 @@ export interface AnimationTimelineProps {
 	readonly speed: number;
 	/** Callback when speed changes */
 	readonly onSpeedChange: (speed: number) => void;
+	/** Maximum frame count across all algorithms (for relative mode) */
+	readonly maxFrameCount: number;
+	/** Frame display mode: absolute or relative */
+	readonly frameDisplayMode: "absolute" | "relative";
 }
 
 export function AnimationTimeline({
@@ -46,6 +50,8 @@ export function AnimationTimeline({
 	onSeek,
 	speed,
 	onSpeedChange,
+	maxFrameCount,
+	frameDisplayMode,
 }: AnimationTimelineProps): React.ReactElement {
 	// Calculate progress percentage
 	const progressPercentage = useMemo(() => {
@@ -111,9 +117,12 @@ export function AnimationTimeline({
 
 	const formatFrame = useCallback(
 		(frame: number): string => {
+			if (frameDisplayMode === "relative") {
+				return `Frame ${String(frame + 1)}/${String(maxFrameCount)}`;
+			}
 			return `Frame ${String(frame + 1)}/${String(totalFrames)}`;
 		},
-		[totalFrames],
+		[totalFrames, maxFrameCount, frameDisplayMode],
 	);
 
 	const disabled = totalFrames <= 1;

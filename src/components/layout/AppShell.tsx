@@ -59,10 +59,16 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	const showDiscoveryNumbers = useInteractionStore(
 		(state) => state.showDiscoveryNumbers,
 	);
+	const frameDisplayMode = useInteractionStore(
+		(state) => state.frameDisplayMode,
+	);
 	const setZoomEnabled = useInteractionStore((state) => state.setZoomEnabled);
 	const setPanEnabled = useInteractionStore((state) => state.setPanEnabled);
 	const setShowDiscoveryNumbers = useInteractionStore(
 		(state) => state.setShowDiscoveryNumbers,
+	);
+	const setFrameDisplayMode = useInteractionStore(
+		(state) => state.setFrameDisplayMode,
 	);
 	const instances = useCytoscapeInstancesStore((state) => state.instances);
 	const resetLayout = useLayoutStore((state) => state.reset);
@@ -409,6 +415,19 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 										setShowDiscoveryNumbers(e.currentTarget.checked);
 									}}
 								/>
+								<SegmentedControl
+									size="xs"
+									value={frameDisplayMode}
+									onChange={(value) => {
+										setFrameDisplayMode(
+											value === "relative" ? "relative" : "absolute",
+										);
+									}}
+									data={[
+										{ label: "Absolute", value: "absolute" },
+										{ label: "Relative", value: "relative" },
+									]}
+								/>
 							</Group>
 						</Group>
 					</Group>
@@ -423,6 +442,8 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 							onSeek={setSyncedFrameIndex}
 							speed={speed}
 							onSpeedChange={setSpeed}
+							maxFrameCount={maxFrameCount}
+							frameDisplayMode={frameDisplayMode}
 						/>
 					</Box>
 				</Stack>
