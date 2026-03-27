@@ -54,6 +54,7 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 	const { cy, graph, seeds, extraStyles } = options;
 
 	const graphVersion = useGraphStore((state) => state.version);
+	const runningLayoutRef = useRef<cytoscape.Layouts | null>(null);
 	const layoutGraphVersion = useLayoutStore(
 		(state) => state.layoutGraphVersion,
 	);
@@ -114,24 +115,27 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			return;
 		}
 
+		// Stop any previously running layout to prevent animation conflicts
+		if (runningLayoutRef.current !== null) {
+			runningLayoutRef.current.stop();
+			runningLayoutRef.current = null;
+		}
+
 		const positionsValid =
 			positions !== null && layoutGraphVersion === graphVersion;
 
 		if (positionsValid) {
 			// Positions are current for this graph version — apply as preset
-			// Build a map: position data is read-only but layout positions param expects function
 			const posMap = positions;
 			const getPosition = (nodeId: string): NodePosition =>
 				posMap.get(nodeId) ?? { x: 0, y: 0 };
 
-			// Add position data to nodes before layout
 			cy.nodes().forEach((node) => {
 				const nodeId = node.id();
 				const pos = getPosition(nodeId);
 				node.position(pos);
 			});
 
-			// Apply preset layout with no animation
 			cy.layout({
 				name: "preset",
 				animate: false,
@@ -165,9 +169,11 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 				nodeSeparation: Math.max(75, n * 2),
 			};
 			const layout = cy.layout(fcoseOptions);
+			runningLayoutRef.current = layout;
 
 			layout.one("layoutstop", () => {
 				Math.random = origRandom;
+				runningLayoutRef.current = null;
 				const newPositions = new Map<string, NodePosition>();
 				cy.nodes().forEach((node) => {
 					const nodeId = node.id();
@@ -178,6 +184,13 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 
 			layout.run();
 		}
+
+		return () => {
+			if (runningLayoutRef.current !== null) {
+				runningLayoutRef.current.stop();
+				runningLayoutRef.current = null;
+			}
+		};
 	}, [cy, graph, graphVersion, layoutGraphVersion, positions, setPositions]);
 
 	// Effect 3: Drag sync — propagate local drag to store
