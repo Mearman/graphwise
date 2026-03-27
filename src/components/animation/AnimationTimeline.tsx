@@ -118,7 +118,9 @@ export function AnimationTimeline({
 	const formatFrame = useCallback(
 		(frame: number): string => {
 			if (frameDisplayMode === "relative") {
-				return `Frame ${String(frame + 1)}/${String(maxFrameCount)}`;
+				const percentage =
+					maxFrameCount > 0 ? Math.round((frame / maxFrameCount) * 100) : 0;
+				return `${String(percentage)}%`;
 			}
 			return `Frame ${String(frame + 1)}/${String(totalFrames)}`;
 		},
