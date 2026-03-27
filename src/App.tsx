@@ -21,11 +21,7 @@ function MainContent(): ReactNode {
 	const viewMode = useColumnStore((state) => state.viewMode);
 
 	return (
-		<Stack
-			gap="md"
-			style={{ flex: 1, minHeight: 0 }}
-			pt="md"
-		>
+		<Stack gap="md" style={{ flex: 1, minHeight: 0 }} pt="md">
 			{/* Content: Columns or Overlay */}
 			{viewMode === "columns" ? (
 				<Box

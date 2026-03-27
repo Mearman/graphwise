@@ -1,21 +1,21 @@
-import { type ReactNode, useMemo } from "react"
-import { Group, Paper, Text, Stack, Box } from "@mantine/core"
-import { IconRoute, IconTrendingUp } from "@tabler/icons-react"
-import { scaleLinear } from "d3-scale"
-import type { PipelineColumn } from "../../state/column-store"
-import { useAnimationStore } from "../../state/animation-store"
-import { useColumnStore } from "../../state/column-store"
-import { buildDiscoveryCurve } from "../../engine/discovery-curve"
-import { columnColour } from "../../theme/column-colours"
+import { type ReactNode, useMemo } from "react";
+import { Group, Paper, Text, Stack, Box } from "@mantine/core";
+import { IconRoute, IconTrendingUp } from "@tabler/icons-react";
+import { scaleLinear } from "d3-scale";
+import type { PipelineColumn } from "../../state/column-store";
+import { useAnimationStore } from "../../state/animation-store";
+import { useColumnStore } from "../../state/column-store";
+import { buildDiscoveryCurve } from "../../engine/discovery-curve";
+import { columnColour } from "../../theme/column-colours";
 
 interface ColumnMetricsProps {
-	readonly column: PipelineColumn
+	readonly column: PipelineColumn;
 }
 
 interface MetricCardProps {
-	readonly icon: ReactNode
-	readonly label: string
-	readonly value: string | number
+	readonly icon: ReactNode;
+	readonly label: string;
+	readonly value: string | number;
 }
 
 function MetricCard({ icon, label, value }: MetricCardProps): ReactNode {
@@ -33,40 +33,46 @@ function MetricCard({ icon, label, value }: MetricCardProps): ReactNode {
 				</Stack>
 			</Group>
 		</Paper>
-	)
+	);
 }
 
-const SVG_HEIGHT = 48
-const LEFT_PAD = 2
-const RIGHT_PAD = 2
-const TOP_PAD = 4
-const BOTTOM_PAD = 4
+const SVG_HEIGHT = 48;
+const LEFT_PAD = 2;
+const RIGHT_PAD = 2;
+const TOP_PAD = 4;
+const BOTTOM_PAD = 4;
 
 export function ColumnMetrics({ column }: ColumnMetricsProps): ReactNode {
-	const rankingStats = column.rankingResult?.stats
-	const meanSalience = rankingStats?.meanSalience
-	const finalPathCount = column.expansionResult?.stats?.pathsFound ?? 0
+	const rankingStats = column.rankingResult?.stats;
+	const meanSalience = rankingStats?.meanSalience;
+	const finalPathCount = column.expansionResult?.stats.pathsFound ?? 0;
 
-	const algorithmName = column.expansionAlgorithm
-	const columns = useColumnStore((state) => state.columns)
-	const columnIndex = columns.findIndex((c) => c.id === column.id)
+	const algorithmName = column.expansionAlgorithm;
+	const columns = useColumnStore((state) => state.columns);
+	const columnIndex = columns.findIndex((c) => c.id === column.id);
 
-	const algorithmFrames = useAnimationStore((state) => state.algorithmFrames)
-	const syncedFrameIndex = useAnimationStore((state) => state.syncedFrameIndex)
+	const algorithmFrames = useAnimationStore((state) => state.algorithmFrames);
+	const syncedFrameIndex = useAnimationStore((state) => state.syncedFrameIndex);
 
-	const frames =
-		algorithmName !== null ? (algorithmFrames[algorithmName] ?? []) : []
-	const curve = useMemo(() => buildDiscoveryCurve(frames), [frames])
+	const curve = useMemo(
+		() =>
+			buildDiscoveryCurve(
+				algorithmName !== null ? (algorithmFrames[algorithmName] ?? []) : [],
+			),
+		[algorithmName, algorithmFrames],
+	);
 
 	const currentPathCount =
 		curve.length > 0
 			? (curve[Math.min(syncedFrameIndex, curve.length - 1)]?.pathCount ?? 0)
-			: finalPathCount
+			: finalPathCount;
 
-	const maxPaths = curve.length > 0 ? (curve[curve.length - 1]?.pathCount ?? 1) : 1
-	const maxFrame = curve.length > 0 ? (curve[curve.length - 1]?.frameIndex ?? 1) : 1
+	const maxPaths =
+		curve.length > 0 ? (curve[curve.length - 1]?.pathCount ?? 1) : 1;
+	const maxFrame =
+		curve.length > 0 ? (curve[curve.length - 1]?.frameIndex ?? 1) : 1;
 
-	const colour = columnColour(columnIndex)
+	const colour = columnColour(columnIndex);
 
 	const xScale = useMemo(
 		() =>
@@ -74,28 +80,32 @@ export function ColumnMetrics({ column }: ColumnMetricsProps): ReactNode {
 				.domain([0, Math.max(maxFrame, 1)])
 				.range([LEFT_PAD, 100 - RIGHT_PAD]),
 		[maxFrame],
-	)
+	);
 	const yScale = useMemo(
 		() =>
 			scaleLinear()
 				.domain([0, Math.max(maxPaths, 1)])
 				.range([SVG_HEIGHT - BOTTOM_PAD, TOP_PAD]),
 		[maxPaths],
-	)
+	);
 
 	const polylinePoints = curve
-		.map((p) => `${String(xScale(p.frameIndex))},${String(yScale(p.pathCount))}`)
-		.join(" ")
+		.map(
+			(p) => `${String(xScale(p.frameIndex))},${String(yScale(p.pathCount))}`,
+		)
+		.join(" ");
 
-	const cursorX = xScale(Math.min(syncedFrameIndex, maxFrame))
-	const cursorPoint = curve[Math.min(syncedFrameIndex, curve.length - 1)]
+	const cursorX = xScale(Math.min(syncedFrameIndex, maxFrame));
+	const cursorPoint = curve[Math.min(syncedFrameIndex, curve.length - 1)];
 	const cursorY =
-		cursorPoint !== undefined ? yScale(cursorPoint.pathCount) : SVG_HEIGHT - BOTTOM_PAD
+		cursorPoint !== undefined
+			? yScale(cursorPoint.pathCount)
+			: SVG_HEIGHT - BOTTOM_PAD;
 
 	const pathLabel =
 		curve.length > 0
 			? `${String(currentPathCount)} / ${String(finalPathCount)}`
-			: String(finalPathCount)
+			: String(finalPathCount);
 
 	return (
 		<Stack gap="xs">
@@ -141,5 +151,5 @@ export function ColumnMetrics({ column }: ColumnMetricsProps): ReactNode {
 				</Box>
 			)}
 		</Stack>
-	)
+	);
 }

@@ -51,7 +51,7 @@ import { loadFixture, fixtureNames } from "../../engine/fixture-loader";
 import { generateRandomGraph } from "../../engine/random-graph-generator";
 import { GraphClassToggles } from "../graph/GraphClassToggles";
 import { SeedPicker } from "../graph/SeedPicker";
-import { AnimationTimeline } from "../animation/AnimationTimeline";
+import { DiscoveryTimeline } from "../animation/DiscoveryTimeline";
 
 const RANDOM_FIXTURE = "random" as const;
 
@@ -372,9 +372,7 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 								placeholder="0"
 								value={maxIterations}
 								onChange={(value) => {
-									setMaxIterations(
-										typeof value === "number" ? value : 0,
-									);
+									setMaxIterations(typeof value === "number" ? value : 0);
 								}}
 								min={0}
 								step={100}
@@ -482,7 +480,7 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 					</Group>
 					<Divider />
 					<Box px="md" py="xs" style={{ flex: 1, minHeight: 0 }}>
-						<AnimationTimeline
+						<DiscoveryTimeline
 							totalFrames={maxFrameCount}
 							currentFrameIndex={syncedFrameIndex}
 							isPlaying={isPlaying}
@@ -497,7 +495,14 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 					</Box>
 				</Stack>
 			</MantineAppShell.Header>
-			<MantineAppShell.Main style={{ display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden" }}>
+			<MantineAppShell.Main
+				style={{
+					display: "flex",
+					flexDirection: "column",
+					height: "100dvh",
+					overflow: "hidden",
+				}}
+			>
 				{children}
 			</MantineAppShell.Main>
 		</MantineAppShell>

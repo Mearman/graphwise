@@ -25,8 +25,7 @@ export function runAllColumns(): void {
 	}
 
 	const { maxIterations } = useGenerationStore.getState();
-	const expansionConfig =
-		maxIterations > 0 ? { maxIterations } : undefined;
+	const expansionConfig = maxIterations > 0 ? { maxIterations } : undefined;
 
 	const columns = useColumnStore.getState().columns;
 	const setExpansionResult = useColumnStore.getState().setExpansionResult;
