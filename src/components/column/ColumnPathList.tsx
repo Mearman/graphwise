@@ -74,8 +74,8 @@ export function ColumnPathList({ paths, cy }: ColumnPathListProps): ReactNode {
 		if (cy === null) return;
 
 		// Clear previous highlighting
-		cy.edges().removeClass("highlighted-path");
-		cy.nodes().removeClass("highlighted-path");
+		cy.edges().removeClass("highlighted");
+		cy.nodes().removeClass("highlighted");
 
 		if (highlightedPath === null) return;
 
@@ -84,7 +84,7 @@ export function ColumnPathList({ paths, cy }: ColumnPathListProps): ReactNode {
 
 		// Highlight nodes in the path
 		for (const nodeId of path.nodes) {
-			cy.getElementById(nodeId).addClass("highlighted-path");
+			cy.getElementById(nodeId).addClass("highlighted");
 		}
 
 		// Highlight edges between consecutive nodes
@@ -98,7 +98,7 @@ export function ColumnPathList({ paths, cy }: ColumnPathListProps): ReactNode {
 				const t = e.target().id();
 				return (s === source && t === target) || (s === target && t === source);
 			});
-			edge.addClass("highlighted-path");
+			edge.addClass("highlighted");
 		}
 
 		prevHighlightedRef.current = highlightedPath;
@@ -106,8 +106,8 @@ export function ColumnPathList({ paths, cy }: ColumnPathListProps): ReactNode {
 		// Cleanup on unmount or when highlight changes
 		return () => {
 			if (prevHighlightedRef.current === highlightedPath) {
-				cy.edges().removeClass("highlighted-path");
-				cy.nodes().removeClass("highlighted-path");
+				cy.edges().removeClass("highlighted");
+				cy.nodes().removeClass("highlighted");
 			}
 		};
 	}, [cy, highlightedPath, paths]);
