@@ -112,24 +112,23 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	const setNodeCount = useGenerationStore((state) => state.setNodeCount);
 	const setSeed = useGenerationStore((state) => state.setSeed);
 
-	// Local slider state — debounce nodeCount updates to avoid thrashing the layout
-	const [sliderNodeCount, setSliderNodeCount] = useState(nodeCount);
+	// Debounce nodeCount updates — pendingSlider is non-null only while the user
+	// is actively dragging. When null, the slider falls back to the store value
+	// (which reflects URL restores and other external changes without a sync effect).
+	const [pendingSlider, setPendingSlider] = useState<number | null>(null);
 	const nodeCountDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
 		null,
 	);
-
-	// Keep local slider in sync when nodeCount changes externally (e.g. URL restore)
-	useEffect(() => {
-		setSliderNodeCount(nodeCount);
-	}, [nodeCount]);
+	const displayedNodeCount = pendingSlider ?? nodeCount;
 
 	const handleNodeCountChange = (value: number): void => {
-		setSliderNodeCount(value);
+		setPendingSlider(value);
 		if (nodeCountDebounceRef.current !== null) {
 			clearTimeout(nodeCountDebounceRef.current);
 		}
 		nodeCountDebounceRef.current = setTimeout(() => {
 			setNodeCount(value);
+			setPendingSlider(null);
 			nodeCountDebounceRef.current = null;
 		}, 300);
 	};
@@ -295,7 +294,7 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 										<Slider
 											size="xs"
 											label={(val) => `${String(val)} nodes`}
-											value={sliderNodeCount}
+											value={displayedNodeCount}
 											onChange={(value) => {
 												handleNodeCountChange(
 													typeof value === "number" ? value : 20,
