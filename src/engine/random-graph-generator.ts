@@ -78,16 +78,16 @@ function pick(arr: readonly string[], rng: () => number): string {
  * @param nodeCount - Number of nodes (clamped to 3–100)
  * @param seed - Random seed for reproducibility
  * @param config - Atomic graph class configuration
- * @param edgeDensity - Probability of additional edges beyond the backbone (0–1, default 0.3)
+ * @param edgeDensity - Target average extra degree per node beyond the backbone (default 2)
  */
 export function generateRandomGraph(
 	nodeCount: number,
 	seed: number,
 	config: GraphClassConfig,
-	edgeDensity = 0.3,
+	edgeDensity = 2,
 ): GeneratedGraph {
 	const n = Math.max(3, Math.min(100, nodeCount));
-	const density = Math.max(0, Math.min(1, edgeDensity));
+	const density = Math.max(0, edgeDensity);
 	const rng = mulberry32(seed);
 
 	// Phase A: Create graph container
@@ -293,10 +293,12 @@ function addCyclicDisconnectedEdges(
 				graph.addEdge(edgeProps(src, tgt, config, rng));
 			}
 		}
-		// Add extra intra-component edges
+		// Add extra intra-component edges (halved density within components)
+		const compProb =
+			component.length > 1 ? (density * 0.5) / (component.length - 1) : 0;
 		for (let i = 0; i < component.length; i++) {
 			for (let j = i + 2; j < component.length; j++) {
-				if (rng() < density * 0.5) {
+				if (rng() < compProb) {
 					const src = component[i];
 					const tgt = component[j];
 					if (src !== undefined && tgt !== undefined) {
@@ -425,9 +427,10 @@ function partitionIntoComponents(
 	return components;
 }
 
-/** Add random edges based on density, skipping existing edges.
- *  Scales density inversely with node count so extra edge count grows
- *  ~linearly (not quadratically) for large graphs.
+/** Add random edges, skipping existing edges.
+ *  `density` is the target average extra degree per node. The per-pair
+ *  probability is derived as `density / (n - 1)` so total extra edges
+ *  scale linearly with n regardless of graph size.
  */
 function addRandomEdges(
 	graph: AdjacencyMapGraph,
@@ -437,10 +440,10 @@ function addRandomEdges(
 	rng: () => number,
 ): void {
 	const n = nodeIds.length;
-	const scaledDensity = n <= 20 ? density : density * (20 / n);
+	const perPairProb = n > 1 ? density / (n - 1) : 0;
 	for (let i = 0; i < n; i++) {
 		for (let j = i + 1; j < n; j++) {
-			if (rng() < scaledDensity) {
+			if (rng() < perPairProb) {
 				const src = nodeIds[i];
 				const tgt = nodeIds[j];
 				if (src !== undefined && tgt !== undefined) {
