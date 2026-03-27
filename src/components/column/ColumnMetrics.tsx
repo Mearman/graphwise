@@ -43,8 +43,7 @@ const TOP_PAD = 4;
 const BOTTOM_PAD = 4;
 
 export function ColumnMetrics({ column }: ColumnMetricsProps): ReactNode {
-	const rankingStats = column.rankingResult?.stats;
-	const meanSalience = rankingStats?.meanSalience;
+	const meanSalience = column.rankingResult?.meanSalience ?? null;
 	const finalPathCount = column.expansionResult?.stats.pathsFound ?? 0;
 
 	const algorithmName = column.expansionAlgorithm;
@@ -118,7 +117,7 @@ export function ColumnMetrics({ column }: ColumnMetricsProps): ReactNode {
 				<MetricCard
 					icon={<IconTrendingUp size={16} />}
 					label="Mean Salience"
-					value={meanSalience !== undefined ? meanSalience.toFixed(3) : "-"}
+					value={meanSalience !== null ? meanSalience.toFixed(3) : "-"}
 				/>
 			</Group>
 
