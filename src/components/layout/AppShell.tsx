@@ -290,7 +290,10 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 							{/* Generation Controls - only show for Random */}
 							{selectedFixture === RANDOM_FIXTURE && (
 								<Group gap="xs">
-									<Box w={120}>
+									<Stack gap={0} w={120}>
+										<Title order={5} size="xs">
+											Nodes
+										</Title>
 										<Slider
 											size="xs"
 											label={(val) => `${String(val)} nodes`}
@@ -309,10 +312,10 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 												{ value: 100, label: "100" },
 											]}
 										/>
-									</Box>
+									</Stack>
 									<NumberInput
 										size="xs"
-										placeholder="Seed"
+										label="Seed"
 										value={seed}
 										onChange={(value) => {
 											setSeed(typeof value === "number" ? value : 42);
