@@ -146,6 +146,7 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			const origRandom = Math.random;
 			Math.random = mulberry32(graphVersion);
 
+			const n = graph.nodeCount;
 			const fcoseOptions: FcoseLayoutOptions = {
 				name: "fcose",
 				quality: "proof",
@@ -155,13 +156,13 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 				fit: true,
 				padding: 60,
 				nodeDimensionsIncludeLabels: true,
-				nodeRepulsion: 4500,
-				idealEdgeLength: 50,
+				nodeRepulsion: Math.max(4500, n * 200),
+				idealEdgeLength: Math.max(50, Math.sqrt(n) * 12),
 				edgeElasticity: 0.65,
 				gravity: 0.4,
 				gravityRange: 3.8,
 				numIter: 3000,
-				nodeSeparation: 75,
+				nodeSeparation: Math.max(75, n * 2),
 			};
 			const layout = cy.layout(fcoseOptions);
 
