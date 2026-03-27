@@ -94,6 +94,8 @@ export function PipelineColumn({ columnId }: PipelineColumnProps): ReactNode {
 			style={{
 				display: "flex",
 				flexDirection: "column",
+				overflow: "hidden",
+				minWidth: 0,
 			}}
 		>
 			<Stack gap="sm">
