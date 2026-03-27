@@ -24,7 +24,7 @@ function MainContent(): ReactNode {
 		<Stack
 			gap="md"
 			style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
-			p="md"
+			pt="md"
 		>
 			{/* Content: Columns or Overlay */}
 			{viewMode === "columns" ? (

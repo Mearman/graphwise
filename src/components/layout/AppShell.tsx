@@ -261,7 +261,7 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	const headerHeight = 56 + TIMELINE_ROW_HEIGHT;
 
 	return (
-		<MantineAppShell header={{ height: headerHeight }} padding="md">
+		<MantineAppShell header={{ height: headerHeight }} padding={0}>
 			<MantineAppShell.Header className={styles.header}>
 				<Stack gap={0} h="100%">
 					<Group h={56} px="md" gap="xs" wrap="nowrap">
@@ -482,7 +482,7 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 					</Box>
 				</Stack>
 			</MantineAppShell.Header>
-			<MantineAppShell.Main style={{ minHeight: "100vh" }}>
+			<MantineAppShell.Main style={{ display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden" }}>
 				{children}
 			</MantineAppShell.Main>
 		</MantineAppShell>
