@@ -137,10 +137,14 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			return;
 		}
 
-		// Stop any previously running layout to prevent animation conflicts
+		// Stop any previously running layout to prevent animation conflicts.
+		// Clear the ref BEFORE calling .stop() so the layoutstop callback
+		// (which checks the ref) knows the layout was cancelled and skips
+		// saving stale positions.
 		if (runningLayoutRef.current !== null) {
-			runningLayoutRef.current.stop();
+			const stale = runningLayoutRef.current;
 			runningLayoutRef.current = null;
+			stale.stop();
 		}
 
 		const positionsValid =
@@ -171,7 +175,8 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			// of the layout so the same graph always produces the same layout (deterministic
 			// across sessions). Seeding via graph content hash ensures reproducibility.
 			const origRandom = Math.random;
-			Math.random = mulberry32(hashGraph(graph));
+			const graphHash = hashGraph(graph);
+			Math.random = mulberry32(graphHash);
 
 			const n = graph.nodeCount;
 			const fcoseOptions: FcoseLayoutOptions = {
@@ -196,6 +201,11 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 
 			layout.one("layoutstop", () => {
 				Math.random = origRandom;
+				// If the ref was cleared (layout was cancelled), skip saving
+				// stale positions that would overwrite a good layout.
+				if (runningLayoutRef.current !== layout) {
+					return;
+				}
 				runningLayoutRef.current = null;
 				const newPositions = new Map<string, NodePosition>();
 				cy.nodes().forEach((node) => {
@@ -210,8 +220,9 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 
 		return () => {
 			if (runningLayoutRef.current !== null) {
-				runningLayoutRef.current.stop();
+				const stale = runningLayoutRef.current;
 				runningLayoutRef.current = null;
+				stale.stop();
 			}
 		};
 	}, [cy, graph, graphVersion, layoutGraphVersion, positions, setPositions]);
