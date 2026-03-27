@@ -1,9 +1,9 @@
 import { create } from "zustand";
 import type { ExpansionResult } from "graphwise/expansion";
-import type { PARSEResult } from "graphwise/ranking";
 import type { MIVariantName } from "graphwise/ranking/mi";
 import type {
 	ExpansionAlgorithmName,
+	NormalisedRankingResult,
 	RankingAlgorithmName,
 } from "../engine/algorithm-registry";
 
@@ -15,7 +15,7 @@ export interface PipelineColumn {
 	readonly miVariant: MIVariantName;
 	readonly rankingAlgorithm: RankingAlgorithmName;
 	readonly expansionResult: ExpansionResult | null;
-	readonly rankingResult: PARSEResult | null;
+	readonly rankingResult: NormalisedRankingResult | null;
 	readonly isRunning: boolean;
 }
 
@@ -40,7 +40,10 @@ interface ColumnState {
 		id: string,
 		result: ExpansionResult | null,
 	) => void;
-	readonly setRankingResult: (id: string, result: PARSEResult | null) => void;
+	readonly setRankingResult: (
+		id: string,
+		result: NormalisedRankingResult | null,
+	) => void;
 	readonly setRunning: (id: string, isRunning: boolean) => void;
 	readonly setViewMode: (mode: ViewMode) => void;
 	readonly runAll: () => void;

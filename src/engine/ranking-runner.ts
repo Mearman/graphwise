@@ -7,11 +7,11 @@
 
 import type { ReadableGraph, NodeData, EdgeData } from "graphwise/graph";
 import type { ExpansionPath } from "graphwise/expansion";
-import type { PARSEResult } from "graphwise/ranking";
 import type { MIVariantName } from "graphwise/ranking/mi";
 import {
 	getMIVariant,
 	getRankingAlgorithm,
+	type NormalisedRankingResult,
 	type RankingAlgorithmConfig,
 	type RankingAlgorithmName,
 } from "./algorithm-registry";
@@ -29,7 +29,7 @@ export function runRanking<N extends NodeData, E extends EdgeData>(
 	paths: readonly ExpansionPath[],
 	miVariantName: MIVariantName,
 	rankingAlgorithmName: RankingAlgorithmName = "parse",
-): PARSEResult {
+): NormalisedRankingResult {
 	const miInfo = getMIVariant(miVariantName);
 	if (miInfo === undefined) {
 		throw new Error(`Unknown MI variant: ${miVariantName}`);
