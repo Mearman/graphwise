@@ -34,6 +34,28 @@ function mulberry32(seed: number): () => number {
 	};
 }
 
+/** Hash a graph structure to a 32-bit integer for deterministic layout seeding.
+ * Same graph → same hash → same fCoSE layout (deterministic across sessions). */
+function hashGraph(graph: AdjacencyMapGraph): number {
+	let hash = 0;
+	// Hash node count first
+	hash = ((hash << 5) - hash + graph.nodeCount) | 0;
+	// Hash all node IDs in order
+	for (const nodeId of graph.nodeIds()) {
+		for (let i = 0; i < nodeId.length; i++) {
+			hash = ((hash << 5) - hash + nodeId.charCodeAt(i)) | 0;
+		}
+	}
+	// Hash edge count
+	hash = ((hash << 5) - hash + [...graph.edges()].length) | 0;
+	// Hash edge directions
+	for (const { source, target } of graph.edges()) {
+		hash = ((hash << 5) - hash + source.charCodeAt(0)) | 0;
+		hash = ((hash << 5) - hash + target.charCodeAt(0)) | 0;
+	}
+	return Math.abs(hash);
+}
+
 function isNode(target: unknown): target is NodeSingular {
 	return (
 		typeof target === "object" &&
@@ -146,9 +168,10 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			// Positions are stale or missing — run fCoSE with spectral initialisation.
 			// fCoSE's spectral stage (randomize: true) uses Math.random() internally
 			// with no seed API. Patch Math.random with a seeded PRNG for the duration
-			// of the layout so the same graphVersion always produces the same layout.
+			// of the layout so the same graph always produces the same layout (deterministic
+			// across sessions). Seeding via graph content hash ensures reproducibility.
 			const origRandom = Math.random;
-			Math.random = mulberry32(graphVersion);
+			Math.random = mulberry32(hashGraph(graph));
 
 			const n = graph.nodeCount;
 			const fcoseOptions: FcoseLayoutOptions = {
