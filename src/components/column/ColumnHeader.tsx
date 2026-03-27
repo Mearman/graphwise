@@ -12,6 +12,7 @@ import { IconX, IconCopy } from "@tabler/icons-react";
 import {
 	expansionAlgorithmNames,
 	getAlgorithm,
+	getRankingAlgorithm,
 	miVariantNames,
 	rankingAlgorithmNames,
 	type ExpansionAlgorithmName,
@@ -88,10 +89,13 @@ export function ColumnHeader({ column }: ColumnHeaderProps): ReactNode {
 		label: name,
 	}));
 
-	const rankingOptions = validRankingAlgorithms.map((name) => ({
-		value: name,
-		label: name,
-	}));
+	const rankingOptions = validRankingAlgorithms.map((name) => {
+		const info = getRankingAlgorithm(name);
+		return { value: name, label: info?.label ?? name };
+	});
+
+	const selectedRankingInfo = getRankingAlgorithm(column.rankingAlgorithm);
+	const showMIVariant = selectedRankingInfo?.usesML ?? true;
 
 	const handleExpansionChange = useCallback(
 		(value: string | null) => {
@@ -190,13 +194,15 @@ export function ColumnHeader({ column }: ColumnHeaderProps): ReactNode {
 			/>
 
 			<Group grow>
-				<Select
-					size="xs"
-					label="MI variant"
-					data={miOptions}
-					value={column.miVariant}
-					onChange={handleMIChange}
-				/>
+				{showMIVariant && (
+					<Select
+						size="xs"
+						label="MI variant"
+						data={miOptions}
+						value={column.miVariant}
+						onChange={handleMIChange}
+					/>
+				)}
 				<Select
 					size="xs"
 					label="Ranking"
