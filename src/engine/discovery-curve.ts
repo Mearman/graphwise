@@ -1,8 +1,8 @@
-import type { ExpansionAnimationFrame } from "./frame-types"
+import type { ExpansionAnimationFrame } from "./frame-types";
 
 export interface CurvePoint {
-	readonly frameIndex: number
-	readonly pathCount: number
+	readonly frameIndex: number;
+	readonly pathCount: number;
 }
 
 /**
@@ -16,5 +16,5 @@ export function buildDiscoveryCurve(
 	return frames.map((f) => ({
 		frameIndex: f.index,
 		pathCount: f.discoveredPaths.length,
-	}))
+	}));
 }
