@@ -8,7 +8,6 @@ import {
 	Slider,
 	Tooltip,
 	ActionIcon,
-	Badge,
 } from "@mantine/core";
 import {
 	IconPlayerPlay,
@@ -118,138 +117,127 @@ export function AnimationTimeline({
 		[totalFrames],
 	);
 
-	if (totalFrames <= 1) {
-		return (
-			<Box className={styles.container}>
-				<Text size="xs" fw={500} c="dimmed">
-					No animation data available
-				</Text>
-			</Box>
-		);
-	}
+	const disabled = totalFrames <= 1;
 
 	return (
-		<Box className={styles.container}>
-			<div className={styles.header}>
-				<Text className={styles.title}>Animation Timeline</Text>
-				<Badge size="xs" variant={localIsPlaying ? "filled" : "outline"}>
-					{localIsPlaying ? "Playing" : "Paused"}
-				</Badge>
-			</div>
+		<Box className={styles.container} style={{ opacity: disabled ? 0.4 : 1 }}>
+			{/* Controls group: left side, spans both rows */}
+			<Group gap="xs" className={styles.controls}>
+				<Tooltip label="Skip to Start">
+					<ActionIcon
+						size="sm"
+						variant="subtle"
+						onClick={() => {
+							onSeek(0);
+						}}
+						disabled={disabled || currentFrameIndex === 0}
+					>
+						<IconPlayerSkipBack size={16} />
+					</ActionIcon>
+				</Tooltip>
+				<Tooltip label="Previous Frame">
+					<ActionIcon
+						size="sm"
+						variant="subtle"
+						onClick={() => {
+							handleFrameSeek("prev");
+						}}
+						disabled={disabled || currentFrameIndex === 0}
+					>
+						<IconChevronLeft size={16} />
+					</ActionIcon>
+				</Tooltip>
+				<Button
+					variant={localIsPlaying ? "filled" : "subtle"}
+					onClick={handlePlayToggle}
+					size="sm"
+					disabled={disabled}
+				>
+					{localIsPlaying ? (
+						<IconPlayerPause size={16} />
+					) : (
+						<IconPlayerPlay size={16} />
+					)}
+				</Button>
+				<Tooltip label="Next Frame">
+					<ActionIcon
+						size="sm"
+						variant="subtle"
+						onClick={() => {
+							handleFrameSeek("next");
+						}}
+						disabled={disabled || currentFrameIndex === totalFrames - 1}
+					>
+						<IconChevronRight size={16} />
+					</ActionIcon>
+				</Tooltip>
+				<Tooltip label="Skip to End">
+					<ActionIcon
+						size="sm"
+						variant="subtle"
+						onClick={() => {
+							onSeek(totalFrames - 1);
+						}}
+						disabled={disabled || currentFrameIndex === totalFrames - 1}
+					>
+						<IconPlayerSkipForward size={16} />
+					</ActionIcon>
+				</Tooltip>
+			</Group>
 
-			<Stack gap="xs">
-				{/* Progress Bar */}
-				<Box>
-					<Text size="xs" c="dimmed" mb={4}>
-						Progress: {formatFrame(currentFrameIndex)}
-					</Text>
-					<div className={styles.progressTrack} onClick={handleSeek}>
+			{/* Right section: progress bar and speed slider stacked */}
+			<Stack gap={4} className={styles.rightSection}>
+				{/* Row 1: progress bar + frame label */}
+				<Group gap="xs" align="center">
+					<div
+						className={styles.progressTrack}
+						onClick={disabled ? undefined : handleSeek}
+						style={{ cursor: disabled ? "default" : "pointer" }}
+					>
 						<div
 							className={styles.progressFill}
 							style={{ width: `${String(progress)}%` }}
 						/>
-						<div
-							className={styles.progressIndicator}
-							style={{ left: `${String(progress)}%` }}
-							onMouseDown={(e) => {
-								e.preventDefault();
-								const track = e.currentTarget.parentElement;
-								if (track === null) return;
+						{!disabled && (
+							<div
+								className={styles.progressIndicator}
+								style={{ left: `${String(progress)}%` }}
+								onMouseDown={(e) => {
+									e.preventDefault();
+									const track = e.currentTarget.parentElement;
+									if (track === null) return;
 
-								const handleMouseMove = (moveEvent: MouseEvent): void => {
-									const rect = track.getBoundingClientRect();
-									const x = moveEvent.clientX - rect.left;
-									const percentage = Math.max(
-										0,
-										Math.min(100, (x / rect.width) * 100),
-									);
-									const targetFrame = Math.round(
-										(percentage / 100) * (totalFrames - 1),
-									);
-									onSeek(targetFrame);
-								};
+									const handleMouseMove = (moveEvent: MouseEvent): void => {
+										const rect = track.getBoundingClientRect();
+										const x = moveEvent.clientX - rect.left;
+										const percentage = Math.max(
+											0,
+											Math.min(100, (x / rect.width) * 100),
+										);
+										const targetFrame = Math.round(
+											(percentage / 100) * (totalFrames - 1),
+										);
+										onSeek(targetFrame);
+									};
 
-								const handleMouseUp = (): void => {
-									document.removeEventListener("mousemove", handleMouseMove);
-									document.removeEventListener("mouseup", handleMouseUp);
-								};
+									const handleMouseUp = (): void => {
+										document.removeEventListener("mousemove", handleMouseMove);
+										document.removeEventListener("mouseup", handleMouseUp);
+									};
 
-								document.addEventListener("mousemove", handleMouseMove);
-								document.addEventListener("mouseup", handleMouseUp);
-							}}
-						/>
+									document.addEventListener("mousemove", handleMouseMove);
+									document.addEventListener("mouseup", handleMouseUp);
+								}}
+							/>
+						)}
 					</div>
-				</Box>
-
-				{/* Frame Navigation */}
-				<Group justify="space-between" gap="xs">
-					<Group gap="xs">
-						<Tooltip label="Previous Frame">
-							<ActionIcon
-								size="sm"
-								variant="subtle"
-								onClick={() => {
-									handleFrameSeek("prev");
-								}}
-								disabled={currentFrameIndex === 0}
-							>
-								<IconChevronLeft size={16} />
-							</ActionIcon>
-						</Tooltip>
-						<Button
-							variant={localIsPlaying ? "filled" : "subtle"}
-							onClick={handlePlayToggle}
-							size="sm"
-						>
-							{localIsPlaying ? (
-								<IconPlayerPause size={16} />
-							) : (
-								<IconPlayerPlay size={16} />
-							)}
-						</Button>
-						<Tooltip label="Next Frame">
-							<ActionIcon
-								size="sm"
-								variant="subtle"
-								onClick={() => {
-									handleFrameSeek("next");
-								}}
-								disabled={currentFrameIndex === totalFrames - 1}
-							>
-								<IconChevronRight size={16} />
-							</ActionIcon>
-						</Tooltip>
-					</Group>
-					<Group gap="xs">
-						<Tooltip label="Skip to Start">
-							<ActionIcon
-								size="sm"
-								variant="subtle"
-								onClick={() => {
-									onSeek(0);
-								}}
-								disabled={currentFrameIndex === 0}
-							>
-								<IconPlayerSkipBack size={16} />
-							</ActionIcon>
-						</Tooltip>
-						<Tooltip label="Skip to End">
-							<ActionIcon
-								size="sm"
-								variant="subtle"
-								onClick={() => {
-									onSeek(totalFrames - 1);
-								}}
-								disabled={currentFrameIndex === totalFrames - 1}
-							>
-								<IconPlayerSkipForward size={16} />
-							</ActionIcon>
-						</Tooltip>
-					</Group>
+					<Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
+						{disabled ? "—" : formatFrame(currentFrameIndex)}
+					</Text>
 				</Group>
 
-				{/* Speed Control */}
-				<Box className={styles.speedControl}>
+				{/* Row 2: speed control */}
+				<Group gap="xs" className={styles.speedControl}>
 					<Text size="xs" c="dimmed">
 						Speed:
 					</Text>
@@ -260,6 +248,7 @@ export function AnimationTimeline({
 						min={0.5}
 						max={4}
 						step={0.5}
+						disabled={disabled}
 						marks={[
 							{ value: 0.5, label: "0.5x" },
 							{ value: 1, label: "1x" },
@@ -267,7 +256,7 @@ export function AnimationTimeline({
 							{ value: 4, label: "4x" },
 						]}
 					/>
-				</Box>
+				</Group>
 			</Stack>
 		</Box>
 	);

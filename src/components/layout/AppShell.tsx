@@ -221,9 +221,9 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 		}
 	};
 
-	// Calculate dynamic header height
-	const TIMELINE_ROW_HEIGHT = 150;
-	const headerHeight = maxFrameCount > 0 ? 56 + TIMELINE_ROW_HEIGHT : 56;
+	// Fixed header height: always reserve space for timeline row
+	const TIMELINE_ROW_HEIGHT = 80;
+	const headerHeight = 56 + TIMELINE_ROW_HEIGHT;
 
 	return (
 		<MantineAppShell header={{ height: headerHeight }} padding="md">
@@ -412,23 +412,19 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 							</Group>
 						</Group>
 					</Group>
-					{maxFrameCount > 0 && (
-						<>
-							<Divider />
-							<Box px="md" py="xs" style={{ flex: 1, minHeight: 0 }}>
-								<AnimationTimeline
-									totalFrames={maxFrameCount}
-									currentFrameIndex={syncedFrameIndex}
-									isPlaying={isPlaying}
-									onPlay={togglePlay}
-									onPause={togglePlay}
-									onSeek={setSyncedFrameIndex}
-									speed={speed}
-									onSpeedChange={setSpeed}
-								/>
-							</Box>
-						</>
-					)}
+					<Divider />
+					<Box px="md" py="xs" style={{ flex: 1, minHeight: 0 }}>
+						<AnimationTimeline
+							totalFrames={maxFrameCount}
+							currentFrameIndex={syncedFrameIndex}
+							isPlaying={isPlaying}
+							onPlay={togglePlay}
+							onPause={togglePlay}
+							onSeek={setSyncedFrameIndex}
+							speed={speed}
+							onSpeedChange={setSpeed}
+						/>
+					</Box>
 				</Stack>
 			</MantineAppShell.Header>
 			<MantineAppShell.Main style={{ minHeight: "100vh" }}>
