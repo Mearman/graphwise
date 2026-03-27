@@ -30,12 +30,12 @@ function MainContent(): ReactNode {
 			{viewMode === "columns" ? (
 				<Box
 					style={{
-						display: "grid",
-						gridAutoFlow: "column",
-						gridAutoColumns: "1fr",
+						display: "flex",
+						justifyContent: "safe center",
 						gap: "var(--mantine-spacing-md)",
 						flex: 1,
 						minHeight: 0,
+						overflowX: "auto",
 					}}
 				>
 					{columns.map((column) => (
@@ -44,6 +44,8 @@ function MainContent(): ReactNode {
 							style={{
 								display: "flex",
 								flexDirection: "column",
+								flex: "1 0 calc(0.75 * min(100vw, 100vh) / 2)",
+								maxWidth: "calc(0.75 * min(100vw, 100vh))",
 							}}
 						>
 							<PipelineColumn columnId={column.id} />
