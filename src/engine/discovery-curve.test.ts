@@ -13,8 +13,9 @@ function makeFrame(index: number, pathCount: number): ExpansionAnimationFrame {
 		frontierQueues: [],
 		frontierSizes: [],
 		discoveredPaths: Array.from({ length: pathCount }, (_, i) => ({
+			fromSeed: { id: "s0" },
+			toSeed: { id: "s1" },
 			nodes: [`n${String(i)}`, `n${String(i + 1)}`],
-			edges: [`e${String(i)}`],
 		})) as ExpansionAnimationFrame["discoveredPaths"],
 		edgesTraversed: 0,
 		newPathDiscovered: null,
