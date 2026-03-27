@@ -26,7 +26,20 @@ import {
 	dfsPriority,
 } from "graphwise/expansion";
 import type { MIFunction, MIVariantName } from "graphwise/ranking/mi";
-import { parse, type PARSEResult } from "graphwise/ranking";
+import {
+	parse,
+	shortest,
+	degreeSum,
+	widestPath,
+	jaccardArithmetic,
+	pagerank,
+	betweenness,
+	katz,
+	communicability,
+	resistanceDistance,
+	randomRanking,
+	hittingTime,
+} from "graphwise/ranking";
 import {
 	jaccard,
 	adamicAdar,
@@ -63,7 +76,29 @@ export type ExpansionAlgorithmName =
 	| "random-priority"
 	| "dfs-priority";
 
-export type RankingAlgorithmName = "parse" | "parse-stable";
+export type RankingAlgorithmName =
+	| "parse"
+	| "parse-stable"
+	| "shortest"
+	| "degree-sum"
+	| "widest-path"
+	| "jaccard-arithmetic"
+	| "pagerank"
+	| "betweenness"
+	| "katz"
+	| "communicability"
+	| "resistance-distance"
+	| "random-ranking"
+	| "hitting-time";
+
+/**
+ * Normalised ranking result — unified return type for all ranking algorithms.
+ * `meanSalience` is null for non-PARSE baselines.
+ */
+export interface NormalisedRankingResult {
+	readonly paths: readonly ExpansionPath[];
+	readonly meanSalience: number | null;
+}
 
 export type SeedSelectionStrategyName = "provided-order" | "stable-node-id";
 
@@ -109,13 +144,15 @@ type RankingAlgorithmFn = <N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	paths: readonly ExpansionPath[],
 	config: RankingAlgorithmConfig<N, E>,
-) => PARSEResult;
+) => NormalisedRankingResult;
 
 export interface RankingAlgorithmInfo {
 	readonly name: RankingAlgorithmName;
 	readonly label: string;
 	readonly description: string;
 	readonly category: "novel" | "baseline";
+	/** Whether this algorithm uses MI functions (PARSE variants). */
+	readonly usesML: boolean;
 	readonly run: RankingAlgorithmFn;
 }
 
@@ -377,25 +414,152 @@ const RANKING_ALGORITHMS: readonly RankingAlgorithmInfo[] = [
 		name: "parse",
 		label: "PARSE",
 		description: "Path salience ranking using geometric-mean MI scores",
-		category: "baseline",
-		run: (graph, paths, config) =>
-			parse(graph, paths, {
+		category: "novel",
+		usesML: true,
+		run: (graph, paths, config) => {
+			const result = parse(graph, paths, {
 				mi: config.mi,
 				epsilon: config.epsilon ?? 1e-10,
-				includeSalience: config.includeSalience ?? true,
-			}),
+				includeSalience: true,
+			});
+			return { paths: result.paths, meanSalience: result.stats.meanSalience };
+		},
 	},
 	{
 		name: "parse-stable",
 		label: "PARSE (Stable)",
 		description: "PARSE ranking with explicit deterministic defaults",
-		category: "baseline",
-		run: (graph, paths, config) =>
-			parse(graph, paths, {
+		category: "novel",
+		usesML: true,
+		run: (graph, paths, config) => {
+			const result = parse(graph, paths, {
 				mi: config.mi,
 				epsilon: config.epsilon ?? 1e-10,
-				includeSalience: config.includeSalience ?? true,
-			}),
+				includeSalience: true,
+			});
+			return { paths: result.paths, meanSalience: result.stats.meanSalience };
+		},
+	},
+	{
+		name: "shortest",
+		label: "Shortest Path",
+		description: "Rank paths by total hop count (ascending)",
+		category: "baseline",
+		usesML: false,
+		run: (_graph, paths) => {
+			const result = shortest(_graph, paths);
+			return { paths: result.paths, meanSalience: null };
+		},
+	},
+	{
+		name: "degree-sum",
+		label: "Degree Sum",
+		description: "Rank paths by sum of node degrees (descending)",
+		category: "baseline",
+		usesML: false,
+		run: (_graph, paths) => {
+			const result = degreeSum(_graph, paths);
+			return { paths: result.paths, meanSalience: null };
+		},
+	},
+	{
+		name: "widest-path",
+		label: "Widest Path",
+		description: "Rank paths by minimum edge weight along the path",
+		category: "baseline",
+		usesML: false,
+		run: (_graph, paths) => {
+			const result = widestPath(_graph, paths);
+			return { paths: result.paths, meanSalience: null };
+		},
+	},
+	{
+		name: "jaccard-arithmetic",
+		label: "Jaccard (Arithmetic)",
+		description: "Rank paths by arithmetic mean Jaccard similarity of edges",
+		category: "baseline",
+		usesML: false,
+		run: (_graph, paths) => {
+			const result = jaccardArithmetic(_graph, paths);
+			return { paths: result.paths, meanSalience: null };
+		},
+	},
+	{
+		name: "pagerank",
+		label: "PageRank",
+		description: "Rank paths by sum of PageRank scores of constituent nodes",
+		category: "baseline",
+		usesML: false,
+		run: (_graph, paths) => {
+			const result = pagerank(_graph, paths);
+			return { paths: result.paths, meanSalience: null };
+		},
+	},
+	{
+		name: "betweenness",
+		label: "Betweenness",
+		description: "Rank paths by sum of betweenness centrality of nodes",
+		category: "baseline",
+		usesML: false,
+		run: (_graph, paths) => {
+			const result = betweenness(_graph, paths);
+			return { paths: result.paths, meanSalience: null };
+		},
+	},
+	{
+		name: "katz",
+		label: "Katz Centrality",
+		description: "Rank paths by sum of Katz centrality scores",
+		category: "baseline",
+		usesML: false,
+		run: (_graph, paths) => {
+			const result = katz(_graph, paths);
+			return { paths: result.paths, meanSalience: null };
+		},
+	},
+	{
+		name: "communicability",
+		label: "Communicability",
+		description: "Rank paths by matrix-exponential communicability scores",
+		category: "baseline",
+		usesML: false,
+		run: (_graph, paths) => {
+			const result = communicability(_graph, paths);
+			return { paths: result.paths, meanSalience: null };
+		},
+	},
+	{
+		name: "resistance-distance",
+		label: "Resistance Distance",
+		description: "Rank paths by effective resistance (lower is better)",
+		category: "baseline",
+		usesML: false,
+		run: (_graph, paths) => {
+			const result = resistanceDistance(_graph, paths);
+			return { paths: result.paths, meanSalience: null };
+		},
+	},
+	{
+		name: "random-ranking",
+		label: "Random",
+		description: "Rank paths randomly (baseline for comparison)",
+		category: "baseline",
+		usesML: false,
+		run: (_graph, paths) => {
+			const result = randomRanking(_graph, paths);
+			return { paths: result.paths, meanSalience: null };
+		},
+	},
+	{
+		name: "hitting-time",
+		label: "Hitting Time",
+		description: "Rank paths by expected random-walk hitting time",
+		category: "baseline",
+		usesML: false,
+		run: (_graph, paths) => {
+			const result = hittingTime(_graph, paths);
+			return { paths: result.paths, meanSalience: null };
+		},
 	},
 ];
 
