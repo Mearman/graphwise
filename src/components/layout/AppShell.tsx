@@ -1,4 +1,10 @@
-import { type ReactNode, useEffect, useCallback } from "react";
+import {
+	type ReactNode,
+	useEffect,
+	useCallback,
+	useState,
+	useRef,
+} from "react";
 import {
 	AppShell as MantineAppShell,
 	Group,
@@ -105,6 +111,28 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 	const graphClass = useGenerationStore((state) => state.graphClass);
 	const setNodeCount = useGenerationStore((state) => state.setNodeCount);
 	const setSeed = useGenerationStore((state) => state.setSeed);
+
+	// Local slider state — debounce nodeCount updates to avoid thrashing the layout
+	const [sliderNodeCount, setSliderNodeCount] = useState(nodeCount);
+	const nodeCountDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
+
+	// Keep local slider in sync when nodeCount changes externally (e.g. URL restore)
+	useEffect(() => {
+		setSliderNodeCount(nodeCount);
+	}, [nodeCount]);
+
+	const handleNodeCountChange = (value: number): void => {
+		setSliderNodeCount(value);
+		if (nodeCountDebounceRef.current !== null) {
+			clearTimeout(nodeCountDebounceRef.current);
+		}
+		nodeCountDebounceRef.current = setTimeout(() => {
+			setNodeCount(value);
+			nodeCountDebounceRef.current = null;
+		}, 300);
+	};
 
 	// App state
 	const selectedFixture = useAppStore((state) => state.selectedFixture);
@@ -267,9 +295,11 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 										<Slider
 											size="xs"
 											label={(val) => `${String(val)} nodes`}
-											value={nodeCount}
+											value={sliderNodeCount}
 											onChange={(value) => {
-												setNodeCount(typeof value === "number" ? value : 20);
+												handleNodeCountChange(
+													typeof value === "number" ? value : 20,
+												);
 											}}
 											min={3}
 											max={100}

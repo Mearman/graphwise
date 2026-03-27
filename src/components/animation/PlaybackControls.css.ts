@@ -1,8 +1,8 @@
 import { style } from "@vanilla-extract/css";
-import { tokens } from "../../theme/tokens.css";
+import { space } from "../../theme/tokens.css";
 
 export const container = style({
 	display: "flex",
 	flexDirection: "column",
-	gap: tokens.space.md,
+	gap: space.md,
 });
