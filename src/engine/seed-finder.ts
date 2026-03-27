@@ -1,4 +1,4 @@
-import { bfs } from "graphwise/traversal";
+import { bfs, bfsWithPath } from "graphwise/traversal";
 import type { AdjacencyMapGraph } from "graphwise/graph";
 import type { Seed } from "graphwise/expansion";
 
@@ -23,24 +23,41 @@ export function seedsAreValid(
 
 /**
  * Finds a pair of nodes with a path between them and returns them as seeds.
- * Picks the source as the first node that has any reachable neighbours, and
- * the target as the node ~2/3 through BFS order for a meaningful spread.
+ *
+ * Enforces a minimum BFS depth of `floor(sqrt(nodeCount))` (minimum 2) so
+ * seeds are meaningfully spread apart relative to the graph size. Falls back
+ * to the furthest reachable node if no node meets the minimum depth.
+ *
  * Returns null if the graph has no connected pair.
  */
 export function findValidSeeds(
 	graph: AdjacencyMapGraph,
 ): readonly Seed[] | null {
+	const minDepth = Math.max(2, Math.floor(Math.sqrt(graph.nodeCount)));
+
 	for (const sourceId of graph.nodeIds()) {
-		const reachable: string[] = [];
-		for (const nodeId of bfs(graph, sourceId)) {
-			if (nodeId !== sourceId) {
-				reachable.push(nodeId);
+		const atMinDepth: string[] = [];
+		let furthest: string | null = null;
+		let furthestDepth = 0;
+
+		for (const { node, depth } of bfsWithPath(graph, sourceId)) {
+			if (node === sourceId) continue;
+			if (depth >= minDepth) {
+				atMinDepth.push(node);
+			}
+			if (depth > furthestDepth) {
+				furthestDepth = depth;
+				furthest = node;
 			}
 		}
+
+		const candidates =
+			atMinDepth.length > 0 ? atMinDepth : furthest !== null ? [furthest] : [];
 		const targetId =
-			reachable[Math.floor(reachable.length * 0.67)] ??
-			reachable[reachable.length - 1] ??
+			candidates[Math.floor(candidates.length * 0.67)] ??
+			candidates[candidates.length - 1] ??
 			null;
+
 		if (targetId !== null) {
 			return [
 				{ id: sourceId, role: "source" },
