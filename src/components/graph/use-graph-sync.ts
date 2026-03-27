@@ -174,6 +174,14 @@ export function useGraphSync(options: UseGraphSyncOptions): void {
 			// with no seed API. Patch Math.random with a seeded PRNG for the duration
 			// of the layout so the same graph always produces the same layout (deterministic
 			// across sessions). Seeding via graph content hash ensures reproducibility.
+
+			// Reset all node positions to origin so fCoSE has identical starting
+			// conditions whether this is a fresh mount (nodes default to 0,0) or a
+			// layout reset (nodes have positions from the previous layout).
+			cy.nodes().forEach((node) => {
+				node.position({ x: 0, y: 0 });
+			});
+
 			const origRandom = Math.random;
 			const graphHash = hashGraph(graph);
 			Math.random = mulberry32(graphHash);
