@@ -1,8 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
-import { lace, laceAsync } from "./lace";
+import {
+	lace,
+	laceAsync,
+	laceBatchPriority,
+	laceWithBatchPriority,
+} from "./lace";
 import type { LACEConfig } from "./lace";
-import type { Seed } from "./types";
+import type { Seed, BatchPriorityContext } from "./types";
 import { jaccard } from "../ranking/mi/jaccard";
 import {
 	createLinearChainGraph,
@@ -200,5 +205,121 @@ describe("laceAsync export", () => {
 		// async signature.
 		expect(typeof laceAsync).toBe("function");
 		expect(laceAsync.constructor.name).toBe("AsyncFunction");
+	});
+});
+
+describe("laceBatchPriority", () => {
+	it("returns a Map of priorities for candidates", () => {
+		const graph = createLinearChainGraph();
+		const candidates = ["B", "C", "D"];
+		const visited = new Set<string>(["A"]);
+		const visitedByFrontier = new Map<string, number>([["A", 0]]);
+
+		const context: BatchPriorityContext = {
+			graph,
+			visited,
+			visitedByFrontier,
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = laceBatchPriority(candidates, context);
+
+		expect(result).toBeInstanceOf(Map);
+		expect(result.size).toBe(3);
+		for (const candidate of candidates) {
+			expect(result.has(candidate)).toBe(true);
+			expect(typeof result.get(candidate)).toBe("number");
+		}
+	});
+
+	it("returns priorities between 0 and 1", () => {
+		const graph = createLinearChainGraph();
+		const candidates = ["B", "C"];
+
+		const context: BatchPriorityContext = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = laceBatchPriority(candidates, context);
+
+		for (const [, priority] of result) {
+			expect(priority).toBeGreaterThanOrEqual(0);
+			expect(priority).toBeLessThanOrEqual(1);
+		}
+	});
+
+	it("handles empty candidates", () => {
+		const graph = createLinearChainGraph();
+		const candidates: string[] = [];
+
+		const context: BatchPriorityContext = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = laceBatchPriority(candidates, context);
+
+		expect(result.size).toBe(0);
+	});
+
+	it("assigns priorities based on MI to same-frontier visited nodes", () => {
+		const graph = createOverlapGraph();
+		const candidates = ["B", "E"];
+
+		const context: BatchPriorityContext<KGNode> = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = laceBatchPriority(candidates, context);
+
+		expect(result.get("B")).toBeDefined();
+		expect(result.get("E")).toBeDefined();
+	});
+});
+
+describe("laceWithBatchPriority", () => {
+	it("returns config with batchPriority function", () => {
+		const config = laceWithBatchPriority({ maxIterations: 10 });
+
+		expect(config.batchPriority).toBeDefined();
+		expect(typeof config.batchPriority).toBe("function");
+		expect(config.maxIterations).toBe(10);
+	});
+
+	it("uses default config when no config provided", () => {
+		const config = laceWithBatchPriority();
+
+		expect(config.batchPriority).toBeDefined();
+		expect(typeof config.batchPriority).toBe("function");
+	});
+
+	it("batchPriority function produces valid output", () => {
+		const config = laceWithBatchPriority();
+
+		const graph = createLinearChainGraph();
+		const candidates = ["B"];
+		const context: BatchPriorityContext = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = config.batchPriority(candidates, context);
+		expect(result.size).toBe(1);
+		expect(result.has("B")).toBe(true);
 	});
 });
