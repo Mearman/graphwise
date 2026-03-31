@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { sift, siftAsync } from "./sift";
-import type { Seed } from "./types";
+import {
+	sift,
+	siftAsync,
+	siftBatchPriority,
+	siftWithBatchPriority,
+} from "./sift";
+import type { Seed, BatchPriorityContext } from "./types";
 import {
 	createLinearChainGraph,
 	createDisconnectedGraph,
@@ -122,11 +127,102 @@ describe("sift expansion", () => {
 
 describe("siftAsync export", () => {
 	it("is an async function", () => {
-		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
-		// The priority function accesses context.graph via avgFrontierMI which is the
-		// sentinel in async mode. This test verifies the export exists with the correct
-		// async signature.
 		expect(typeof siftAsync).toBe("function");
 		expect(siftAsync.constructor.name).toBe("AsyncFunction");
+	});
+});
+
+describe("siftBatchPriority", () => {
+	it("returns a Map of priorities for candidates", () => {
+		const graph = createLinearChainGraph();
+		const candidates = ["B", "C", "D"];
+
+		const context: BatchPriorityContext = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = siftBatchPriority(candidates, context);
+
+		expect(result).toBeInstanceOf(Map);
+		expect(result.size).toBe(3);
+		for (const candidate of candidates) {
+			expect(result.has(candidate)).toBe(true);
+			expect(typeof result.get(candidate)).toBe("number");
+		}
+	});
+
+	it("handles empty candidates", () => {
+		const graph = createLinearChainGraph();
+		const candidates: string[] = [];
+
+		const context: BatchPriorityContext = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = siftBatchPriority(candidates, context);
+
+		expect(result.size).toBe(0);
+	});
+
+	it("returns finite numeric priorities", () => {
+		const graph = createLinearChainGraph();
+		const candidates = ["B", "C"];
+
+		const context: BatchPriorityContext = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = siftBatchPriority(candidates, context);
+
+		for (const [, priority] of result) {
+			expect(Number.isFinite(priority)).toBe(true);
+		}
+	});
+});
+
+describe("siftWithBatchPriority", () => {
+	it("returns config with batchPriority function", () => {
+		const config = siftWithBatchPriority({ miThreshold: 0.3 });
+
+		expect(config.batchPriority).toBeDefined();
+		expect(typeof config.batchPriority).toBe("function");
+		expect(config.miThreshold).toBe(0.3);
+	});
+
+	it("uses default config when no config provided", () => {
+		const config = siftWithBatchPriority();
+
+		expect(config.batchPriority).toBeDefined();
+		expect(typeof config.batchPriority).toBe("function");
+	});
+
+	it("batchPriority function produces valid output", () => {
+		const config = siftWithBatchPriority();
+
+		const graph = createLinearChainGraph();
+		const candidates = ["B"];
+		const context: BatchPriorityContext = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = config.batchPriority(candidates, context);
+		expect(result.size).toBe(1);
+		expect(result.has("B")).toBe(true);
 	});
 });
