@@ -105,4 +105,28 @@ describe("katz baseline", () => {
 			}
 		}
 	});
+
+	it("handles empty graph with paths by returning 0 scores", () => {
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
+		const paths = [createPath(["A", "B"])];
+		const result = katz(graph, paths);
+
+		// Returns paths but with 0 scores since graph has no nodes
+		expect(result.paths).toHaveLength(1);
+		expect(result.paths[0]?.score).toBe(0);
+	});
+
+	it("handles path with nodes not in graph", () => {
+		const graph = AdjacencyMapGraph.undirected<KGNode>();
+		graph.addNode({ id: "A", label: "A" });
+		graph.addNode({ id: "B", label: "B" });
+		graph.addEdge({ source: "A", target: "B", weight: 1 });
+
+		// Path includes node C which is not in graph
+		const paths = [createPath(["A", "C"])];
+		const result = katz(graph, paths);
+
+		expect(result.paths).toHaveLength(1);
+		expect(result.paths[0]?.score).toBe(0);
+	});
 });
