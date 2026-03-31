@@ -1,8 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { ReadableGraph } from "../graph";
-import { fuse, fuseAsync, type FUSEConfig } from "./fuse";
-import type { Seed } from "./types";
+import {
+	fuse,
+	fuseAsync,
+	fuseBatchPriority,
+	fuseWithBatchPriority,
+	type FUSEConfig,
+} from "./fuse";
+import type { Seed, BatchPriorityContext } from "./types";
 import {
 	createLinearChainGraph,
 	createDisconnectedGraph,
@@ -260,11 +266,102 @@ describe("fuse with graph containing shared neighbours", () => {
 
 describe("fuseAsync export", () => {
 	it("is an async function", () => {
-		// Full async equivalence requires PriorityContext refactoring (Phase 4b deferred).
-		// The priority function accesses context.graph via avgFrontierMI which is the
-		// sentinel in async mode. This test verifies the export exists with the correct
-		// async signature.
 		expect(typeof fuseAsync).toBe("function");
 		expect(fuseAsync.constructor.name).toBe("AsyncFunction");
+	});
+});
+
+describe("fuseBatchPriority", () => {
+	it("returns a Map of priorities for candidates", () => {
+		const graph = createLinearChainGraph();
+		const candidates = ["B", "C", "D"];
+
+		const context: BatchPriorityContext = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = fuseBatchPriority(candidates, context);
+
+		expect(result).toBeInstanceOf(Map);
+		expect(result.size).toBe(3);
+		for (const candidate of candidates) {
+			expect(result.has(candidate)).toBe(true);
+			expect(typeof result.get(candidate)).toBe("number");
+		}
+	});
+
+	it("handles empty candidates", () => {
+		const graph = createLinearChainGraph();
+		const candidates: string[] = [];
+
+		const context: BatchPriorityContext = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = fuseBatchPriority(candidates, context);
+
+		expect(result.size).toBe(0);
+	});
+
+	it("returns finite numeric priorities", () => {
+		const graph = createLinearChainGraph();
+		const candidates = ["B", "C"];
+
+		const context: BatchPriorityContext = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = fuseBatchPriority(candidates, context);
+
+		for (const [, priority] of result) {
+			expect(Number.isFinite(priority)).toBe(true);
+		}
+	});
+});
+
+describe("fuseWithBatchPriority", () => {
+	it("returns config with batchPriority function", () => {
+		const config = fuseWithBatchPriority({ salienceWeight: 0.5 });
+
+		expect(config.batchPriority).toBeDefined();
+		expect(typeof config.batchPriority).toBe("function");
+		expect(config.salienceWeight).toBe(0.5);
+	});
+
+	it("uses default config when no config provided", () => {
+		const config = fuseWithBatchPriority();
+
+		expect(config.batchPriority).toBeDefined();
+		expect(typeof config.batchPriority).toBe("function");
+	});
+
+	it("batchPriority function produces valid output", () => {
+		const config = fuseWithBatchPriority();
+
+		const graph = createLinearChainGraph();
+		const candidates = ["B"];
+		const context: BatchPriorityContext = {
+			graph,
+			visited: new Set(["A"]),
+			visitedByFrontier: new Map([["A", 0]]),
+			frontierId: 0,
+			discoveredPaths: [],
+		};
+
+		const result = config.batchPriority(candidates, context);
+		expect(result.size).toBe(1);
+		expect(result.has("B")).toBe(true);
 	});
 });
