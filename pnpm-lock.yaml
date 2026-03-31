@@ -49,8 +49,8 @@ importers:
         specifier: 9.0.1
         version: 9.0.1
       eslint-plugin-jsdoc:
-        specifier: 62.8.0
-        version: 62.8.0(eslint@10.1.0(jiti@2.6.1))
+        specifier: 62.8.1
+        version: 62.8.1(eslint@10.1.0(jiti@2.6.1))
       eslint-plugin-prettier:
         specifier: 5.5.5
         version: 5.5.5(eslint@10.1.0(jiti@2.6.1))(prettier@3.8.1)
@@ -701,6 +701,10 @@ packages:
     resolution: {integrity: sha512-/iZM6FnM4tnx9csuTxspMW4BOSegshwX5oBDznJ7S4WggL7Vczz5d2W11ecc4vRrQMQHXRSxzrCsyG5EsPPTbA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
+  '@typescript-eslint/types@8.58.0':
+    resolution: {integrity: sha512-O9CjxypDT89fbHxRfETNoAnHj/i6IpRK0CvbVN3qibxlLdo5p5hcLmUuCCrHMpxiWSwKyI8mCP7qRNYuOJ0Uww==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
   '@typescript-eslint/typescript-estree@8.57.2':
     resolution: {integrity: sha512-2MKM+I6g8tJxfSmFKOnHv2t8Sk3T6rF20A1Puk0svLK+uVapDZB/4pfAeB7nE83uAZrU6OxW+HmOd5wHVdXwXA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -1157,8 +1161,8 @@ packages:
     resolution: {integrity: sha512-mBAti2tb403dQGMyilQTYHU80stem3N7jdtKW+tmn5gj3JNF7ki0rgCZtJFw4iMayTH862FTUIqCdp70ug0S0Q==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  eslint-plugin-jsdoc@62.8.0:
-    resolution: {integrity: sha512-hu3r9/6JBmPG6wTcqtYzgZAnjEG2eqRUATfkFscokESg1VDxZM21ZaMire0KjeMwfj+SXvgB4Rvh5LBuesj92w==}
+  eslint-plugin-jsdoc@62.8.1:
+    resolution: {integrity: sha512-e9358PdHgvcMF98foNd3L7hVCw70Lt+YcSL7JzlJebB8eT5oRJtW6bHMQKoAwJtw6q0q0w/fRIr2kwnHdFDI6A==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
@@ -2978,7 +2982,7 @@ snapshots:
   '@es-joy/jsdoccomment@0.84.0':
     dependencies:
       '@types/estree': 1.0.8
-      '@typescript-eslint/types': 8.57.2
+      '@typescript-eslint/types': 8.58.0
       comment-parser: 1.4.5
       esquery: 1.7.0
       jsdoc-type-pratt-parser: 7.1.1
@@ -3491,6 +3495,8 @@ snapshots:
 
   '@typescript-eslint/types@8.57.2': {}
 
+  '@typescript-eslint/types@8.58.0': {}
+
   '@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2)':
     dependencies:
       '@typescript-eslint/project-service': 8.57.2(typescript@6.0.2)
@@ -3943,7 +3949,7 @@ snapshots:
 
   eslint-formatter-compact@9.0.1: {}
 
-  eslint-plugin-jsdoc@62.8.0(eslint@10.1.0(jiti@2.6.1)):
+  eslint-plugin-jsdoc@62.8.1(eslint@10.1.0(jiti@2.6.1)):
     dependencies:
       '@es-joy/jsdoccomment': 0.84.0
       '@es-joy/resolve.exports': 1.2.0
