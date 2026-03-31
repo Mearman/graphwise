@@ -4,6 +4,7 @@
  * @module seeds
  */
 
+export * from "./crisp";
 export * from "./crest";
 export * from "./grasp";
 export * from "./spine";
