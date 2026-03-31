@@ -1,3 +1,24 @@
+## [1.11.0](https://github.com/Mearman/graphwise/compare/v1.10.0...v1.11.0) (2026-03-31)
+
+### Features
+
+* **seeds:** add CREST community-bridge seed selection ([1ddb957](https://github.com/Mearman/graphwise/commit/1ddb957c5c682c02cd25294f9e3ad9a0acf112ec))
+* **seeds:** add CRISP connectivity-rich informed seed pairing ([4926a8f](https://github.com/Mearman/graphwise/commit/4926a8f6db9d85bab15c0ec7e95434743e2cadfb))
+* **seeds:** add SPINE structural position seed selection ([bb76889](https://github.com/Mearman/graphwise/commit/bb7688937839e3c345234d5f67e34709c2b2b7e8))
+* **seeds:** add stride seed selection to barrel exports ([dfa3fbb](https://github.com/Mearman/graphwise/commit/dfa3fbb969a4ba27ab6354788a7fb92a42109a59))
+* **seeds:** add STRIDE triad-based seed selection ([9c4d2b4](https://github.com/Mearman/graphwise/commit/9c4d2b47da769ffbcb1f1a813ad050e08c51df94))
+
+### Tests
+
+* **expansion:** add FUSE batch priority function tests ([9c907aa](https://github.com/Mearman/graphwise/commit/9c907aa06bfde8d7b1cb0a2980ee66cc6789b285))
+* **expansion:** add LACE batch priority function tests ([1df393e](https://github.com/Mearman/graphwise/commit/1df393e8ee01f7f2e027b13d5fc56d0704fa40f0))
+* **expansion:** add SIFT batch priority function tests ([febdd82](https://github.com/Mearman/graphwise/commit/febdd82289f0ec1e6b8840781aa89ec803455526))
+* **ranking:** add Katz edge case tests ([8bd469d](https://github.com/Mearman/graphwise/commit/8bd469d4632d0ce5e3a36db42e5dd7ffd33a85ab))
+* **seeds:** add CREST unit tests ([338eff6](https://github.com/Mearman/graphwise/commit/338eff674524a8a9f0c5a903fd941f1e42b1587f))
+* **seeds:** add CRISP unit tests ([b6c43f4](https://github.com/Mearman/graphwise/commit/b6c43f46e0de8e598353f178c89494b6c1a8035e))
+* **seeds:** add SPINE unit tests ([c3ba12e](https://github.com/Mearman/graphwise/commit/c3ba12e0016c8d9f1227aee6515253331dbb421e))
+* **seeds:** add STRIDE unit tests ([cf63250](https://github.com/Mearman/graphwise/commit/cf63250e363159b2e22eeb977f011e6158561240))
+
 ## [1.10.0](https://github.com/Mearman/graphwise/compare/v1.9.1...v1.10.0) (2026-03-25)
 
 ### Features
