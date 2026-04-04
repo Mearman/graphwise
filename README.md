@@ -11,7 +11,7 @@ Low-dependency TypeScript graph algorithms for citation network analysis: novel 
 - **Expansion algorithms**: BASE, DOME, EDGE, HAE, PIPE, SAGE, REACH, MAZE + 6 variants (TIDE, LACE, WARP, FUSE, SIFT, FLUX) + baselines
 - **MI variants**: Jaccard, Adamic-Adar, SCALE, SKEW, SPAN, ETCH, NOTCH, Unified Adaptive
 - **Path ranking**: PARSE + baselines (Katz, Communicability, PageRank, etc.)
-- **Seed selection**: GRASP, Stratified
+- **Seed selection**: GRASP, STRIDE, CREST, SPINE, CRISP, BRISK, BASIL, PRISM, OMNIA, Stratified
 - **Subgraph extraction**: ego-network, k-core, k-truss, motif, induced, filter
 - **Optional WebGPU acceleration**
 - **Async support**: Generator coroutine protocol, sync/async runners, all algorithms available as `*Async` variants
