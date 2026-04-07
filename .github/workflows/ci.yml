@@ -53,7 +53,7 @@ jobs:
             turbo-pack-${{ runner.os }}-
       - run: npx turbo run _build
       - run: pnpm pack
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tarball
           path: graphwise-*.tgz
@@ -71,7 +71,7 @@ jobs:
         with:
           node-version: "24"
       - uses: pnpm/action-setup@v5
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: tarball
           path: __tests__/fixtures/smoke-test
