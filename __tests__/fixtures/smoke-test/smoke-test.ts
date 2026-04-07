@@ -1,7 +1,7 @@
 // Smoke test: verify all export paths are accessible
 import * as graphwise from "graphwise";
 import * as graph from "graphwise/graph";
-import * as expansion from "graphwise/expansion";
+import * as exploration from "graphwise/exploration";
 import * as ranking from "graphwise/ranking";
 import * as mi from "graphwise/ranking/mi";
 import * as seeds from "graphwise/seeds";
@@ -17,7 +17,7 @@ import * as async_ from "graphwise/async";
 const modules = [
   { name: "graphwise", module: graphwise },
   { name: "graph", module: graph },
-  { name: "expansion", module: expansion },
+  { name: "exploration", module: exploration },
   { name: "ranking", module: ranking },
   { name: "mi", module: mi },
   { name: "seeds", module: seeds },
