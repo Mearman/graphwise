@@ -1,3 +1,13 @@
+## [1.12.0](https://github.com/Mearman/graphwise/compare/v1.11.0...v1.12.0) (2026-04-07)
+
+### Features
+
+* **seeds:** add BRISK BASIL PRISM and OMNIA ensemble selectors ([159a450](https://github.com/Mearman/graphwise/commit/159a450ecfe14cfca1e24e2c89082f76c7ce3d6b))
+
+### Documentation
+
+* **seeds:** list BRISK BASIL PRISM and OMNIA in README ([a4fb2a9](https://github.com/Mearman/graphwise/commit/a4fb2a91393b00c1e146c3cde361f1ec789834b0))
+
 ## [1.11.0](https://github.com/Mearman/graphwise/compare/v1.10.0...v1.11.0) (2026-03-31)
 
 ### Features
