@@ -6,7 +6,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
 import { normaliseAndRank } from "./utils";
 
@@ -22,7 +22,7 @@ import { normaliseAndRank } from "./utils";
  */
 export function shortest<N extends NodeData, E extends EdgeData>(
 	_graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): BaselineResult {
 	const { includeScores = true } = config ?? {};
@@ -35,7 +35,7 @@ export function shortest<N extends NodeData, E extends EdgeData>(
 	}
 
 	// Compute raw scores (1 / length)
-	const scored: { path: ExpansionPath; score: number }[] = paths.map(
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
 		(path) => ({
 			path,
 			score: 1 / path.nodes.length,

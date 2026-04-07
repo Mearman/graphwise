@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../../graph";
 import type { NodeData, EdgeData } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import { shortest } from "./shortest";
 
 interface TestNode extends NodeData {
@@ -12,7 +12,7 @@ interface TestEdge extends EdgeData {
 	readonly weight: number;
 }
 
-function createPath(nodes: string[]): ExpansionPath {
+function createPath(nodes: string[]): ExplorationPath {
 	return {
 		nodes,
 		fromSeed: { id: nodes[0] ?? "" },

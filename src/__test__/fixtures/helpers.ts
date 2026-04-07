@@ -1,26 +1,26 @@
 /**
  * Helper functions for test fixture manipulation and analysis.
  *
- * These utilities support creation and analysis of expansion paths,
+ * These utilities support creation and analysis of exploration paths,
  * path MI calculation, and other common test operations.
  */
 
 import type { NodeId, ReadableGraph, NodeData, EdgeData } from "../../graph";
 import type {
-	ExpansionPath,
-	ExpansionResult,
-	ExpansionStats,
-} from "../../expansion";
+	ExplorationPath,
+	ExplorationResult,
+	ExplorationStats,
+} from "../../exploration";
 import type { MIFunction } from "../../ranking/mi";
 
 /**
- * Create an ExpansionPath from an array of node IDs.
+ * Create an ExplorationPath from an array of node IDs.
  *
  * The first node becomes the source seed and the last becomes the target seed.
  * Useful for constructing paths in tests without manually creating Seed objects.
  *
  * @param nodes - Array of node IDs forming the path (must have at least 1 element)
- * @returns ExpansionPath with fromSeed and toSeed inferred from endpoints
+ * @returns ExplorationPath with fromSeed and toSeed inferred from endpoints
  *
  * @example
  * ```typescript
@@ -30,7 +30,7 @@ import type { MIFunction } from "../../ranking/mi";
  * // path.nodes === ['A', 'B', 'C']
  * ```
  */
-export function createPath(nodes: readonly NodeId[]): ExpansionPath {
+export function createPath(nodes: readonly NodeId[]): ExplorationPath {
 	if (nodes.length === 0) {
 		throw new Error("Cannot create path from empty node array");
 	}
@@ -90,7 +90,7 @@ function edgeMI<N extends NodeData, E extends EdgeData>(
  */
 export function pathMI<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	path: ExpansionPath,
+	path: ExplorationPath,
 	mi: MIFunction<N, E>,
 ): number {
 	const nodes = path.nodes;
@@ -127,30 +127,30 @@ export function pathMI<N extends NodeData, E extends EdgeData>(
 }
 
 /**
- * Assert that an ExpansionResult has the four required top-level properties.
+ * Assert that an ExplorationResult has the four required top-level properties.
  *
  * Checks for `paths`, `sampledNodes`, `sampledEdges`, and `stats`. Intended
- * as a concise structural guard in expansion unit tests.
+ * as a concise structural guard in exploration unit tests.
  *
- * @param result - The expansion result to validate
+ * @param result - The exploration result to validate
  */
-export function assertExpansionResultShape(result: ExpansionResult): void {
+export function assertExpansionResultShape(result: ExplorationResult): void {
 	if (!("paths" in result)) {
-		throw new Error("ExpansionResult missing 'paths' property");
+		throw new Error("ExplorationResult missing 'paths' property");
 	}
 	if (!("sampledNodes" in result)) {
-		throw new Error("ExpansionResult missing 'sampledNodes' property");
+		throw new Error("ExplorationResult missing 'sampledNodes' property");
 	}
 	if (!("sampledEdges" in result)) {
-		throw new Error("ExpansionResult missing 'sampledEdges' property");
+		throw new Error("ExplorationResult missing 'sampledEdges' property");
 	}
 	if (!("stats" in result)) {
-		throw new Error("ExpansionResult missing 'stats' property");
+		throw new Error("ExplorationResult missing 'stats' property");
 	}
 }
 
 /**
- * Assert that an ExpansionStats object has all expected numeric fields and
+ * Assert that an ExplorationStats object has all expected numeric fields and
  * a valid termination reason.
  *
  * Checks `iterations`, `nodesVisited`, `edgesTraversed`, `pathsFound`,
@@ -158,24 +158,24 @@ export function assertExpansionResultShape(result: ExpansionResult): void {
  *
  * @param stats - The stats object to validate
  */
-export function assertValidStats(stats: ExpansionStats): void {
+export function assertValidStats(stats: ExplorationStats): void {
 	if (typeof stats.iterations !== "number") {
-		throw new Error("ExpansionStats.iterations must be a number");
+		throw new Error("ExplorationStats.iterations must be a number");
 	}
 	if (typeof stats.nodesVisited !== "number") {
-		throw new Error("ExpansionStats.nodesVisited must be a number");
+		throw new Error("ExplorationStats.nodesVisited must be a number");
 	}
 	if (typeof stats.edgesTraversed !== "number") {
-		throw new Error("ExpansionStats.edgesTraversed must be a number");
+		throw new Error("ExplorationStats.edgesTraversed must be a number");
 	}
 	if (typeof stats.pathsFound !== "number") {
-		throw new Error("ExpansionStats.pathsFound must be a number");
+		throw new Error("ExplorationStats.pathsFound must be a number");
 	}
 	if (typeof stats.durationMs !== "number") {
-		throw new Error("ExpansionStats.durationMs must be a number");
+		throw new Error("ExplorationStats.durationMs must be a number");
 	}
 	if (typeof stats.algorithm !== "string") {
-		throw new Error("ExpansionStats.algorithm must be a string");
+		throw new Error("ExplorationStats.algorithm must be a string");
 	}
 	const validTerminations = [
 		"exhausted",
@@ -185,7 +185,7 @@ export function assertValidStats(stats: ExpansionStats): void {
 	] as const;
 	if (!validTerminations.includes(stats.termination)) {
 		throw new Error(
-			`ExpansionStats.termination '${stats.termination}' is not a valid termination reason`,
+			`ExplorationStats.termination '${stats.termination}' is not a valid termination reason`,
 		);
 	}
 }
@@ -213,7 +213,7 @@ export function assertValidStats(stats: ExpansionStats): void {
  */
 export function meanPathMI<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	mi: MIFunction<N, E>,
 ): number {
 	if (paths.length === 0) {

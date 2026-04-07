@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../../graph";
 import type { NodeData, EdgeData } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import { hittingTime } from "./hitting-time";
 
 interface TestNode extends NodeData {
@@ -12,7 +12,7 @@ interface TestEdge extends EdgeData {
 	readonly weight: number;
 }
 
-function createPath(nodes: string[]): ExpansionPath {
+function createPath(nodes: string[]): ExplorationPath {
 	return {
 		nodes,
 		fromSeed: { id: nodes[0] ?? "" },
@@ -127,7 +127,7 @@ describe("hittingTime baseline", () => {
 		const graph = AdjacencyMapGraph.undirected<TestNode, TestEdge>();
 		graph.addNode({ id: "A", label: "A" });
 
-		const emptyPath: ExpansionPath = {
+		const emptyPath: ExplorationPath = {
 			nodes: [],
 			fromSeed: { id: "" },
 			toSeed: { id: "" },

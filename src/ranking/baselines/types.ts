@@ -7,7 +7,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { GPUComputeOptions } from "../../gpu/types";
 
 /**
@@ -23,7 +23,7 @@ export interface BaselineConfig {
 /**
  * A scored path from baseline ranking.
  */
-export interface ScoredPath extends ExpansionPath {
+export interface ScoredPath extends ExplorationPath {
 	/** Ranking score */
 	readonly score: number;
 }
@@ -46,6 +46,6 @@ export type PathRanker<
 	E extends EdgeData = EdgeData,
 > = (
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ) => BaselineResult;

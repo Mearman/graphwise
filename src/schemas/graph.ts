@@ -41,7 +41,7 @@ export const EdgeData = defineSchema(
 export type EdgeData = z.infer<typeof EdgeData>;
 
 /**
- * Seed role in multi-seed expansion.
+ * Seed role in multi-seed exploration.
  */
 export const SeedRole = defineSchema(
 	z.union([

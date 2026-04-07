@@ -11,7 +11,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
 import { gpuPageRank } from "../../gpu/operations";
 import { normaliseAndRank } from "./utils";
@@ -101,7 +101,7 @@ function computePageRank<N extends NodeData, E extends EdgeData>(
  */
 export async function pagerankAsync<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): Promise<BaselineResult> {
 	const { includeScores = true, gpu } = config ?? {};
@@ -136,13 +136,15 @@ export async function pagerankAsync<N extends NodeData, E extends EdgeData>(
 	}
 
 	// Score paths by sum of node ranks
-	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
-		let prSum = 0;
-		for (const nodeId of path.nodes) {
-			prSum += ranks.get(nodeId) ?? 0;
-		}
-		return { path, score: prSum };
-	});
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
+		(path) => {
+			let prSum = 0;
+			for (const nodeId of path.nodes) {
+				prSum += ranks.get(nodeId) ?? 0;
+			}
+			return { path, score: prSum };
+		},
+	);
 
 	return normaliseAndRank(paths, scored, "pagerank", includeScores);
 }
@@ -160,7 +162,7 @@ export async function pagerankAsync<N extends NodeData, E extends EdgeData>(
  */
 export function pagerank<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): BaselineResult {
 	const { includeScores = true } = config ?? {};
@@ -176,13 +178,15 @@ export function pagerank<N extends NodeData, E extends EdgeData>(
 	const ranks = computePageRank(graph);
 
 	// Score paths by sum of node ranks
-	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
-		let prSum = 0;
-		for (const nodeId of path.nodes) {
-			prSum += ranks.get(nodeId) ?? 0;
-		}
-		return { path, score: prSum };
-	});
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
+		(path) => {
+			let prSum = 0;
+			for (const nodeId of path.nodes) {
+				prSum += ranks.get(nodeId) ?? 0;
+			}
+			return { path, score: prSum };
+		},
+	);
 
 	return normaliseAndRank(paths, scored, "pagerank", includeScores);
 }

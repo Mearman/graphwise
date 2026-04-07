@@ -12,7 +12,7 @@
  * - Liaison node importance
  * - Clustering coefficient effects
  * - SPAN MI variant (clustering-aware edge weighting)
- * - Community detection via expansion
+ * - Community detection via exploration
  */
 
 import { AdjacencyMapGraph } from "../../../graph";

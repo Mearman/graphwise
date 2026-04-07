@@ -1,5 +1,5 @@
 /**
- * Comparison metrics for expansion and ranking algorithm evaluation.
+ * Comparison metrics for exploration and ranking algorithm evaluation.
  *
  * Pure functions for measuring hub deferral, path diversity, subgraph density,
  * coverage efficiency, and statistical correlation between rankings.
@@ -9,7 +9,7 @@
  */
 
 import type { NodeId, NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionResult } from "../../expansion/types";
+import type { ExplorationResult } from "../../exploration/types";
 import type { PARSEResult } from "../../ranking/parse";
 
 // ---------------------------------------------------------------------------
@@ -23,7 +23,7 @@ import type { PARSEResult } from "../../ranking/parse";
  */
 export function hubDeferralRatio<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	result: ExpansionResult,
+	result: ExplorationResult,
 ): number {
 	const nodes = Array.from(result.sampledNodes);
 	if (nodes.length === 0) {
@@ -43,7 +43,7 @@ export function hubDeferralRatio<N extends NodeData, E extends EdgeData>(
  * Count of distinct intermediate nodes (i.e. excluding endpoints) across all
  * discovered paths. Higher values indicate broader path diversity.
  */
-export function pathDiversity(result: ExpansionResult): number {
+export function pathDiversity(result: ExplorationResult): number {
 	const intermediates = new Set<NodeId>();
 	for (const path of result.paths) {
 		const nodes = path.nodes;
@@ -62,7 +62,7 @@ export function pathDiversity(result: ExpansionResult): number {
  * Ratio of sampled edges to sampled nodes. Reflects how densely the sampled
  * subgraph is connected (higher = more edges per node).
  */
-export function subgraphDensity(result: ExpansionResult): number {
+export function subgraphDensity(result: ExplorationResult): number {
 	const nodeCount = result.sampledNodes.size;
 	if (nodeCount === 0) {
 		return 0;
@@ -72,9 +72,9 @@ export function subgraphDensity(result: ExpansionResult): number {
 
 /**
  * Ratio of discovered paths to total nodes visited. Measures how efficiently
- * the expansion produced useful paths relative to exploration cost.
+ * the exploration produced useful paths relative to exploration cost.
  */
-export function coverageEfficiency(result: ExpansionResult): number {
+export function coverageEfficiency(result: ExplorationResult): number {
 	const nodesVisited = result.stats.nodesVisited;
 	if (nodesVisited === 0) {
 		return 0;
@@ -85,9 +85,9 @@ export function coverageEfficiency(result: ExpansionResult): number {
 /**
  * Ratio of total iterations to paths discovered. Measures how many
  * iterations were required per path. Returns Infinity when no paths
- * were found (expansion terminated without connecting seeds).
+ * were found (exploration terminated without connecting seeds).
  */
-export function firstPathLatency(result: ExpansionResult): number {
+export function firstPathLatency(result: ExplorationResult): number {
 	if (result.paths.length === 0) {
 		return Infinity;
 	}
@@ -100,7 +100,7 @@ export function firstPathLatency(result: ExpansionResult): number {
  */
 export function typeCoverage<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	result: ExpansionResult,
+	result: ExplorationResult,
 ): number {
 	const types = new Set<string>();
 	for (const nodeId of result.sampledNodes) {
@@ -117,7 +117,7 @@ export function typeCoverage<N extends NodeData, E extends EdgeData>(
  * determined via union-find over the sampled edge set. Higher values
  * indicate paths spanning structurally distant regions of the graph.
  */
-export function communitySpan(result: ExpansionResult): number {
+export function communitySpan(result: ExplorationResult): number {
 	// Build union-find over sampled edges
 	const parent = new Map<NodeId, NodeId>();
 

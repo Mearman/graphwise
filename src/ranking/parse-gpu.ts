@@ -9,7 +9,7 @@
  */
 
 import type { NodeData, EdgeData, NodeId, ReadableGraph } from "../graph";
-import type { ExpansionPath } from "../expansion/types";
+import type { ExplorationPath } from "../exploration/types";
 import type { MIVariantName } from "./mi/types";
 import type { PARSEResult, RankedPath } from "./parse";
 import type { ComputeBackend } from "../gpu/types";
@@ -42,7 +42,7 @@ export interface GPUPARSEConfig {
  */
 export async function parseGpu<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: GPUPARSEConfig,
 ): Promise<PARSEResult> {
 	const startTime = performance.now();

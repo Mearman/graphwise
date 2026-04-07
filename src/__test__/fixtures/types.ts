@@ -2,11 +2,11 @@
  * Type definitions for test graph fixtures.
  *
  * These types define the structure of test graphs used across
- * integration tests for expansion, ranking, and other algorithms.
+ * integration tests for exploration, ranking, and other algorithms.
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { Seed } from "../../expansion";
+import type { Seed } from "../../exploration";
 
 /**
  * Knowledge graph node with optional label and type.
@@ -37,7 +37,7 @@ export interface KGEdge extends EdgeData {
 export interface TestGraphFixture {
 	/** The test graph */
 	readonly graph: ReadableGraph;
-	/** Seed nodes for expansion */
+	/** Seed nodes for exploration */
 	readonly seeds: readonly Seed[];
 	/** Optional metadata about the fixture (e.g. structure description) */
 	readonly metadata: Record<string, unknown>;

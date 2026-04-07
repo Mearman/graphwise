@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineResult, ScoredPath } from "./types";
 
 /**
@@ -21,8 +21,8 @@ import type { BaselineResult, ScoredPath } from "./types";
  * @returns BaselineResult with ranked paths
  */
 export function normaliseAndRank(
-	paths: readonly ExpansionPath[],
-	scored: readonly { readonly path: ExpansionPath; readonly score: number }[],
+	paths: readonly ExplorationPath[],
+	scored: readonly { readonly path: ExplorationPath; readonly score: number }[],
 	method: string,
 	includeScores: boolean,
 ): BaselineResult {

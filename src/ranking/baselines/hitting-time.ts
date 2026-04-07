@@ -13,7 +13,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
 import { normaliseAndRank } from "./utils";
 
@@ -383,7 +383,7 @@ function invertMatrix(matrix: number[][]): number[][] | null {
  */
 export function hittingTime<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: HittingTimeConfig,
 ): BaselineResult {
 	const {
@@ -409,30 +409,32 @@ export function hittingTime<N extends NodeData, E extends EdgeData>(
 	const rng = new SeededRNG(seed);
 
 	// Score paths by inverse hitting time between endpoints
-	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
-		const source = path.nodes[0];
-		const target = path.nodes[path.nodes.length - 1];
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
+		(path) => {
+			const source = path.nodes[0];
+			const target = path.nodes[path.nodes.length - 1];
 
-		if (source === undefined || target === undefined) {
-			return { path, score: 0 };
-		}
+			if (source === undefined || target === undefined) {
+				return { path, score: 0 };
+			}
 
-		const ht =
-			actualMode === "exact"
-				? computeHittingTimeExact(graph, source, target)
-				: computeHittingTimeApproximate(
-						graph,
-						source,
-						target,
-						walks,
-						maxSteps,
-						rng,
-					);
+			const ht =
+				actualMode === "exact"
+					? computeHittingTimeExact(graph, source, target)
+					: computeHittingTimeApproximate(
+							graph,
+							source,
+							target,
+							walks,
+							maxSteps,
+							rng,
+						);
 
-		// Use inverse: shorter hitting time = higher score
-		const score = ht > 0 ? 1 / ht : 0;
-		return { path, score };
-	});
+			// Use inverse: shorter hitting time = higher score
+			const score = ht > 0 ? 1 / ht : 0;
+			return { path, score };
+		},
+	);
 
 	// Guard against non-finite scores before normalisation
 	const maxScore = Math.max(...scored.map((s) => s.score));

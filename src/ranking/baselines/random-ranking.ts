@@ -7,7 +7,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
 import { normaliseAndRank } from "./utils";
 
@@ -48,7 +48,7 @@ function seededRandom(input: string, seed = 0): number {
  */
 export function randomRanking<N extends NodeData, E extends EdgeData>(
 	_graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: RandomRankingConfig,
 ): BaselineResult {
 	const { includeScores = true, seed = 0 } = config ?? {};
@@ -61,11 +61,13 @@ export function randomRanking<N extends NodeData, E extends EdgeData>(
 	}
 
 	// Score paths by seeded random hash of node list
-	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
-		const nodesKey = path.nodes.join(",");
-		const score = seededRandom(nodesKey, seed);
-		return { path, score };
-	});
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
+		(path) => {
+			const nodesKey = path.nodes.join(",");
+			const score = seededRandom(nodesKey, seed);
+			return { path, score };
+		},
+	);
 
 	return normaliseAndRank(paths, scored, "random", includeScores);
 }

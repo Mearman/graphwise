@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import { parseGpu } from "./parse-gpu";
-import type { ExpansionPath } from "../expansion/types";
+import type { ExplorationPath } from "../exploration/types";
 
 describe("GPU PARSE ranking", () => {
 	it("ranks paths by geometric mean of edge MI scores", async () => {
@@ -25,7 +25,7 @@ describe("GPU PARSE ranking", () => {
 		// MI(B,C): intersection = {A} = 1, sizes = 2,3 → Jaccard = 1/5
 		// MI(C,D): intersection = {} = 0, sizes = 3,1 → Jaccard = 0
 
-		const paths: ExpansionPath[] = [
+		const paths: ExplorationPath[] = [
 			{
 				nodes: ["A", "B", "C"],
 				fromSeed: { id: "A" },
@@ -76,7 +76,7 @@ describe("GPU PARSE ranking", () => {
 		graph.addEdge({ source: "A", target: "C" });
 		graph.addEdge({ source: "B", target: "C" });
 
-		const paths: ExpansionPath[] = [
+		const paths: ExplorationPath[] = [
 			{
 				nodes: ["A", "B"],
 				fromSeed: { id: "A" },
@@ -105,7 +105,7 @@ describe("GPU PARSE ranking", () => {
 		graph.addEdge({ source: "B", target: "C" });
 
 		// Two paths sharing the same edge A-B
-		const paths: ExpansionPath[] = [
+		const paths: ExplorationPath[] = [
 			{
 				nodes: ["A", "B"],
 				fromSeed: { id: "A" },
@@ -135,7 +135,7 @@ describe("GPU PARSE ranking", () => {
 		graph.addEdge({ source: "A", target: "C" });
 		graph.addEdge({ source: "B", target: "C" });
 
-		const paths: ExpansionPath[] = [
+		const paths: ExplorationPath[] = [
 			{
 				nodes: ["A", "B"],
 				fromSeed: { id: "A" },
@@ -170,7 +170,7 @@ describe("GPU PARSE ranking", () => {
 		graph.addEdge({ source: "A", target: "B" });
 		graph.addEdge({ source: "B", target: "C" });
 
-		const paths: ExpansionPath[] = [
+		const paths: ExplorationPath[] = [
 			{
 				nodes: ["A", "B", "C"],
 				fromSeed: { id: "A" },

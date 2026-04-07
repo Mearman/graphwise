@@ -2,7 +2,7 @@
  * Entropy computation utilities for graph analysis.
  *
  * Shannon entropy measures uncertainty or randomness in a distribution.
- * Used in EDGE and HAE algorithms for heterogeneity-aware expansion.
+ * Used in EDGE and HAE algorithms for heterogeneity-aware exploration.
  *
  * @packageDocumentation
  */

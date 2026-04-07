@@ -6,7 +6,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
 import { normaliseAndRank } from "./utils";
 
@@ -122,7 +122,7 @@ function computeBetweenness<N extends NodeData, E extends EdgeData>(
  */
 export function betweenness<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): BaselineResult {
 	const { includeScores = true } = config ?? {};
@@ -138,13 +138,15 @@ export function betweenness<N extends NodeData, E extends EdgeData>(
 	const bcMap = computeBetweenness(graph);
 
 	// Score paths by sum of betweenness
-	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
-		let bcSum = 0;
-		for (const nodeId of path.nodes) {
-			bcSum += bcMap.get(nodeId) ?? 0;
-		}
-		return { path, score: bcSum };
-	});
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
+		(path) => {
+			let bcSum = 0;
+			for (const nodeId of path.nodes) {
+				bcSum += bcMap.get(nodeId) ?? 0;
+			}
+			return { path, score: bcSum };
+		},
+	);
 
 	return normaliseAndRank(paths, scored, "betweenness", includeScores);
 }

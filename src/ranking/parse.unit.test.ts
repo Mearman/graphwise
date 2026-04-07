@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AdjacencyMapGraph } from "../graph";
 import type { NodeData, EdgeData } from "../graph";
-import type { ExpansionPath } from "../expansion/types";
+import type { ExplorationPath } from "../exploration/types";
 import { wrapAsync } from "../__test__/fixtures/wrap-async";
 import { parse, parseAsync } from "./parse";
 import { adamicAdar } from "./mi";
@@ -30,7 +30,7 @@ function createTestGraph(): AdjacencyMapGraph<TestNode, TestEdge> {
 	return graph;
 }
 
-function createPath(nodes: string[]): ExpansionPath {
+function createPath(nodes: string[]): ExplorationPath {
 	return {
 		nodes,
 		fromSeed: { id: nodes[0] ?? "" },

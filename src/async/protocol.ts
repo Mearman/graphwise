@@ -65,7 +65,7 @@ export type GraphOpResponse<
 	| { readonly tag: "yield" }
 	| { readonly tag: "progress" };
 
-/** Progress statistics emitted during expansion. */
+/** Progress statistics emitted during exploration. */
 export interface ProgressStats {
 	readonly iterations: number;
 	readonly nodesVisited: number;

@@ -14,7 +14,7 @@ export * from "./traversal";
 export * from "./structures";
 
 // Expansion algorithms
-export * from "./expansion";
+export * from "./exploration";
 
 // Ranking algorithms
 export * from "./ranking";

@@ -7,7 +7,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
 import { normaliseAndRank } from "./utils";
 
@@ -205,7 +205,7 @@ function gaussianInverse(A: number[][]): number[][] {
  */
 export function resistanceDistance<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): BaselineResult {
 	const { includeScores = true } = config ?? {};
@@ -226,19 +226,21 @@ export function resistanceDistance<N extends NodeData, E extends EdgeData>(
 	}
 
 	// Score paths by conductance (1 / resistance)
-	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
-		const source = path.nodes[0];
-		const target = path.nodes[path.nodes.length - 1];
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
+		(path) => {
+			const source = path.nodes[0];
+			const target = path.nodes[path.nodes.length - 1];
 
-		if (source === undefined || target === undefined) {
-			return { path, score: 0 };
-		}
+			if (source === undefined || target === undefined) {
+				return { path, score: 0 };
+			}
 
-		const resistance = computeResistance(graph, source, target);
-		// Score = conductance = 1 / resistance
-		const score = 1 / resistance;
-		return { path, score };
-	});
+			const resistance = computeResistance(graph, source, target);
+			// Score = conductance = 1 / resistance
+			const score = 1 / resistance;
+			return { path, score };
+		},
+	);
 
 	return normaliseAndRank(paths, scored, "resistance-distance", includeScores);
 }

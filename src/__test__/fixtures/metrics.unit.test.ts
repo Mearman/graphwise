@@ -18,14 +18,17 @@ import {
 	firstPathLatency,
 	communitySpan,
 } from "./metrics";
-import type { ExpansionResult, ExpansionStats } from "../../expansion/types";
+import type {
+	ExplorationResult,
+	ExplorationStats,
+} from "../../exploration/types";
 import type { PARSEResult, RankedPath } from "../../ranking/parse";
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makeStats(overrides?: Partial<ExpansionStats>): ExpansionStats {
+function makeStats(overrides?: Partial<ExplorationStats>): ExplorationStats {
 	return {
 		iterations: 10,
 		nodesVisited: 5,
@@ -39,8 +42,8 @@ function makeStats(overrides?: Partial<ExpansionStats>): ExpansionStats {
 }
 
 function makeExpansionResult(
-	overrides?: Partial<ExpansionResult>,
-): ExpansionResult {
+	overrides?: Partial<ExplorationResult>,
+): ExplorationResult {
 	return {
 		paths: [],
 		sampledNodes: new Set<string>(),

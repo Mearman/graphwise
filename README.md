@@ -4,11 +4,11 @@
 [![npm](https://img.shields.io/badge/npm-cb3837?logo=npm)](https://www.npmjs.com/package/graphwise)
 [![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github)](https://github.com/Mearman/graphwise)
 
-Low-dependency TypeScript graph algorithms for citation network analysis: novel expansion, MI variants, and path ranking.
+Low-dependency TypeScript graph algorithms for citation network analysis: novel exploration, MI variants, and path ranking.
 
 ## Features
 
-- **Expansion algorithms**: BASE, DOME, EDGE, HAE, PIPE, SAGE, REACH, MAZE + 6 variants (TIDE, LACE, WARP, FUSE, SIFT, FLUX) + baselines
+- **Exploration algorithms**: BASE, DOME, EDGE, HAE, PIPE, SAGE, REACH, MAZE + 6 variants (TIDE, LACE, WARP, FUSE, SIFT, FLUX) + baselines
 - **MI variants**: Jaccard, Adamic-Adar, SCALE, SKEW, SPAN, ETCH, NOTCH, Unified Adaptive
 - **Path ranking**: PARSE + baselines (Katz, Communicability, PageRank, etc.)
 - **Seed selection**: GRASP, STRIDE, CREST, SPINE, CRISP, BRISK, BASIL, PRISM, OMNIA, Stratified
@@ -36,7 +36,7 @@ const ranked = parse(graph, result.paths, { mi: jaccard });
 
 ## Algorithms
 
-### Expansion: BASE Framework
+### Exploration: BASE Framework
 
 **Boundary-free Adaptive Seeded Expansion** (BASE) discovers the neighbourhood around seed nodes without any configuration. You provide seeds and a priority function; BASE expands outward, visiting the most interesting nodes first and recording paths when search frontiers from different seeds collide. It stops naturally when there is nothing left to explore — no depth limits, no size thresholds, no parameters to tune.
 
@@ -50,7 +50,7 @@ Three key properties:
 
 ---
 
-#### DOME: Degree-Ordered Multi-seed Expansion
+#### DOME: Degree-Ordered Multi-seed Exploration
 
 Explores low-connectivity nodes before hubs. In a social network, DOME visits niche specialists before reaching the well-connected influencers, discovering the quiet corners of the graph before the busy crossroads.
 
@@ -60,7 +60,7 @@ where $\deg^{+}(v)$ is weighted out-degree, $\deg^{-}(v)$ is weighted in-degree,
 
 ---
 
-#### Expansion Variants
+#### Exploration Variants
 
 | Algorithm | Priority Function                                      | Phases |
 | --------- | ------------------------------------------------------ | ------ |
@@ -80,7 +80,7 @@ where $\deg^{+}(v)$ is weighted out-degree, $\deg^{-}(v)$ is weighted in-degree,
 
 ---
 
-#### EDGE: Entropy-Driven Graph Expansion
+#### EDGE: Entropy-Driven Graph Exploration
 
 Finds nodes that sit at the boundary between different kinds of things. If a person's friends include scientists, artists, and engineers (high type diversity), EDGE visits them early — they are likely bridges between communities.
 
@@ -90,7 +90,7 @@ where $H_{\text{local}}(v) = -\sum_{\tau} p(\tau) \log p(\tau)$ is the Shannon e
 
 ---
 
-#### PIPE: Path-potential Informed Priority Expansion
+#### PIPE: Path-potential Informed Priority Exploration
 
 Rushes towards nodes that are about to connect two search frontiers. When expanding from multiple seeds, PIPE detects that a node's neighbours have already been reached by another seed's frontier — meaning a connecting path is one step away.
 
@@ -100,7 +100,7 @@ where $\mathrm{pathPotential}(v) = \lvert N(v) \cap \bigcup_{j \neq i} V_j \rver
 
 ---
 
-#### SAGE: Salience-Accumulation Guided Expansion
+#### SAGE: Salience-Accumulation Guided Exploration
 
 Learns from its own discoveries. Phase 1 explores by degree (like DOME). Once the first path is found, SAGE switches to Phase 2: nodes that appear in many discovered paths get top priority, guiding expansion towards structurally rich regions.
 
@@ -112,7 +112,7 @@ where $\text{salience}(v)$ counts discovered paths containing $v$.
 
 ---
 
-#### REACH: Retrospective Expansion with Adaptive Convergence
+#### REACH: Retrospective Exploration with Adaptive Convergence
 
 Uses the quality of already-discovered paths to steer future exploration. Phase 1 explores by degree. Once paths are found, REACH asks "which unexplored nodes look structurally similar to the endpoints of my best paths?" and prioritises those — seeking more of what already worked.
 
@@ -124,7 +124,7 @@ where $\widehat{\text{MI}}(v) = \frac{1}{\lvert \mathcal{P}\_{\text{top}} \rvert
 
 ---
 
-#### MAZE: Multi-frontier Adaptive Zone Expansion
+#### MAZE: Multi-frontier Adaptive Zone Exploration
 
 Combines the best of PIPE and SAGE across three phases. First, it races to find initial paths using path potential (like PIPE). Then it refines exploration using salience feedback (like SAGE). Finally, it decides when to stop based on whether it's still discovering diverse, high-quality paths.
 
@@ -136,7 +136,7 @@ Phase 1 uses path potential until $M$ paths found. Phase 2 adds salience feedbac
 
 ---
 
-#### TIDE: Total Interconnected Degree Expansion
+#### TIDE: Total Interconnected Degree Exploration
 
 Avoids dense clusters by looking at total neighbourhood connectivity. A node surrounded by other well-connected nodes gets deferred; a node in a quiet corner of the graph gets explored first.
 
@@ -146,7 +146,7 @@ Related to EDGE but uses raw degree sums rather than entropy.
 
 ---
 
-#### LACE: Local Affinity-Computed Expansion
+#### LACE: Local Affinity-Computed Exploration
 
 Explores towards nodes that are most similar to what the frontier has already seen. If a candidate node shares many neighbours with the explored region, it gets priority — building outward from a coherent core.
 
@@ -166,7 +166,7 @@ Related to PIPE but omits the degree numerator, making it more aggressive at pri
 
 ---
 
-#### FUSE: Fused Utility-Salience Expansion
+#### FUSE: Fused Utility-Salience Exploration
 
 Balances two signals simultaneously: how connected a node is (degree) and how strongly it relates to the explored region (MI). The weight $w$ controls the trade-off — at $w=0$ it behaves like DOME, at $w=1$ it behaves like LACE.
 
@@ -196,7 +196,7 @@ Related to MAZE but adapts spatially (per-node) rather than temporally (per-phas
 
 ---
 
-#### Expansion Baselines
+#### Exploration Baselines
 
 | Algorithm             | Priority Function              | Description                                |
 | --------------------- | ------------------------------ | ------------------------------------------ |
@@ -325,7 +325,7 @@ where $c(\tau_u)$ is the count of nodes with the same type as $u$.
 
 ### Seed Selection: GRASP
 
-**Graph-agnostic Representative seed pAir Sampling** picks starting points for expansion algorithms. Given a graph you have never seen before, GRASP streams through its edges, samples a representative set of nodes, clusters them by structural role (hubs, bridges, peripherals), and returns seed pairs that cover the full range of structural diversity — without loading the entire graph into memory.
+**Graph-agnostic Representative seed pAir Sampling** picks starting points for exploration algorithms. Given a graph you have never seen before, GRASP streams through its edges, samples a representative set of nodes, clusters them by structural role (hubs, bridges, peripherals), and returns seed pairs that cover the full range of structural diversity — without loading the entire graph into memory.
 
 Three phases:
 
@@ -342,7 +342,7 @@ Three phases:
 ```typescript
 import { ... } from 'graphwise';           // Everything
 import { ... } from 'graphwise/graph';      // Graph data structures
-import { ... } from 'graphwise/expansion';  // Expansion algorithms
+import { ... } from 'graphwise/exploration';  // Exploration algorithms
 import { ... } from 'graphwise/ranking';    // PARSE + baselines
 import { ... } from 'graphwise/ranking/mi'; // MI variants
 import { ... } from 'graphwise/seeds';      // Seed selection

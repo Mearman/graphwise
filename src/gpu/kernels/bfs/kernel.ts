@@ -32,7 +32,7 @@ const BFSLayout = tgpu.bindGroupLayout({
 });
 
 /**
- * BFS level expansion pipeline: one thread per frontier node.
+ * BFS level exploration pipeline: one thread per frontier node.
  *
  * Each thread:
  *   1. Reads its frontier node

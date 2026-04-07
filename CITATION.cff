@@ -4,7 +4,7 @@ type: software
 title: graphwise
 abstract: >-
   Low-dependency TypeScript graph algorithms for citation network analysis:
-  novel expansion, MI variants, and path ranking.
+  novel exploration, MI variants, and path ranking.
 doi: 10.5281/zenodo.19209820
 repository-code: https://github.com/Mearman/graphwise
 url: https://www.npmjs.com/package/graphwise
@@ -15,7 +15,7 @@ keywords:
   - graph
   - algorithms
   - citation-network
-  - expansion
+  - exploration
   - path-ranking
   - mutual-information
   - seed-selection

@@ -12,7 +12,7 @@
 
 import type { NodeData, EdgeData, ReadableGraph } from "../graph";
 import type { AsyncReadableGraph } from "../graph/async-interfaces";
-import type { ExpansionPath } from "../expansion/types";
+import type { ExplorationPath } from "../exploration/types";
 import type { MIFunction, AsyncMIFunction } from "./mi/types";
 import { jaccard } from "./mi/jaccard";
 import { jaccardAsync } from "./mi/jaccard";
@@ -35,7 +35,7 @@ export interface PARSEConfig<
 /**
  * A ranked path with salience score.
  */
-export interface RankedPath extends ExpansionPath {
+export interface RankedPath extends ExplorationPath {
 	/** Salience score (geometric mean of edge MI) */
 	readonly salience: number;
 }
@@ -76,7 +76,7 @@ export interface PARSEResult {
  */
 export function parse<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: PARSEConfig<N, E>,
 ): PARSEResult {
 	const startTime = performance.now();
@@ -159,7 +159,7 @@ export interface AsyncPARSEConfig<
  */
 export async function parseAsync<N extends NodeData, E extends EdgeData>(
 	graph: AsyncReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: AsyncPARSEConfig<N, E>,
 ): Promise<PARSEResult> {
 	const startTime = performance.now();
@@ -221,7 +221,7 @@ export async function parseAsync<N extends NodeData, E extends EdgeData>(
  */
 async function computePathSalienceAsync<N extends NodeData, E extends EdgeData>(
 	graph: AsyncReadableGraph<N, E>,
-	path: ExpansionPath,
+	path: ExplorationPath,
 	mi: AsyncMIFunction<N, E>,
 	epsilon: number,
 ): Promise<number> {
@@ -266,7 +266,7 @@ async function computePathSalienceAsync<N extends NodeData, E extends EdgeData>(
  */
 function computePathSalience<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	path: ExpansionPath,
+	path: ExplorationPath,
 	mi: MIFunction<N, E>,
 	epsilon: number,
 ): number {

@@ -1,8 +1,8 @@
 /**
- * Simple linear-chain graph fixtures for expansion unit tests.
+ * Simple linear-chain graph fixtures for exploration unit tests.
  *
  * These lightweight fixtures replace the per-file boilerplate found across
- * the expansion algorithm unit tests. Each test file previously declared its
+ * the exploration algorithm unit tests. Each test file previously declared its
  * own identical `TestNode`, `TestEdge`, and `createTestGraph()` / `createLinearGraph()`
  * — this module is the single canonical source.
  */
@@ -13,8 +13,8 @@ import type { KGNode } from "../types";
 /**
  * Five-node linear chain: A – B – C – D – E, all edges weight 1.
  *
- * Used as the primary test graph in expansion unit tests. Seeds are typically
- * placed at the two endpoints (A and E) to exercise bidirectional expansion
+ * Used as the primary test graph in exploration unit tests. Seeds are typically
+ * placed at the two endpoints (A and E) to exercise bidirectional exploration
  * across the full chain length.
  */
 export function createLinearChainGraph(): AdjacencyMapGraph<KGNode> {
@@ -39,7 +39,7 @@ export function createLinearChainGraph(): AdjacencyMapGraph<KGNode> {
 /**
  * Two disconnected nodes A and B with no edges between them.
  *
- * Used to verify that expansion algorithms correctly return zero paths when
+ * Used to verify that exploration algorithms correctly return zero paths when
  * seeds cannot be connected.
  */
 export function createDisconnectedGraph(): AdjacencyMapGraph<KGNode> {

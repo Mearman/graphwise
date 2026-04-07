@@ -7,7 +7,7 @@
  * - Bob and Carol: connected via niche interest (narrow path through shared friend)
  *
  * Useful for testing:
- * - Hub deferral in expansion (DOME should explore low-degree edges first)
+ * - Hub deferral in exploration (DOME should explore low-degree edges first)
  * - Path discovery through sparse interest communities
  * - Degree-based heuristics
  */

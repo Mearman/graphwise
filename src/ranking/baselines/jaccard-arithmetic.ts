@@ -7,7 +7,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
 import { jaccard } from "../mi/jaccard";
 import { normaliseAndRank } from "./utils";
@@ -22,7 +22,7 @@ import { normaliseAndRank } from "./utils";
  */
 export function jaccardArithmetic<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): BaselineResult {
 	const { includeScores = true } = config ?? {};
@@ -35,29 +35,31 @@ export function jaccardArithmetic<N extends NodeData, E extends EdgeData>(
 	}
 
 	// Compute raw scores (arithmetic mean of edge similarities)
-	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
-		if (path.nodes.length < 2) {
-			// Single-node path: no edges, score = 1
-			return { path, score: 1 };
-		}
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
+		(path) => {
+			if (path.nodes.length < 2) {
+				// Single-node path: no edges, score = 1
+				return { path, score: 1 };
+			}
 
-		let similaritySum = 0;
-		let edgeCount = 0;
+			let similaritySum = 0;
+			let edgeCount = 0;
 
-		for (let i = 0; i < path.nodes.length - 1; i++) {
-			const source = path.nodes[i];
-			const target = path.nodes[i + 1];
-			if (source === undefined || target === undefined) continue;
+			for (let i = 0; i < path.nodes.length - 1; i++) {
+				const source = path.nodes[i];
+				const target = path.nodes[i + 1];
+				if (source === undefined || target === undefined) continue;
 
-			const edgeSimilarity = jaccard(graph, source, target);
-			similaritySum += edgeSimilarity;
-			edgeCount++;
-		}
+				const edgeSimilarity = jaccard(graph, source, target);
+				similaritySum += edgeSimilarity;
+				edgeCount++;
+			}
 
-		// Arithmetic mean
-		const score = edgeCount > 0 ? similaritySum / edgeCount : 1;
-		return { path, score };
-	});
+			// Arithmetic mean
+			const score = edgeCount > 0 ? similaritySum / edgeCount : 1;
+			return { path, score };
+		},
+	);
 
 	return normaliseAndRank(paths, scored, "jaccard-arithmetic", includeScores);
 }

@@ -13,7 +13,7 @@ const entries = {
 	gpu: resolve(__dirname, "src/gpu/index.ts"),
 	schemas: resolve(__dirname, "src/schemas/index.ts"),
 	async: resolve(__dirname, "src/async/index.ts"),
-	expansion: resolve(__dirname, "src/expansion/index.ts"),
+	exploration: resolve(__dirname, "src/exploration/index.ts"),
 	ranking: resolve(__dirname, "src/ranking/index.ts"),
 	"ranking/mi": resolve(__dirname, "src/ranking/mi/index.ts"),
 	extraction: resolve(__dirname, "src/extraction/index.ts"),

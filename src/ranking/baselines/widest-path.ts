@@ -7,7 +7,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
 import { jaccard } from "../mi/jaccard";
 import { normaliseAndRank } from "./utils";
@@ -22,7 +22,7 @@ import { normaliseAndRank } from "./utils";
  */
 export function widestPath<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): BaselineResult {
 	const { includeScores = true } = config ?? {};
@@ -35,27 +35,29 @@ export function widestPath<N extends NodeData, E extends EdgeData>(
 	}
 
 	// Compute raw scores (minimum edge similarity per path)
-	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
-		if (path.nodes.length < 2) {
-			// Single-node path: no edges
-			return { path, score: 1 };
-		}
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
+		(path) => {
+			if (path.nodes.length < 2) {
+				// Single-node path: no edges
+				return { path, score: 1 };
+			}
 
-		let minSimilarity = Number.POSITIVE_INFINITY;
-		for (let i = 0; i < path.nodes.length - 1; i++) {
-			const source = path.nodes[i];
-			const target = path.nodes[i + 1];
-			if (source === undefined || target === undefined) continue;
+			let minSimilarity = Number.POSITIVE_INFINITY;
+			for (let i = 0; i < path.nodes.length - 1; i++) {
+				const source = path.nodes[i];
+				const target = path.nodes[i + 1];
+				if (source === undefined || target === undefined) continue;
 
-			const edgeSimilarity = jaccard(graph, source, target);
-			minSimilarity = Math.min(minSimilarity, edgeSimilarity);
-		}
+				const edgeSimilarity = jaccard(graph, source, target);
+				minSimilarity = Math.min(minSimilarity, edgeSimilarity);
+			}
 
-		// If no edges were found, default to 1
-		const score =
-			minSimilarity === Number.POSITIVE_INFINITY ? 1 : minSimilarity;
-		return { path, score };
-	});
+			// If no edges were found, default to 1
+			const score =
+				minSimilarity === Number.POSITIVE_INFINITY ? 1 : minSimilarity;
+			return { path, score };
+		},
+	);
 
 	return normaliseAndRank(paths, scored, "widest-path", includeScores);
 }

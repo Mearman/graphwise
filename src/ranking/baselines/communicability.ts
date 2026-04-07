@@ -10,7 +10,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
 import { normaliseAndRank } from "./utils";
 import { gpuSpmv } from "../../gpu/operations";
@@ -99,7 +99,7 @@ function computeCommunicability<N extends NodeData, E extends EdgeData>(
  */
 export function communicability<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): BaselineResult {
 	const { includeScores = true } = config ?? {};
@@ -112,17 +112,19 @@ export function communicability<N extends NodeData, E extends EdgeData>(
 	}
 
 	// Score paths by communicability between endpoints
-	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
-		const source = path.nodes[0];
-		const target = path.nodes[path.nodes.length - 1];
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
+		(path) => {
+			const source = path.nodes[0];
+			const target = path.nodes[path.nodes.length - 1];
 
-		if (source === undefined || target === undefined) {
-			return { path, score: 0 };
-		}
+			if (source === undefined || target === undefined) {
+				return { path, score: 0 };
+			}
 
-		const commScore = computeCommunicability(graph, source, target);
-		return { path, score: commScore };
-	});
+			const commScore = computeCommunicability(graph, source, target);
+			return { path, score: commScore };
+		},
+	);
 
 	return normaliseAndRank(paths, scored, "communicability", includeScores);
 }
@@ -206,7 +208,7 @@ export async function communicabilityAsync<
 	E extends EdgeData,
 >(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): Promise<BaselineResult> {
 	const { includeScores = true, gpu } = config ?? {};
@@ -228,7 +230,7 @@ export async function communicabilityAsync<
 	// Score paths by communicability between endpoints
 	const useGPU = gpu?.backend === "gpu" && gpu.root !== undefined;
 
-	const scored: { path: ExpansionPath; score: number }[] = [];
+	const scored: { path: ExplorationPath; score: number }[] = [];
 
 	if (useGPU) {
 		// Use GPU SpMV for each path

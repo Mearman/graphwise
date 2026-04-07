@@ -7,7 +7,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
 import { normaliseAndRank } from "./utils";
 
@@ -21,7 +21,7 @@ import { normaliseAndRank } from "./utils";
  */
 export function degreeSum<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): BaselineResult {
 	const { includeScores = true } = config ?? {};
@@ -34,13 +34,15 @@ export function degreeSum<N extends NodeData, E extends EdgeData>(
 	}
 
 	// Compute raw scores (sum of degrees)
-	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
-		let degreeSum = 0;
-		for (const nodeId of path.nodes) {
-			degreeSum += graph.degree(nodeId);
-		}
-		return { path, score: degreeSum };
-	});
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
+		(path) => {
+			let degreeSum = 0;
+			for (const nodeId of path.nodes) {
+				degreeSum += graph.degree(nodeId);
+			}
+			return { path, score: degreeSum };
+		},
+	);
 
 	return normaliseAndRank(paths, scored, "degree-sum", includeScores);
 }

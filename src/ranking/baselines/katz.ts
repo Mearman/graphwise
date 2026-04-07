@@ -10,7 +10,7 @@
  */
 
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
-import type { ExpansionPath } from "../../expansion/types";
+import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
 import { normaliseAndRank } from "./utils";
 import { gpuSpmv } from "../../gpu/operations";
@@ -98,7 +98,7 @@ function computeKatz<N extends NodeData, E extends EdgeData>(
  */
 export function katz<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): BaselineResult {
 	const { includeScores = true } = config ?? {};
@@ -111,17 +111,19 @@ export function katz<N extends NodeData, E extends EdgeData>(
 	}
 
 	// Score paths by Katz between endpoints
-	const scored: { path: ExpansionPath; score: number }[] = paths.map((path) => {
-		const source = path.nodes[0];
-		const target = path.nodes[path.nodes.length - 1];
+	const scored: { path: ExplorationPath; score: number }[] = paths.map(
+		(path) => {
+			const source = path.nodes[0];
+			const target = path.nodes[path.nodes.length - 1];
 
-		if (source === undefined || target === undefined) {
-			return { path, score: 0 };
-		}
+			if (source === undefined || target === undefined) {
+				return { path, score: 0 };
+			}
 
-		const katzScore = computeKatz(graph, source, target);
-		return { path, score: katzScore };
-	});
+			const katzScore = computeKatz(graph, source, target);
+			return { path, score: katzScore };
+		},
+	);
 
 	return normaliseAndRank(paths, scored, "katz", includeScores);
 }
@@ -198,7 +200,7 @@ async function computeKatzGPU<N extends NodeData, E extends EdgeData>(
  */
 export async function katzAsync<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
-	paths: readonly ExpansionPath[],
+	paths: readonly ExplorationPath[],
 	config?: BaselineConfig,
 ): Promise<BaselineResult> {
 	const { includeScores = true, gpu } = config ?? {};
@@ -220,7 +222,7 @@ export async function katzAsync<N extends NodeData, E extends EdgeData>(
 	// Score paths by Katz between endpoints
 	const useGPU = gpu?.backend === "gpu" && gpu.root !== undefined;
 
-	const scored: { path: ExpansionPath; score: number }[] = [];
+	const scored: { path: ExplorationPath; score: number }[] = [];
 
 	if (useGPU) {
 		// Use GPU SpMV for each path
