@@ -18,7 +18,7 @@ const config: UserConfig = {
 			[
 				// Source modules
 				"graph",
-				"expansion",
+				"exploration",
 				"ranking",
 				"traversal",
 				"structures",
