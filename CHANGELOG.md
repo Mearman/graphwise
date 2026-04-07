@@ -1,3 +1,24 @@
+## [1.12.1](https://github.com/Mearman/graphwise/compare/v1.12.0...v1.12.1) (2026-04-07)
+
+### Bug Fixes
+
+* **exploration:** update smoke test import path from expansion to exploration ([9eee20d](https://github.com/Mearman/graphwise/commit/9eee20d13ac4b6f916b731c2f4cfaa6eaa285172))
+
+### Code Refactoring
+
+* **expansion:** rename expansion → exploration in all in-file references ([d017f20](https://github.com/Mearman/graphwise/commit/d017f20b47ed23adfd09e7b2e0fd5d8c19c4c58b))
+
+### Build System
+
+* **deps:** bump eslint-plugin-jsdoc from 62.8.0 to 62.8.1 ([577d8eb](https://github.com/Mearman/graphwise/commit/577d8eb57a112b171340fe7723122caf5c2095c9))
+* enforce 7-day minimum release age for pnpm installs ([815b882](https://github.com/Mearman/graphwise/commit/815b88279a55b5aae677bf7e08af5c6fca3d43f3))
+* rename expansion scope to exploration in commitlint config ([885220b](https://github.com/Mearman/graphwise/commit/885220b0d0292e367aa1327f54ee422901524aed))
+
+### Continuous Integration
+
+* bump upload-artifact to v7 and download-artifact to v8 ([08b77da](https://github.com/Mearman/graphwise/commit/08b77dac8a103c97dcd11eba9a91cebfba02e72c))
+* replace Dependabot with Renovate ([02dcf90](https://github.com/Mearman/graphwise/commit/02dcf90264efb63174d1f5d973b791463b47e643))
+
 ## [1.12.0](https://github.com/Mearman/graphwise/compare/v1.11.0...v1.12.0) (2026-04-07)
 
 ### Features
