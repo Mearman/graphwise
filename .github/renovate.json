@@ -1,0 +1,38 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "minimumReleaseAge": "7 days",
+  "schedule": ["before 3am on monday"],
+  "commitMessagePrefix": "build(deps):",
+  "commitMessageLowerCase": "never",
+  "packageRules": [
+    {
+      "matchDepTypes": ["devDependencies"],
+      "commitMessagePrefix": "build(deps-dev):"
+    },
+    {
+      "groupName": "semantic-release",
+      "matchPackageNames": ["semantic-release", "@semantic-release/**"]
+    },
+    {
+      "groupName": "eslint",
+      "matchPackageNames": ["eslint", "@eslint/**", "eslint-*", "*-eslint-*"]
+    },
+    {
+      "groupName": "testing",
+      "matchPackageNames": ["vitest", "@vitest/**", "fast-check", "@fast-check/**"]
+    },
+    {
+      "groupName": "typescript",
+      "matchPackageNames": ["typescript", "typescript-eslint", "@typescript-eslint/**"]
+    },
+    {
+      "groupName": "build",
+      "matchPackageNames": ["vite", "vite-plugin-*", "turbo"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "commitMessagePrefix": "ci(actions):"
+    }
+  ]
+}
