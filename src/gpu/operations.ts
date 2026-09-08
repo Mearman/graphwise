@@ -398,7 +398,6 @@ export async function gpuBfsLevels<N extends NodeData, E extends EdgeData>(
 	const gpuFn = (_root: GraphwiseGPURoot): Int32Array => {
 		// BFS requires atomics not yet in TypeGPU - use CPU
 		// _root is intentionally unused as we fall back to CPU implementation
-		void _root;
 		return cpuFn();
 	};
 

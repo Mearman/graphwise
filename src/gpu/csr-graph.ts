@@ -166,7 +166,6 @@ export class CSRReadableGraph<
 		return this.indexMap.nodeToIndex.has(id);
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	getNode(_id: NodeId): undefined {
 		// CSR stores topology only, no node data
 		return undefined;
@@ -178,7 +177,6 @@ export class CSRReadableGraph<
 		}
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	*neighbours(id: NodeId, _direction?: Direction): Iterable<NodeId> {
 		const srcIdx = this.indexMap.nodeToIndex.get(id);
 		if (srcIdx === undefined) return;
@@ -202,7 +200,6 @@ export class CSRReadableGraph<
 		}
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	degree(id: NodeId, _direction?: Direction): number {
 		const idx = this.indexMap.nodeToIndex.get(id);
 		if (idx === undefined) return 0;
@@ -211,7 +208,6 @@ export class CSRReadableGraph<
 		return (rowOffsets[idx + 1] ?? 0) - (rowOffsets[idx] ?? 0);
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	getEdge(_source: NodeId, _target: NodeId): undefined {
 		// CSR stores topology only, no edge data
 		return undefined;

@@ -367,12 +367,12 @@ import type { AsyncReadableGraph } from "graphwise/graph";
 const remoteGraph: AsyncReadableGraph = createRemoteGraph();
 
 const result = await domeAsync(remoteGraph, seeds, {
-    signal: controller.signal,
-    onProgress: (stats) => console.log(stats),
+  signal: controller.signal,
+  onProgress: (stats) => console.log(stats),
 });
 
 const ranked = await parseAsync(remoteGraph, result.paths, {
-    mi: jaccardAsync,
+  mi: jaccardAsync,
 });
 ```
 
