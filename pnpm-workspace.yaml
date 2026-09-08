@@ -17,3 +17,8 @@ overrides:
   "@humanfs/node": ^0.16.8
   "@isaacs/brace-expansion@^5": ^5.0.5
   "brace-expansion@^5": ^5.0.5
+  # The release-notes generator loads the writer through conventional-changelog's
+  # own nested resolution; pnpm keeps that at 8.4 whose writer lacks the helper the
+  # conventionalcommits preset registers. One version everywhere.
+  conventional-changelog-writer: ^9.2.1
+  conventional-changelog: ^8.0.0
