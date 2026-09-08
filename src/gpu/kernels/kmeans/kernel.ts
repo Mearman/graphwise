@@ -122,10 +122,7 @@ export function dispatchKMeansAssign(
 ): void {
 	// TypeGPU kernel function with "use gpu" directive
 
-	const pipeline = root.createGuardedComputePipeline(
-		// eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-		kmeansAssignPipeline as any,
-	);
+	const pipeline = root.createGuardedComputePipeline(kmeansAssignPipeline);
 
 	const pairCountBuffer = root
 		.createBuffer(d.u32, pointCount)

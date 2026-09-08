@@ -20,11 +20,20 @@
     },
     {
       "groupName": "testing",
-      "matchPackageNames": ["vitest", "@vitest/**", "fast-check", "@fast-check/**"]
+      "matchPackageNames": [
+        "vitest",
+        "@vitest/**",
+        "fast-check",
+        "@fast-check/**"
+      ]
     },
     {
       "groupName": "typescript",
-      "matchPackageNames": ["typescript", "typescript-eslint", "@typescript-eslint/**"]
+      "matchPackageNames": [
+        "typescript",
+        "typescript-eslint",
+        "@typescript-eslint/**"
+      ]
     },
     {
       "groupName": "build",

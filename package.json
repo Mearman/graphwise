@@ -1,148 +1,149 @@
 {
-	"name": "graphwise",
-	"version": "1.12.2",
-	"description": "Graph algorithms for citation network analysis - novel expansion, MI variants, and path ranking",
-	"type": "module",
-	"sideEffects": false,
-	"main": "dist/index.cjs",
-	"module": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js",
-			"require": "./dist/index.cjs"
-		},
-		"./graph": {
-			"types": "./dist/graph/index.d.ts",
-			"import": "./dist/graph/index.js",
-			"require": "./dist/graph/index.cjs"
-		},
-		"./exploration": {
-			"types": "./dist/exploration/index.d.ts",
-			"import": "./dist/exploration/index.js",
-			"require": "./dist/exploration/index.cjs"
-		},
-		"./ranking": {
-			"types": "./dist/ranking/index.d.ts",
-			"import": "./dist/ranking/index.js",
-			"require": "./dist/ranking/index.cjs"
-		},
-		"./ranking/mi": {
-			"types": "./dist/ranking/mi/index.d.ts",
-			"import": "./dist/ranking/mi/index.js",
-			"require": "./dist/ranking/mi/index.cjs"
-		},
-		"./seeds": {
-			"types": "./dist/seeds/index.d.ts",
-			"import": "./dist/seeds/index.js",
-			"require": "./dist/seeds/index.cjs"
-		},
-		"./traversal": {
-			"types": "./dist/traversal/index.d.ts",
-			"import": "./dist/traversal/index.js",
-			"require": "./dist/traversal/index.cjs"
-		},
-		"./structures": {
-			"types": "./dist/structures/index.d.ts",
-			"import": "./dist/structures/index.js",
-			"require": "./dist/structures/index.cjs"
-		},
-		"./extraction": {
-			"types": "./dist/extraction/index.d.ts",
-			"import": "./dist/extraction/index.js",
-			"require": "./dist/extraction/index.cjs"
-		},
-		"./utils": {
-			"types": "./dist/utils/index.d.ts",
-			"import": "./dist/utils/index.js",
-			"require": "./dist/utils/index.cjs"
-		},
-		"./gpu": {
-			"types": "./dist/gpu/index.d.ts",
-			"import": "./dist/gpu/index.js",
-			"require": "./dist/gpu/index.cjs"
-		},
-		"./schemas": {
-			"types": "./dist/schemas/index.d.ts",
-			"import": "./dist/schemas/index.js",
-			"require": "./dist/schemas/index.cjs"
-		},
-		"./async": {
-			"types": "./dist/async/index.d.ts",
-			"import": "./dist/async/index.js",
-			"require": "./dist/async/index.cjs"
-		}
-	},
-	"files": [
-		"dist"
-	],
-	"engines": {
-		"node": ">=20.19"
-	},
-	"packageManager": "pnpm@10.27.0",
-	"scripts": {
-		"_typecheck": "tsc --noEmit",
-		"_lint": "eslint --cache",
-		"_lint:fix": "eslint --cache --fix",
-		"_test": "vitest run",
-		"_build": "vite build",
-		"_validate": "echo 'Validation complete'",
-		"build": "turbo run _build",
-		"test": "turbo run _test",
-		"test:watch": "vitest",
-		"test:coverage": "vitest run --coverage",
-		"typecheck": "turbo run _typecheck",
-		"lint": "turbo run _lint",
-		"lint:fix": "turbo run _lint:fix",
-		"validate": "turbo run _validate",
-		"clean": "rm -rf dist coverage node_modules .turbo",
-		"prepublishOnly": "pnpm validate",
-		"prepare": "husky"
-	},
-	"keywords": [
-		"graph",
-		"algorithms",
-		"citation-network",
-		"exploration",
-		"path-ranking",
-		"mutual-information",
-		"seed-selection"
-	],
-	"author": "Joseph Mearman",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/Mearman/graphwise.git"
-	},
-	"dependencies": {
-		"typegpu": "0.10.2",
-		"zod": "^4.3.6"
-	},
-	"devDependencies": {
-		"@commitlint/cli": "^20.5.0",
-		"@commitlint/config-conventional": "^20.5.0",
-		"@eslint-community/eslint-plugin-eslint-comments": "^4.7.1",
-		"@eslint/js": "10.0.1",
-		"@fast-check/vitest": "^0.3.0",
-		"@semantic-release/changelog": "6.0.3",
-		"@semantic-release/git": "10.0.1",
-		"@vitest/coverage-v8": "^4.1.1",
-		"@webgpu/types": "^0.1.69",
-		"eslint": "^10.1.0",
-		"eslint-formatter-compact": "9.0.1",
-		"eslint-plugin-jsdoc": "62.8.1",
-		"eslint-plugin-prettier": "5.5.5",
-		"fast-check": "^4.6.0",
-		"husky": "^9.1.7",
-		"lint-staged": "^16.4.0",
-		"prettier": "3.8.1",
-		"semantic-release": "^25.0.3",
-		"turbo": "2.9.14",
-		"typescript": "^6.0.2",
-		"typescript-eslint": "^8.57.2",
-		"unplugin-typegpu": "0.10.2",
-		"vite": "8.0.16",
-		"vite-plugin-dts": "^4.5.4",
-		"vitest": "^4.1.1"
-	}
+  "name": "graphwise",
+  "version": "1.12.2",
+  "description": "Graph algorithms for citation network analysis - novel expansion, MI variants, and path ranking",
+  "type": "module",
+  "sideEffects": false,
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./graph": {
+      "types": "./dist/graph/index.d.ts",
+      "import": "./dist/graph/index.js",
+      "require": "./dist/graph/index.cjs"
+    },
+    "./exploration": {
+      "types": "./dist/exploration/index.d.ts",
+      "import": "./dist/exploration/index.js",
+      "require": "./dist/exploration/index.cjs"
+    },
+    "./ranking": {
+      "types": "./dist/ranking/index.d.ts",
+      "import": "./dist/ranking/index.js",
+      "require": "./dist/ranking/index.cjs"
+    },
+    "./ranking/mi": {
+      "types": "./dist/ranking/mi/index.d.ts",
+      "import": "./dist/ranking/mi/index.js",
+      "require": "./dist/ranking/mi/index.cjs"
+    },
+    "./seeds": {
+      "types": "./dist/seeds/index.d.ts",
+      "import": "./dist/seeds/index.js",
+      "require": "./dist/seeds/index.cjs"
+    },
+    "./traversal": {
+      "types": "./dist/traversal/index.d.ts",
+      "import": "./dist/traversal/index.js",
+      "require": "./dist/traversal/index.cjs"
+    },
+    "./structures": {
+      "types": "./dist/structures/index.d.ts",
+      "import": "./dist/structures/index.js",
+      "require": "./dist/structures/index.cjs"
+    },
+    "./extraction": {
+      "types": "./dist/extraction/index.d.ts",
+      "import": "./dist/extraction/index.js",
+      "require": "./dist/extraction/index.cjs"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js",
+      "require": "./dist/utils/index.cjs"
+    },
+    "./gpu": {
+      "types": "./dist/gpu/index.d.ts",
+      "import": "./dist/gpu/index.js",
+      "require": "./dist/gpu/index.cjs"
+    },
+    "./schemas": {
+      "types": "./dist/schemas/index.d.ts",
+      "import": "./dist/schemas/index.js",
+      "require": "./dist/schemas/index.cjs"
+    },
+    "./async": {
+      "types": "./dist/async/index.d.ts",
+      "import": "./dist/async/index.js",
+      "require": "./dist/async/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "packageManager": "pnpm@10.27.0",
+  "scripts": {
+    "_typecheck": "tsc --noEmit",
+    "_lint": "eslint --cache",
+    "_lint:fix": "eslint --cache --fix",
+    "_test": "vitest run",
+    "_build": "vite build",
+    "_validate": "echo 'Validation complete'",
+    "build": "turbo run _build",
+    "test": "turbo run _test",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "turbo run _typecheck",
+    "lint": "turbo run _lint",
+    "lint:fix": "turbo run _lint:fix",
+    "validate": "turbo run _validate",
+    "clean": "rm -rf dist coverage node_modules .turbo",
+    "prepublishOnly": "pnpm validate",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "graph",
+    "algorithms",
+    "citation-network",
+    "exploration",
+    "path-ranking",
+    "mutual-information",
+    "seed-selection"
+  ],
+  "author": "Joseph Mearman",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mearman/graphwise.git"
+  },
+  "dependencies": {
+    "typegpu": "0.12.4",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.2",
+    "@commitlint/config-conventional": "21.2.2",
+    "@eslint-community/eslint-plugin-eslint-comments": "4.7.2",
+    "@eslint/js": "10.0.1",
+    "@fast-check/vitest": "0.4.1",
+    "@semantic-release/changelog": "7.0.0",
+    "@semantic-release/git": "11.0.1",
+    "@vitest/coverage-v8": "4.1.11",
+    "@webgpu/types": "0.1.72",
+    "eslint": "10.9.1",
+    "eslint-formatter-compact": "9.0.1",
+    "eslint-plugin-jsdoc": "64.3.3",
+    "eslint-plugin-prettier": "5.5.6",
+    "fast-check": "4.9.0",
+    "husky": "^9.1.7",
+    "lint-staged": "17.4.1",
+    "prettier": "3.9.6",
+    "semantic-release": "25.0.9",
+    "turbo": "2.10.12",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.69.0",
+    "unplugin-typegpu": "0.12.3",
+    "vite": "8.2.2",
+    "vite-plugin-dts": "5.1.0",
+    "vitest": "4.1.11",
+    "@typescript/typescript6": "6.0.2"
+  }
 }

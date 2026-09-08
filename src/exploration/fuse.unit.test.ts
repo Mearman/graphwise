@@ -47,14 +47,11 @@ function createGraphWithSharedNeighbours(): AdjacencyMapGraph<KGNode> {
  * Custom MI function for testing that returns a fixed value.
  */
 function fixedMI(
-	graph: ReadableGraph<KGNode>,
-	source: string,
-	target: string,
+	_graph: ReadableGraph<KGNode>,
+	_source: string,
+	_target: string,
 ): number {
-	void graph; // Intentionally unused - test mock
-	void source; // Intentionally unused - test mock
-	void target; // Intentionally unused - test mock
-	return 0.75;
+	return 0.75; // test mock: parameters intentionally unused
 }
 
 describe("fuse exploration", () => {

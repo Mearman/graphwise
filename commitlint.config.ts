@@ -10,31 +10,31 @@ import type { UserConfig } from "@commitlint/types";
  * Note: Commits must use British English spelling and grammar.
  */
 const config: UserConfig = {
-	extends: ["@commitlint/config-conventional"],
-	rules: {
-		"scope-enum": [
-			2, // error severity
-			"always",
-			[
-				// Source modules
-				"graph",
-				"exploration",
-				"ranking",
-				"traversal",
-				"structures",
-				"extraction",
-				"seeds",
-				"utils",
-				"schemas",
-				"gpu",
-				// Build/tooling
-				"build",
-				"release",
-				"ci",
-				"deps",
-			],
-		],
-	},
+  extends: ["@commitlint/config-conventional"],
+  rules: {
+    "scope-enum": [
+      2, // error severity
+      "always",
+      [
+        // Source modules
+        "graph",
+        "exploration",
+        "ranking",
+        "traversal",
+        "structures",
+        "extraction",
+        "seeds",
+        "utils",
+        "schemas",
+        "gpu",
+        // Build/tooling
+        "build",
+        "release",
+        "ci",
+        "deps",
+      ],
+    ],
+  },
 };
 
 export default config;

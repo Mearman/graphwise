@@ -321,7 +321,10 @@ export default defineConfig(
 			],
 			"@typescript-eslint/no-explicit-any": "error",
 			"@typescript-eslint/no-non-null-assertion": "error",
-			"@typescript-eslint/no-unused-vars": "error",
+			"@typescript-eslint/no-unused-vars": [
+				"error",
+				{ argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+			],
 			"@typescript-eslint/explicit-function-return-type": [
 				"error",
 				{ allowExpressions: true },

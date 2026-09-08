@@ -142,14 +142,12 @@ export function normaliseFeatures(
 	const std3 = Math.sqrt(var3 / n + EPSILON);
 
 	// Normalise
-	return features.map(
-		(f): LabelledFeature => ({
-			nodeId: f.nodeId,
-			f1: (f.f1 - mean1) / std1,
-			f2: (f.f2 - mean2) / std2,
-			f3: (f.f3 - mean3) / std3,
-		}),
-	);
+	return features.map((f): LabelledFeature => ({
+		nodeId: f.nodeId,
+		f1: (f.f1 - mean1) / std1,
+		f2: (f.f2 - mean2) / std2,
+		f3: (f.f3 - mean3) / std3,
+	}));
 }
 
 /**
