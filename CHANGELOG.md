@@ -1,3 +1,9 @@
+## [1.12.2](https://github.com/Mearman/graphwise/compare/v1.12.1...v1.12.2) (2026-09-08)
+
+### Bug Fixes
+
+* **deps:** clear the advisory backlog with floors and patched pins ([038f9e5](https://github.com/Mearman/graphwise/commit/038f9e57d2f9109e097acde3e40991a2a8920067))
+
 ## [1.12.1](https://github.com/Mearman/graphwise/compare/v1.12.0...v1.12.1) (2026-04-07)
 
 ### Bug Fixes
