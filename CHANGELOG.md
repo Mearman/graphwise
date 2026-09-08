@@ -1,3 +1,14 @@
+## [1.12.3](https://github.com/Mearman/graphwise/compare/v1.12.2...v1.12.3) (2026-09-08)
+
+### Bug Fixes
+
+* **release:** force one conventional-changelog-writer version across resolutions ([545fac9](https://github.com/Mearman/graphwise/commit/545fac95029e5b24a877c8cdcc7cd61ca138fa79))
+* **release:** provide the conventional-changelog writer the preset requires ([4f30d84](https://github.com/Mearman/graphwise/commit/4f30d84153bae7b2ec4b1c9d173d60e2a09f1e84))
+
+### Miscellaneous Chores
+
+* **deps:** update every dependency to the newest release at least a week old ([e5cb871](https://github.com/Mearman/graphwise/commit/e5cb8716ad8d87757c64fd82a9bc232c510cc424))
+
 ## [1.12.2](https://github.com/Mearman/graphwise/compare/v1.12.1...v1.12.2) (2026-09-08)
 
 ### Bug Fixes
