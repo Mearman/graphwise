@@ -12,14 +12,32 @@
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
 import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
-import { normaliseAndRank } from "./utils";
+import { normaliseAndRank, scorePathsByWalkSeries } from "./utils";
 import { gpuSpmv } from "../../gpu/operations";
 import type { GPUComputeOptions } from "../../gpu/types";
 
+/** Taylor terms of the matrix exponential that are summed. */
+const COMMUNICABILITY_DEPTH = 15;
+
 /**
- * Compute truncated communicability between two nodes.
+ * Series weights for communicability: 1 / d! for d from 0 (the identity term) to the depth.
+ */
+function communicabilityCoefficients(
+	k = COMMUNICABILITY_DEPTH,
+): readonly number[] {
+	const weights: number[] = [1];
+	let factorial = 1;
+	for (let depth = 1; depth <= k; depth++) {
+		factorial *= depth;
+		weights.push(1 / factorial);
+	}
+	return weights;
+}
+
+/**
+ * Compute communicability between two nodes.
  *
- * Uses Taylor series expansion: (e^A)_{s,t} ≈ sum_{k=0}^{K} A^k_{s,t} / k!
+ * Uses the Taylor expansion (e^A)_{s,t} approximated by the sum over d of A^d_{s,t} / d!.
  *
  * @param graph - Source graph
  * @param source - Source node ID
@@ -31,62 +49,20 @@ function computeCommunicability<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	source: string,
 	target: string,
-	k = 15,
+	k = COMMUNICABILITY_DEPTH,
 ): number {
-	const nodes = Array.from(graph.nodeIds());
-	const nodeToIdx = new Map<string, number>();
-	nodes.forEach((nodeId, idx) => {
-		nodeToIdx.set(nodeId, idx);
-	});
-
-	const n = nodes.length;
-	if (n === 0) {
-		return 0;
-	}
-
-	const sourceIdx = nodeToIdx.get(source);
-	const targetIdx = nodeToIdx.get(target);
-
-	if (sourceIdx === undefined || targetIdx === undefined) {
-		return 0;
-	}
-
-	// Current column of A^depth
-	let walks = new Float64Array(n);
-	walks[targetIdx] = 1; // Base case: walks[target] = 1
-
-	// Compute sum: sum_{k=0}^{K} A^k_{s,t} / k!
-	let commScore = walks[sourceIdx] ?? 0; // k=0 term (identity matrix): A^0 = I, so [I]_{s,t} = delta_{s,t}
-
-	let factorial = 1;
-
-	// Iterate from k=1 to k
-	for (let depth = 1; depth <= k; depth++) {
-		// Multiply by adjacency matrix: walks_next[i] = sum_j A[i,j] * walks[j]
-		const walksNext = new Float64Array(n);
-
-		for (const fromNode of nodes) {
-			const fromIdx = nodeToIdx.get(fromNode);
-			if (fromIdx === undefined) continue;
-
-			const neighbours = graph.neighbours(fromNode);
-			for (const toNodeId of neighbours) {
-				const toIdx = nodeToIdx.get(toNodeId);
-				if (toIdx === undefined) continue;
-
-				walksNext[fromIdx] = (walksNext[fromIdx] ?? 0) + (walks[toIdx] ?? 0);
-			}
-		}
-
-		factorial *= depth;
-
-		// Add contribution: A^depth[s,t] / k!
-		commScore += (walksNext[sourceIdx] ?? 0) / factorial;
-
-		walks = walksNext;
-	}
-
-	return commScore;
+	const scored = scorePathsByWalkSeries(
+		graph,
+		[
+			{
+				fromSeed: { id: source },
+				toSeed: { id: target },
+				nodes: [source, target],
+			},
+		],
+		communicabilityCoefficients(k),
+	);
+	return scored[0]?.score ?? 0;
 }
 
 /**
@@ -111,19 +87,11 @@ export function communicability<N extends NodeData, E extends EdgeData>(
 		};
 	}
 
-	// Score paths by communicability between endpoints
-	const scored: { path: ExplorationPath; score: number }[] = paths.map(
-		(path) => {
-			const source = path.nodes[0];
-			const target = path.nodes[path.nodes.length - 1];
-
-			if (source === undefined || target === undefined) {
-				return { path, score: 0 };
-			}
-
-			const commScore = computeCommunicability(graph, source, target);
-			return { path, score: commScore };
-		},
+	// Score paths by communicability between endpoints, propagating walks once per anchor endpoint
+	const scored = scorePathsByWalkSeries(
+		graph,
+		paths,
+		communicabilityCoefficients(),
 	);
 
 	return normaliseAndRank(paths, scored, "communicability", includeScores);

@@ -12,27 +12,17 @@ import type { BaselineConfig, BaselineResult } from "./types";
 import { normaliseAndRank } from "./utils";
 
 /**
- * Compute effective resistance between two nodes via Laplacian pseudoinverse.
- *
- * Resistance = L^+_{s,s} + L^+_{t,t} - 2*L^+_{s,t}
- * where L^+ is the pseudoinverse of the Laplacian matrix.
- *
- * @param graph - Source graph
- * @param source - Source node ID
- * @param target - Target node ID
- * @returns Effective resistance
+ * The Laplacian pseudoinverse of a graph with its node index, built once and queried for every path's endpoints.
  */
-function computeResistance<N extends NodeData, E extends EdgeData>(
-	graph: ReadableGraph<N, E>,
-	source: string,
-	target: string,
-): number {
-	const nodes = Array.from(graph.nodeIds());
-	const nodeToIdx = new Map<string, number>();
-	nodes.forEach((nodeId, idx) => {
-		nodeToIdx.set(nodeId, idx);
-	});
+interface ResistanceModel {
+	readonly index: ReadonlyMap<string, number>;
+	readonly pseudoinverse: readonly (readonly number[])[];
+}
 
+function buildResistanceModel<N extends NodeData, E extends EdgeData>(
+	graph: ReadableGraph<N, E>,
+): ResistanceModel {
+	const nodes = Array.from(graph.nodeIds());
 	const n = nodes.length;
 
 	if (n === 0 || n > 5000) {
@@ -41,12 +31,10 @@ function computeResistance<N extends NodeData, E extends EdgeData>(
 		);
 	}
 
-	const sourceIdx = nodeToIdx.get(source);
-	const targetIdx = nodeToIdx.get(target);
-
-	if (sourceIdx === undefined || targetIdx === undefined) {
-		return 0;
-	}
+	const index = new Map<string, number>();
+	nodes.forEach((nodeId, idx) => {
+		index.set(nodeId, idx);
+	});
 
 	// Build Laplacian matrix: L = D - A
 	const L: number[][] = Array.from({ length: n }, () =>
@@ -57,30 +45,48 @@ function computeResistance<N extends NodeData, E extends EdgeData>(
 		const nodeId = nodes[i];
 		if (nodeId === undefined) continue;
 
-		const degree = graph.degree(nodeId);
 		const row = L[i];
 		if (row !== undefined) {
-			row[i] = degree; // Diagonal
+			row[i] = graph.degree(nodeId); // Diagonal
 		}
 
-		const neighbours = graph.neighbours(nodeId);
-		for (const neighbourId of neighbours) {
-			const j = nodeToIdx.get(neighbourId);
+		for (const neighbourId of graph.neighbours(nodeId)) {
+			const j = index.get(neighbourId);
 			if (j !== undefined && row !== undefined) {
 				row[j] = -1; // Off-diagonal
 			}
 		}
 	}
 
-	// Compute pseudoinverse using Moore-Penrose approach (simplified)
-	// For small graphs, use LU decomposition with diagonal adjustment
-	const Lpinv = pinv(L);
+	return { index, pseudoinverse: pinv(L) };
+}
 
-	// Resistance = L^+_{s,s} + L^+_{t,t} - 2*L^+_{s,t}
+/**
+ * Compute the effective resistance between two nodes from a prebuilt model.
+ *
+ * Resistance = L^+_{s,s} + L^+_{t,t} - 2*L^+_{s,t}
+ *
+ * @param model - Laplacian pseudoinverse of the graph
+ * @param source - Source node ID
+ * @param target - Target node ID
+ * @returns Effective resistance
+ */
+function computeResistance(
+	model: ResistanceModel,
+	source: string,
+	target: string,
+): number {
+	const sourceIdx = model.index.get(source);
+	const targetIdx = model.index.get(target);
+
+	if (sourceIdx === undefined || targetIdx === undefined) {
+		return 0;
+	}
+
 	const resistance =
-		(Lpinv[sourceIdx]?.[sourceIdx] ?? 0) +
-		(Lpinv[targetIdx]?.[targetIdx] ?? 0) -
-		2 * (Lpinv[sourceIdx]?.[targetIdx] ?? 0);
+		(model.pseudoinverse[sourceIdx]?.[sourceIdx] ?? 0) +
+		(model.pseudoinverse[targetIdx]?.[targetIdx] ?? 0) -
+		2 * (model.pseudoinverse[sourceIdx]?.[targetIdx] ?? 0);
 
 	// Clamp to positive (numerical stability)
 	return Math.max(resistance, 1e-10);
@@ -225,6 +231,9 @@ export function resistanceDistance<N extends NodeData, E extends EdgeData>(
 		);
 	}
 
+	// The O(n^3) pseudoinverse is built once for the whole call, not per path
+	const model = buildResistanceModel(graph);
+
 	// Score paths by conductance (1 / resistance)
 	const scored: { path: ExplorationPath; score: number }[] = paths.map(
 		(path) => {
@@ -235,7 +244,7 @@ export function resistanceDistance<N extends NodeData, E extends EdgeData>(
 				return { path, score: 0 };
 			}
 
-			const resistance = computeResistance(graph, source, target);
+			const resistance = computeResistance(model, source, target);
 			// Score = conductance = 1 / resistance
 			const score = 1 / resistance;
 			return { path, score };

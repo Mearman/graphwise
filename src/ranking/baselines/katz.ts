@@ -12,15 +12,29 @@
 import type { NodeData, EdgeData, ReadableGraph } from "../../graph";
 import type { ExplorationPath } from "../../exploration/types";
 import type { BaselineConfig, BaselineResult } from "./types";
-import { normaliseAndRank } from "./utils";
+import { normaliseAndRank, scorePathsByWalkSeries } from "./utils";
 import { gpuSpmv } from "../../gpu/operations";
 import type { GPUComputeOptions } from "../../gpu/types";
 
+/** Walk lengths summed by the Katz score. */
+const KATZ_DEPTH = 5;
+
+/** Attenuation applied per walk step. */
+const KATZ_BETA = 0.005;
+
 /**
- * Compute truncated Katz centrality between two nodes.
+ * Series weights for Katz: beta^d for walks of length d from 1 to the depth, nothing for the identity term.
+ */
+function katzCoefficients(k = KATZ_DEPTH, beta = KATZ_BETA): readonly number[] {
+	return Array.from({ length: k + 1 }, (_, depth) =>
+		depth === 0 ? 0 : Math.pow(beta, depth),
+	);
+}
+
+/**
+ * Compute Katz centrality between two nodes.
  *
- * Uses iterative matrix-vector products to avoid full matrix powers.
- * score(s,t) = sum_{k=1}^{K} beta^k * walks_k(s,t)
+ * Truncated Katz index: sum over d of beta^d times the number of walks of length d from source to target.
  *
  * @param graph - Source graph
  * @param source - Source node ID
@@ -33,59 +47,21 @@ function computeKatz<N extends NodeData, E extends EdgeData>(
 	graph: ReadableGraph<N, E>,
 	source: string,
 	target: string,
-	k = 5,
-	beta = 0.005,
+	k = KATZ_DEPTH,
+	beta = KATZ_BETA,
 ): number {
-	const nodes = Array.from(graph.nodeIds());
-	const nodeToIdx = new Map<string, number>();
-	nodes.forEach((nodeId, idx) => {
-		nodeToIdx.set(nodeId, idx);
-	});
-
-	const n = nodes.length;
-	if (n === 0) {
-		return 0;
-	}
-
-	const sourceIdx = nodeToIdx.get(source);
-	const targetIdx = nodeToIdx.get(target);
-
-	if (sourceIdx === undefined || targetIdx === undefined) {
-		return 0;
-	}
-
-	// Current column of A^depth (number of walks of length depth from each node to target)
-	let walks = new Float64Array(n);
-	walks[targetIdx] = 1; // Base case: walks[target] = 1
-
-	let katzScore = 0;
-
-	// Iterate from depth 1 to k
-	for (let depth = 1; depth <= k; depth++) {
-		// Multiply by adjacency matrix: walks_next[i] = sum_j A[i,j] * walks[j]
-		const walksNext = new Float64Array(n);
-
-		for (const sourceNode of nodes) {
-			const srcIdx = nodeToIdx.get(sourceNode);
-			if (srcIdx === undefined) continue;
-
-			const neighbours = graph.neighbours(sourceNode);
-			for (const neighbourId of neighbours) {
-				const nIdx = nodeToIdx.get(neighbourId);
-				if (nIdx === undefined) continue;
-
-				walksNext[srcIdx] = (walksNext[srcIdx] ?? 0) + (walks[nIdx] ?? 0);
-			}
-		}
-
-		// Add contribution: beta^depth * walks_depth[source]
-		const walkCount = walksNext[sourceIdx] ?? 0;
-		katzScore += Math.pow(beta, depth) * walkCount;
-
-		walks = walksNext;
-	}
-
-	return katzScore;
+	const scored = scorePathsByWalkSeries(
+		graph,
+		[
+			{
+				fromSeed: { id: source },
+				toSeed: { id: target },
+				nodes: [source, target],
+			},
+		],
+		katzCoefficients(k, beta),
+	);
+	return scored[0]?.score ?? 0;
 }
 
 /**
@@ -110,20 +86,8 @@ export function katz<N extends NodeData, E extends EdgeData>(
 		};
 	}
 
-	// Score paths by Katz between endpoints
-	const scored: { path: ExplorationPath; score: number }[] = paths.map(
-		(path) => {
-			const source = path.nodes[0];
-			const target = path.nodes[path.nodes.length - 1];
-
-			if (source === undefined || target === undefined) {
-				return { path, score: 0 };
-			}
-
-			const katzScore = computeKatz(graph, source, target);
-			return { path, score: katzScore };
-		},
-	);
+	// Score paths by Katz between endpoints, propagating walks once per anchor endpoint
+	const scored = scorePathsByWalkSeries(graph, paths, katzCoefficients());
 
 	return normaliseAndRank(paths, scored, "katz", includeScores);
 }
