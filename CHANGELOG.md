@@ -1,3 +1,9 @@
+## [1.12.4](https://github.com/Mearman/graphwise/compare/v1.12.3...v1.12.4) (2026-10-12)
+
+### Performance Improvements
+
+* **ranking:** share walk series and the Laplacian inverse across paths ([97b22cf](https://github.com/Mearman/graphwise/commit/97b22cfebfe429608ecf5f6eeec966556cd646f0))
+
 ## [1.12.3](https://github.com/Mearman/graphwise/compare/v1.12.2...v1.12.3) (2026-09-08)
 
 ### Bug Fixes
