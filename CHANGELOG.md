@@ -1,3 +1,9 @@
+## [1.12.5](https://github.com/Mearman/graphwise/compare/v1.12.4...v1.12.5) (2026-10-29)
+
+### Documentation
+
+* add the standard badge row to the README ([4cd4db9](https://github.com/Mearman/graphwise/commit/4cd4db90d6c506d9b7395c793830afa58fe4e0de))
+
 ## [1.12.4](https://github.com/Mearman/graphwise/compare/v1.12.3...v1.12.4) (2026-10-12)
 
 ### Performance Improvements
