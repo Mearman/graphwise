@@ -1,8 +1,8 @@
 # graphwise
 
+[![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github&logoColor=white)](https://github.com/Mearman/graphwise) [![npm](https://img.shields.io/badge/npm-CB3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/graphwise) [![Release](https://img.shields.io/github/v/release/Mearman/graphwise)](https://github.com/Mearman/graphwise/releases/latest) [![CI](https://img.shields.io/github/actions/workflow/status/Mearman/graphwise/ci.yml?branch=main)](https://github.com/Mearman/graphwise/actions)
+
 [![DOI](https://zenodo.org/badge/1190809040.svg)](https://doi.org/10.5281/zenodo.19209820)
-[![npm](https://img.shields.io/badge/npm-cb3837?logo=npm)](https://www.npmjs.com/package/graphwise)
-[![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github)](https://github.com/Mearman/graphwise)
 
 Low-dependency TypeScript graph algorithms for citation network analysis: novel exploration, MI variants, and path ranking.
 
