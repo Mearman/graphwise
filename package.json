@@ -144,7 +144,7 @@
     "typescript": "6.0.3",
     "typescript-eslint": "8.69.0",
     "unplugin-typegpu": "0.12.3",
-    "vite": "8.2.2",
+    "vite": "8.2.4",
     "vite-plugin-dts": "5.1.0",
     "vitest": "4.1.11"
   }
